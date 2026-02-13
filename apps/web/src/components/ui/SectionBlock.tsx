@@ -1,6 +1,6 @@
 import { forwardRef, type HTMLAttributes } from "react";
 
-type SectionColor = "white" | "muted" | "primary" | "secondary" | "accent";
+type SectionColor = "white" | "muted" | "dark" | "primary" | "secondary" | "accent";
 
 interface SectionBlockProps extends HTMLAttributes<HTMLElement> {
   color?: SectionColor;
@@ -17,6 +17,11 @@ const colorStyles: Record<SectionColor, { bg: string; text: string; deco: string
     bg: "bg-muted",
     text: "text-foreground",
     deco: "bg-gray-300/30",
+  },
+  dark: {
+    bg: "bg-foreground",
+    text: "text-white",
+    deco: "bg-white/5",
   },
   primary: {
     bg: "bg-primary",

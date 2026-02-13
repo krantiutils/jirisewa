@@ -35,5 +35,86 @@
   "languageSwitcher": {
     "en": "English",
     "ne": "नेपाली"
+  },
+  "landing": {
+    "hero": {
+      "heading": "Fresh from farm to your door",
+      "subheading": "JiriSewa connects farmers, riders, and consumers — cutting out middlemen so farmers earn more and you pay less.",
+      "ctaBrowse": "Browse Produce",
+      "ctaRider": "Become a Rider",
+      "farmer": "Farmer",
+      "rider": "Rider",
+      "consumer": "Consumer"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1Title": "Farmer lists produce",
+      "step1Desc": "Farmers list fresh produce with photos, prices, and available quantities directly from their farm.",
+      "step1Number": "1",
+      "step2Title": "Rider posts trip",
+      "step2Desc": "Anyone traveling between towns posts their trip route and available cargo capacity.",
+      "step2Number": "2",
+      "step3Title": "Consumer orders, rider delivers",
+      "step3Desc": "You order fresh produce. A rider heading your way picks it up and delivers it to your door.",
+      "step3Number": "3"
+    },
+    "stats": {
+      "title": "Growing Every Day",
+      "farmersValue": "500+",
+      "farmersLabel": "Farmers Registered",
+      "deliveredValue": "12,000",
+      "deliveredLabel": "KG Delivered",
+      "ridersValue": "200+",
+      "ridersLabel": "Active Riders",
+      "savingsValue": "40%",
+      "savingsLabel": "Average Savings"
+    },
+    "forFarmers": {
+      "title": "For Farmers",
+      "subtitle": "Sell directly. Earn fairly.",
+      "benefit1": "Set your own prices — no middlemen taking 75%",
+      "benefit2": "Reach consumers in Kathmandu and beyond",
+      "benefit3": "Get paid when your produce is delivered",
+      "benefit4": "List in minutes with photos from your phone",
+      "cta": "Start Selling"
+    },
+    "forRiders": {
+      "title": "For Riders",
+      "subtitle": "You're already traveling. Start earning.",
+      "benefit1": "Earn money on trips you're already taking",
+      "benefit2": "Choose which deliveries to accept",
+      "benefit3": "Flexible — no commitment, no schedule",
+      "benefit4": "Help connect rural farms to city kitchens",
+      "cta": "Start Earning"
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "subtitle": "Join thousands of farmers, riders, and consumers building a fairer food system in Nepal.",
+      "ctaPrimary": "Sign Up Now",
+      "ctaSecondary": "Learn More"
+    },
+    "footer": {
+      "brand": "JiriSewa",
+      "tagline": "Connecting Nepali farmers directly with consumers through community riders.",
+      "productTitle": "Product",
+      "productMarketplace": "Marketplace",
+      "productFarmers": "For Farmers",
+      "productRiders": "For Riders",
+      "productPricing": "Pricing",
+      "companyTitle": "Company",
+      "companyAbout": "About",
+      "companyBlog": "Blog",
+      "companyCareers": "Careers",
+      "companyContact": "Contact",
+      "legalTitle": "Legal",
+      "legalPrivacy": "Privacy",
+      "legalTerms": "Terms",
+      "legalCookies": "Cookie Policy",
+      "email": "info@jirisewa.com",
+      "phone": "+977-1-XXXXXXX",
+      "address": "Kathmandu, Nepal",
+      "mapAttribution": "Map data © OpenStreetMap contributors",
+      "copyright": "JiriSewa. All rights reserved."
+    }
   }
 }
