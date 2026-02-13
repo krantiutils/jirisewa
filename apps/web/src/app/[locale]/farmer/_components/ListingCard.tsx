@@ -26,9 +26,15 @@ export function ListingCard({ listing }: ListingCardProps) {
       : listing.produce_categories.name_en
     : "";
 
+  const [toggleError, setToggleError] = useState<string | null>(null);
+
   async function handleToggle() {
     setToggling(true);
-    await toggleListingActive(listing.id, !listing.is_active);
+    setToggleError(null);
+    const result = await toggleListingActive(listing.id, !listing.is_active);
+    if (!result.success) {
+      setToggleError(result.error);
+    }
     setToggling(false);
   }
 
@@ -103,6 +109,10 @@ export function ListingCard({ listing }: ListingCardProps) {
           )}
         </button>
       </div>
+
+      {toggleError && (
+        <p className="col-span-full text-xs text-red-600">{toggleError}</p>
+      )}
     </div>
   );
 }

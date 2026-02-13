@@ -221,6 +221,7 @@ export async function deleteListing(
 
 type OrderItemWithOrder = {
   subtotal: number;
+  order_id: string;
   orders: { status: string; created_at: string } | null;
 };
 
@@ -248,9 +249,8 @@ export async function getFarmerDashboardData(): Promise<
       .order("created_at", { ascending: false }),
     supabase
       .from("order_items")
-      .select("subtotal, orders(status, created_at)")
-      .eq("farmer_id", user.id)
-      .limit(50),
+      .select("subtotal, order_id, orders(status, created_at)")
+      .eq("farmer_id", user.id),
   ]);
 
   const listings = (listingsResult.data ?? []) as unknown as ListingWithCategory[];
@@ -267,12 +267,16 @@ export async function getFarmerDashboardData(): Promise<
     0,
   );
 
-  const pendingOrders = orderItems.filter(
-    (item) =>
-      item.orders &&
-      ["pending", "matched", "picked_up", "in_transit"].includes(
-        item.orders.status,
-      ),
+  const pendingOrderIds = new Set(
+    orderItems
+      .filter(
+        (item) =>
+          item.orders &&
+          ["pending", "matched", "picked_up", "in_transit"].includes(
+            item.orders.status,
+          ),
+      )
+      .map((item) => item.order_id),
   );
 
   return {
@@ -281,7 +285,7 @@ export async function getFarmerDashboardData(): Promise<
       listings,
       activeListings,
       inactiveListings,
-      pendingOrderCount: pendingOrders.length,
+      pendingOrderCount: pendingOrderIds.size,
       totalEarnings,
     },
   };
@@ -309,7 +313,12 @@ export async function uploadProducePhoto(
     return { success: false, error: "Invalid file type. Use JPEG, PNG, or WebP." };
   }
 
-  const ext = file.name.split(".").pop() ?? "jpg";
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  const ext = mimeToExt[file.type] ?? "jpg";
   const fileName = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage
