@@ -11,6 +11,9 @@
     "clean": "rm -rf .next out"
   },
   "dependencies": {
+    "@jirisewa/shared": "workspace:*",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.95.3",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
     "next-intl": "^4.8.2",

@@ -1,30 +1,38 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:jirisewa_mobile/main.dart';
+import 'package:jirisewa_mobile/core/phone_validation.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('Phone validation', () {
+    test('valid Nepal numbers', () {
+      expect(isValidNepalPhone('9812345678'), true);
+      expect(isValidNepalPhone('9801234567'), true);
+      expect(isValidNepalPhone('9712345678'), true);
+      expect(isValidNepalPhone('9612345678'), true);
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('invalid numbers', () {
+      expect(isValidNepalPhone('123456789'), false); // too short
+      expect(isValidNepalPhone('12345678901'), false); // too long
+      expect(isValidNepalPhone('1234567890'), false); // wrong prefix
+      expect(isValidNepalPhone(''), false);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('normalization strips country code', () {
+      expect(normalizePhone('+9779812345678'), '9812345678');
+      expect(normalizePhone('9779812345678'), '9812345678');
+      expect(normalizePhone('09812345678'), '9812345678');
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('toE164 formats correctly', () {
+      expect(toE164('9812345678'), '+9779812345678');
+      expect(toE164('+9779812345678'), '+9779812345678');
+    });
+
+    test('normalization strips whitespace and dashes', () {
+      expect(normalizePhone('981 234 5678'), '9812345678');
+      expect(normalizePhone('981-234-5678'), '9812345678');
+      expect(normalizePhone('(981) 234-5678'), '9812345678');
+    });
   });
 }

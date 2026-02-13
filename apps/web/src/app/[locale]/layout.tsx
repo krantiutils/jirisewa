@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Outfit } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -57,13 +58,15 @@ export default async function LocaleLayout({
     <html lang={locale} dir="ltr">
       <body className={`${outfit.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
-          <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
-            <span className="text-lg font-bold text-primary">
-              {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
-            </span>
-            <LanguageSwitcher />
-          </header>
-          {children}
+          <AuthProvider>
+            <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
+              <span className="text-lg font-bold text-primary">
+                {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
+              </span>
+              <LanguageSwitcher />
+            </header>
+            {children}
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>
