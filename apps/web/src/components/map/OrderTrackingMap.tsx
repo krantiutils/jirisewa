@@ -10,17 +10,7 @@ import {
   NEPAL_BOUNDS,
 } from "@jirisewa/shared";
 import type { LatLng } from "@/lib/map";
-
-const markerIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
+import { defaultMarkerIcon } from "@/lib/leaflet-icons";
 
 interface OrderTrackingMapProps {
   pickupLocation: LatLng;
@@ -75,7 +65,7 @@ export default function OrderTrackingMap({
         <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} />
         <Marker
           position={[pickupLocation.lat, pickupLocation.lng]}
-          icon={markerIcon}
+          icon={defaultMarkerIcon}
         >
           <Popup>
             <span className="font-sans text-sm font-semibold">
@@ -85,7 +75,7 @@ export default function OrderTrackingMap({
         </Marker>
         <Marker
           position={[deliveryLocation.lat, deliveryLocation.lng]}
-          icon={markerIcon}
+          icon={defaultMarkerIcon}
         >
           <Popup>
             <span className="font-sans text-sm font-semibold">
