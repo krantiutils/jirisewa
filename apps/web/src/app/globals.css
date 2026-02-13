@@ -1,7 +1,25 @@
 @import "tailwindcss";
 
 @theme inline {
+  /* Typography — Outfit geometric sans-serif */
   --font-sans: var(--font-outfit);
-  --color-primary: #16a34a;
-  --color-primary-dark: #15803d;
+
+  /* Colors — ui.md design tokens */
+  --color-primary: #3B82F6;
+  --color-secondary: #10B981;
+  --color-accent: #F59E0B;
+  --color-muted: #F3F4F6;
+  --color-foreground: #111827;
+  --color-background: #FFFFFF;
+  --color-border: #E5E7EB;
+
+  /* Shadows — enforce flat design (zero depth) */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 }
