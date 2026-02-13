@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "title": "JiriSewa — Farm to Consumer Marketplace",
+    "description": "Connecting Nepali farmers directly with consumers through community riders. Fresh produce, fair prices."
+  },
+  "nav": {
+    "home": "Home",
+    "produce": "Produce",
+    "orders": "Orders",
+    "farmer": "Farmer Dashboard",
+    "login": "Login",
+    "register": "Register"
+  },
+  "home": {
+    "title": "JiriSewa",
+    "subtitle": "Farm to Consumer Marketplace",
+    "description": "Connecting Nepali farmers directly with consumers through community riders."
+  },
+  "auth": {
+    "title": "Login / Register",
+    "comingSoon": "Coming soon"
+  },
+  "produce": {
+    "title": "Produce Marketplace",
+    "comingSoon": "Coming soon"
+  },
+  "orders": {
+    "title": "Orders",
+    "comingSoon": "Coming soon"
+  },
+  "farmer": {
+    "title": "Farmer Dashboard",
+    "comingSoon": "Coming soon"
+  },
+  "languageSwitcher": {
+    "en": "English",
+    "ne": "नेपाली"
+  }
+}
