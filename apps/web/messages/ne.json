@@ -9,6 +9,7 @@
     "marketplace": "बजार",
     "orders": "अर्डरहरू",
     "farmer": "किसान ड्यासबोर्ड",
+    "rider": "चालक ड्यासबोर्ड",
     "login": "लगइन",
     "register": "दर्ता"
   },
@@ -138,6 +139,75 @@
         "priceInvalid": "कृपया मान्य मूल्य प्रविष्ट गर्नुहोस्।",
         "qtyInvalid": "कृपया मान्य मात्रा प्रविष्ट गर्नुहोस्।"
       }
+    }
+  },
+  "rider": {
+    "loading": "लोड हुँदैछ...",
+    "tripNotFound": "यात्रा फेला परेन",
+    "backToDashboard": "ड्यासबोर्डमा फर्कनुहोस्",
+    "dashboard": {
+      "title": "चालक ड्यासबोर्ड",
+      "postTrip": "यात्रा पोस्ट गर्नुहोस्",
+      "upcoming": "आगामी",
+      "active": "सक्रिय",
+      "completed": "सम्पन्न",
+      "noTrips": "अहिलेसम्म कुनै यात्रा छैन",
+      "postFirstTrip": "पहिलो यात्रा पोस्ट गर्नुहोस्",
+      "unknownLocation": "अज्ञात स्थान"
+    },
+    "tripForm": {
+      "title": "यात्रा पोस्ट गर्नुहोस्",
+      "pickOrigin": "तपाईं कहाँबाट सुरु गर्दै हुनुहुन्छ?",
+      "pickOriginHint": "आफ्नो सुरुवात बिन्दु चयन गर्न नक्सामा ट्याप गर्नुहोस्।",
+      "pickDestination": "तपाईं कहाँ जाँदै हुनुहुन्छ?",
+      "pickDestinationHint": "आफ्नो गन्तव्य चयन गर्न नक्सामा ट्याप गर्नुहोस्।",
+      "tripDetails": "यात्रा विवरण",
+      "departureDate": "प्रस्थान मिति",
+      "departureTime": "प्रस्थान समय",
+      "capacity": "उपलब्ध क्षमता (केजी)",
+      "vehicleType": "सवारी प्रकार",
+      "distance": "दूरी",
+      "duration": "अनुमानित समय",
+      "from": "बाट",
+      "to": "सम्म",
+      "departure": "प्रस्थान",
+      "next": "अर्को",
+      "back": "पछाडि",
+      "review": "समीक्षा",
+      "reviewTitle": "तपाईंको यात्रा समीक्षा गर्नुहोस्",
+      "postTrip": "यात्रा पोस्ट गर्नुहोस्",
+      "posting": "पोस्ट गर्दै...",
+      "calculatingRoute": "मार्ग गणना गर्दै...",
+      "routeError": "मार्ग गणना गर्न सकिएन। कृपया फरक स्थान प्रयास गर्नुहोस्।",
+      "fillAllFields": "कृपया सबै फिल्ड भर्नुहोस्।",
+      "invalidCapacity": "कृपया ० भन्दा बढी मान्य क्षमता प्रविष्ट गर्नुहोस्।"
+    },
+    "tripDetail": {
+      "title": "यात्रा विवरण",
+      "info": "यात्रा जानकारी",
+      "totalCapacity": "कुल क्षमता",
+      "remainingCapacity": "बाँकी क्षमता",
+      "matchedOrders": "मिलेका अर्डरहरू",
+      "noMatchedOrders": "यो यात्रामा अहिलेसम्म कुनै अर्डर मिलेको छैन।",
+      "edit": "सम्पादन",
+      "startTrip": "यात्रा सुरु गर्नुहोस्",
+      "starting": "सुरु गर्दै...",
+      "completeTrip": "यात्रा पूरा गर्नुहोस्",
+      "completing": "पूरा गर्दै...",
+      "cancel": "यात्रा रद्द गर्नुहोस्"
+    },
+    "tripStatus": {
+      "scheduled": "तालिकाबद्ध",
+      "in_transit": "बाटोमा",
+      "completed": "सम्पन्न",
+      "cancelled": "रद्द"
+    },
+    "vehicleTypes": {
+      "bike": "बाइक",
+      "car": "कार",
+      "truck": "ट्रक",
+      "bus": "बस",
+      "other": "अन्य"
     }
   },
   "languageSwitcher": {

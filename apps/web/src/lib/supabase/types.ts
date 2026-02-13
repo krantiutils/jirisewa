@@ -332,6 +332,117 @@ export type Database = {
           },
         ];
       };
+      rider_trips: {
+        Row: {
+          id: string;
+          rider_id: string;
+          origin: unknown;
+          origin_name: string;
+          destination: unknown;
+          destination_name: string;
+          route: unknown | null;
+          departure_at: string;
+          available_capacity_kg: number;
+          remaining_capacity_kg: number;
+          status: "scheduled" | "in_transit" | "completed" | "cancelled";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          rider_id: string;
+          origin: unknown;
+          origin_name: string;
+          destination: unknown;
+          destination_name: string;
+          route?: unknown | null;
+          departure_at: string;
+          available_capacity_kg: number;
+          remaining_capacity_kg: number;
+          status?: "scheduled" | "in_transit" | "completed" | "cancelled";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          rider_id?: string;
+          origin?: unknown;
+          origin_name?: string;
+          destination?: unknown;
+          destination_name?: string;
+          route?: unknown | null;
+          departure_at?: string;
+          available_capacity_kg?: number;
+          remaining_capacity_kg?: number;
+          status?: "scheduled" | "in_transit" | "completed" | "cancelled";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rider_trips_rider_id_fkey";
+            columns: ["rider_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ratings: {
+        Row: {
+          id: string;
+          order_id: string;
+          rater_id: string;
+          rated_id: string;
+          role_rated: "farmer" | "consumer" | "rider";
+          score: number;
+          comment: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          rater_id: string;
+          rated_id: string;
+          role_rated: "farmer" | "consumer" | "rider";
+          score: number;
+          comment?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          rater_id?: string;
+          rated_id?: string;
+          role_rated?: "farmer" | "consumer" | "rider";
+          score?: number;
+          comment?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ratings_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ratings_rater_id_fkey";
+            columns: ["rater_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ratings_rated_id_fkey";
+            columns: ["rated_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

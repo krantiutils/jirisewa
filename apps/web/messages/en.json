@@ -9,6 +9,7 @@
     "marketplace": "Marketplace",
     "orders": "Orders",
     "farmer": "Farmer Dashboard",
+    "rider": "Rider Dashboard",
     "login": "Login",
     "register": "Register"
   },
@@ -138,6 +139,75 @@
         "priceInvalid": "Please enter a valid price.",
         "qtyInvalid": "Please enter a valid quantity."
       }
+    }
+  },
+  "rider": {
+    "loading": "Loading...",
+    "tripNotFound": "Trip not found",
+    "backToDashboard": "Back to Dashboard",
+    "dashboard": {
+      "title": "Rider Dashboard",
+      "postTrip": "Post a Trip",
+      "upcoming": "Upcoming",
+      "active": "Active",
+      "completed": "Completed",
+      "noTrips": "No trips yet",
+      "postFirstTrip": "Post your first trip",
+      "unknownLocation": "Unknown location"
+    },
+    "tripForm": {
+      "title": "Post a Trip",
+      "pickOrigin": "Where are you starting?",
+      "pickOriginHint": "Tap the map to select your starting point.",
+      "pickDestination": "Where are you heading?",
+      "pickDestinationHint": "Tap the map to select your destination.",
+      "tripDetails": "Trip Details",
+      "departureDate": "Departure Date",
+      "departureTime": "Departure Time",
+      "capacity": "Available Capacity (kg)",
+      "vehicleType": "Vehicle Type",
+      "distance": "Distance",
+      "duration": "Est. Duration",
+      "from": "From",
+      "to": "To",
+      "departure": "Departure",
+      "next": "Next",
+      "back": "Back",
+      "review": "Review",
+      "reviewTitle": "Review Your Trip",
+      "postTrip": "Post Trip",
+      "posting": "Posting...",
+      "calculatingRoute": "Calculating route...",
+      "routeError": "Could not calculate route. Please try different locations.",
+      "fillAllFields": "Please fill in all fields.",
+      "invalidCapacity": "Please enter a valid capacity greater than 0."
+    },
+    "tripDetail": {
+      "title": "Trip Detail",
+      "info": "Trip Information",
+      "totalCapacity": "Total Capacity",
+      "remainingCapacity": "Remaining Capacity",
+      "matchedOrders": "Matched Orders",
+      "noMatchedOrders": "No orders matched to this trip yet.",
+      "edit": "Edit",
+      "startTrip": "Start Trip",
+      "starting": "Starting...",
+      "completeTrip": "Complete Trip",
+      "completing": "Completing...",
+      "cancel": "Cancel Trip"
+    },
+    "tripStatus": {
+      "scheduled": "Scheduled",
+      "in_transit": "In Transit",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "vehicleTypes": {
+      "bike": "Bike",
+      "car": "Car",
+      "truck": "Truck",
+      "bus": "Bus",
+      "other": "Other"
     }
   },
   "languageSwitcher": {

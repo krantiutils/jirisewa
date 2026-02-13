@@ -1,8 +1,13 @@
 import { hasLocale } from "next-intl";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Outfit } from "next/font/google";
+import Link from "next/link";
 import { routing } from "@/i18n/routing";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
@@ -51,16 +56,38 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
 
-  const messages = await getMessages();
+  const [messages, nav] = await Promise.all([
+    getMessages(),
+    getTranslations("nav"),
+  ]);
 
   return (
     <html lang={locale} dir="ltr">
       <body className={`${outfit.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
-            <span className="text-lg font-bold text-primary">
-              {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
-            </span>
+            <div className="flex items-center gap-6">
+              <Link
+                href={`/${locale}`}
+                className="text-lg font-bold text-primary"
+              >
+                {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
+              </Link>
+              <nav className="hidden items-center gap-4 text-sm sm:flex">
+                <Link
+                  href={`/${locale}/produce`}
+                  className="text-gray-600 hover:text-primary transition-colors"
+                >
+                  {nav("produce")}
+                </Link>
+                <Link
+                  href={`/${locale}/rider/dashboard`}
+                  className="text-gray-600 hover:text-primary transition-colors"
+                >
+                  {nav("rider")}
+                </Link>
+              </nav>
+            </div>
             <LanguageSwitcher />
           </header>
           {children}
