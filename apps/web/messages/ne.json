@@ -90,7 +90,55 @@
   },
   "farmer": {
     "title": "किसान ड्यासबोर्ड",
-    "comingSoon": "छिट्टै आउँदैछ"
+    "dashboard": {
+      "title": "किसान ड्यासबोर्ड",
+      "loginRequired": "कृपया आफ्नो किसान ड्यासबोर्ड पहुँच गर्न लगइन गर्नुहोस्।",
+      "addListing": "सूची थप्नुहोस्",
+      "activeListings": "सक्रिय सूचीहरू",
+      "pendingOrders": "बाँकी अर्डरहरू",
+      "earnings": "कुल आम्दानी",
+      "myListings": "मेरा सूचीहरू",
+      "noListings": "तपाईंले अहिलेसम्म कुनै उत्पादन सूचीबद्ध गर्नुभएको छैन।",
+      "addFirstListing": "पहिलो सूची थप्नुहोस्"
+    },
+    "newListing": {
+      "title": "नयाँ सूची थप्नुहोस्"
+    },
+    "editListing": {
+      "title": "सूची सम्पादन गर्नुहोस्"
+    },
+    "listing": {
+      "active": "सक्रिय",
+      "inactive": "निष्क्रिय",
+      "available": "उपलब्ध",
+      "edit": "सूची सम्पादन",
+      "deactivate": "निष्क्रिय पार्नुहोस्",
+      "activate": "सक्रिय पार्नुहोस्"
+    },
+    "form": {
+      "category": "वर्ग",
+      "selectCategory": "वर्ग छान्नुहोस्",
+      "nameEn": "नाम (अंग्रेजी)",
+      "nameEnPlaceholder": "जस्तै Fresh Tomatoes",
+      "nameNe": "नाम (नेपाली)",
+      "nameNePlaceholder": "जस्तै ताजा गोलभेडा",
+      "description": "विवरण",
+      "descriptionPlaceholder": "आफ्नो उत्पादनको बारेमा लेख्नुहोस्...",
+      "pricePerKg": "प्रति केजी मूल्य (रु)",
+      "availableQty": "उपलब्ध मात्रा (केजी)",
+      "freshnessDate": "ताजापनको मिति",
+      "photos": "फोटोहरू (५ सम्म)",
+      "saving": "सुरक्षित गर्दै...",
+      "create": "सूची बनाउनुहोस्",
+      "update": "सूची अपडेट गर्नुहोस्",
+      "cancel": "रद्द गर्नुहोस्",
+      "errors": {
+        "categoryRequired": "कृपया वर्ग छान्नुहोस्।",
+        "nameRequired": "अंग्रेजी र नेपाली दुवै नाम आवश्यक छ।",
+        "priceInvalid": "कृपया मान्य मूल्य प्रविष्ट गर्नुहोस्।",
+        "qtyInvalid": "कृपया मान्य मात्रा प्रविष्ट गर्नुहोस्।"
+      }
+    }
   },
   "languageSwitcher": {
     "en": "English",
