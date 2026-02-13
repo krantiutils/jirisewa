@@ -3,6 +3,17 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin();
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "54321",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
+};
 
 export default withNextIntl(nextConfig);
