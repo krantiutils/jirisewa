@@ -361,3 +361,15 @@ export type InsertTables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Insert"];
 export type UpdateTables<T extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][T]["Update"];
+
+export type AppRole = Database["public"]["Enums"]["app_role"];
+export type AppLanguage = Database["public"]["Enums"]["app_language"];
+export type ProduceListing = Database["public"]["Tables"]["produce_listings"]["Row"];
+export type ProduceCategory = Database["public"]["Tables"]["produce_categories"]["Row"];
+export type User = Database["public"]["Tables"]["users"]["Row"];
+
+export interface ProduceListingWithDetails extends ProduceListing {
+  farmer: Pick<User, "id" | "name" | "avatar_url" | "rating_avg" | "rating_count">;
+  category: Pick<ProduceCategory, "id" | "name_en" | "name_ne" | "icon">;
+  distance_km?: number;
+}
