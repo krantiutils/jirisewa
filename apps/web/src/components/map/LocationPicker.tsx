@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -55,9 +55,12 @@ export default function LocationPicker({
   onChange,
   className,
 }: LocationPickerProps) {
-  const [position, setPosition] = useState<LatLng | null>(value ?? null);
+  const [selectedPosition, setSelectedPosition] = useState<LatLng | null>(null);
   const [address, setAddress] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
+
+  // Show either user-selected position or the controlled value
+  const position = selectedPosition ?? value ?? null;
 
   const center = useMemo(
     () => value ?? MAP_DEFAULT_CENTER,
@@ -76,7 +79,7 @@ export default function LocationPicker({
   const handleLocationSelect = useCallback(
     async (latlng: L.LatLng) => {
       const newPos = { lat: latlng.lat, lng: latlng.lng };
-      setPosition(newPos);
+      setSelectedPosition(newPos);
       setIsGeocoding(true);
 
       const result = await reverseGeocode(latlng.lat, latlng.lng);
@@ -87,12 +90,6 @@ export default function LocationPicker({
     },
     [onChange],
   );
-
-  useEffect(() => {
-    if (value) {
-      setPosition(value);
-    }
-  }, [value]);
 
   return (
     <div className={className}>

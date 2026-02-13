@@ -49,6 +49,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>JiriSewa needs your location to show nearby produce and set your delivery address.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>JiriSewa needs your location for rider tracking during deliveries.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

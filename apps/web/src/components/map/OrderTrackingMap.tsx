@@ -7,8 +7,6 @@ import "leaflet/dist/leaflet.css";
 import {
   MAP_TILE_URL,
   MAP_ATTRIBUTION,
-  MAP_DEFAULT_CENTER,
-  MAP_DEFAULT_ZOOM,
   NEPAL_BOUNDS,
 } from "@jirisewa/shared";
 import type { LatLng } from "@/lib/map";
