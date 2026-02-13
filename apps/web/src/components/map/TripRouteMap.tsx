@@ -7,13 +7,12 @@ import "leaflet/dist/leaflet.css";
 import {
   MAP_TILE_URL,
   MAP_ATTRIBUTION,
-  MAP_DEFAULT_CENTER,
   NEPAL_BOUNDS,
 } from "@jirisewa/shared";
 import { fetchRoute } from "@/lib/map";
 import type { LatLng } from "@/lib/map";
 
-const originIcon = L.icon({
+const markerIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -29,7 +28,7 @@ interface TripRouteMapProps {
   destination: LatLng;
   originName?: string;
   destinationName?: string;
-  /** Pre-computed route coordinates as [lat, lng] pairs. If not provided, fetched via OSRM. */
+  /** Pre-computed route coordinates as [lat, lng] pairs. If provided, OSRM fetch is skipped. */
   routeCoordinates?: [number, number][];
   className?: string;
   onRouteLoaded?: (distanceMeters: number, durationSeconds: number) => void;
@@ -44,10 +43,10 @@ export default function TripRouteMap({
   className,
   onRouteLoaded,
 }: TripRouteMapProps) {
-  const [routePositions, setRoutePositions] = useState<[number, number][]>(
-    precomputedRoute ?? [],
-  );
+  const [fetchedRoute, setFetchedRoute] = useState<[number, number][]>([]);
   const [loading, setLoading] = useState(!precomputedRoute);
+
+  const routePositions = precomputedRoute ?? fetchedRoute;
 
   const bounds = useMemo(
     () =>
@@ -69,8 +68,6 @@ export default function TripRouteMap({
 
   useEffect(() => {
     if (precomputedRoute) {
-      setRoutePositions(precomputedRoute);
-      setLoading(false);
       return;
     }
 
@@ -87,11 +84,11 @@ export default function TripRouteMap({
         const positions: [number, number][] = result.coordinates.map(
           ([lng, lat]) => [lat, lng],
         );
-        setRoutePositions(positions);
+        setFetchedRoute(positions);
         onRouteLoaded?.(result.distanceMeters, result.durationSeconds);
       } else {
         // Fallback: straight line between origin and destination
-        setRoutePositions([
+        setFetchedRoute([
           [origin.lat, origin.lng],
           [destination.lat, destination.lng],
         ]);
@@ -117,7 +114,7 @@ export default function TripRouteMap({
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} />
-        <Marker position={[origin.lat, origin.lng]} icon={originIcon}>
+        <Marker position={[origin.lat, origin.lng]} icon={markerIcon}>
           {originName && (
             <Popup>
               <span className="font-sans text-sm font-semibold">
@@ -128,7 +125,7 @@ export default function TripRouteMap({
         </Marker>
         <Marker
           position={[destination.lat, destination.lng]}
-          icon={originIcon}
+          icon={markerIcon}
         >
           {destinationName && (
             <Popup>
