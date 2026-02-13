@@ -1,0 +1,15 @@
+{
+  "name": "@jirisewa/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./types/index.ts",
+  "types": "./types/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "echo 'no lint configured'",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,34 @@
+[project]
+id = "jirisewa"
+name = "JiriSewa"
+
+[db]
+port = 54322
+major_version = 16
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+
+[studio]
+enabled = true
+port = 54323
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+[auth.external.phone]
+enabled = true
+
+[storage]
+enabled = true
+
+[realtime]
+enabled = true

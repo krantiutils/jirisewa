@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase local
+supabase/.temp/
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/.packages
+apps/mobile/build/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/android/.gradle/
+apps/mobile/ios/Pods/
+
+# pnpm
+.pnpm-debug.log
+
+# Gas Town / Beads runtime
+.runtime/
+.claude/
+.beads/
+.logs/

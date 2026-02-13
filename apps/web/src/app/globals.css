@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-outfit);
+  --color-primary: #16a34a;
+  --color-primary-dark: #15803d;
+}
