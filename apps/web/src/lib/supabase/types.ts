@@ -55,6 +55,7 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       user_roles: {
         Row: {
@@ -90,6 +91,15 @@ export type Database = {
           verified?: boolean;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       produce_categories: {
         Row: {
@@ -113,6 +123,7 @@ export type Database = {
           icon?: string | null;
           sort_order?: number;
         };
+        Relationships: [];
       };
       produce_listings: {
         Row: {
@@ -163,6 +174,22 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "produce_listings_farmer_id_fkey";
+            columns: ["farmer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "produce_listings_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "produce_categories";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       orders: {
         Row: {
@@ -231,6 +258,15 @@ export type Database = {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "orders_consumer_id_fkey";
+            columns: ["consumer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       order_items: {
         Row: {
@@ -272,6 +308,29 @@ export type Database = {
           pickup_photo_url?: string | null;
           delivery_confirmed?: boolean;
         };
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_listing_id_fkey";
+            columns: ["listing_id"];
+            isOneToOne: false;
+            referencedRelation: "produce_listings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_items_farmer_id_fkey";
+            columns: ["farmer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

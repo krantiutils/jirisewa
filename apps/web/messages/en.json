@@ -30,7 +30,55 @@
   },
   "farmer": {
     "title": "Farmer Dashboard",
-    "comingSoon": "Coming soon"
+    "dashboard": {
+      "title": "Farmer Dashboard",
+      "loginRequired": "Please log in to access your farmer dashboard.",
+      "addListing": "Add Listing",
+      "activeListings": "Active Listings",
+      "pendingOrders": "Pending Orders",
+      "earnings": "Total Earnings",
+      "myListings": "My Listings",
+      "noListings": "You haven't listed any produce yet.",
+      "addFirstListing": "Add Your First Listing"
+    },
+    "newListing": {
+      "title": "Add New Listing"
+    },
+    "editListing": {
+      "title": "Edit Listing"
+    },
+    "listing": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "available": "available",
+      "edit": "Edit listing",
+      "deactivate": "Deactivate listing",
+      "activate": "Activate listing"
+    },
+    "form": {
+      "category": "Category",
+      "selectCategory": "Select a category",
+      "nameEn": "Name (English)",
+      "nameEnPlaceholder": "e.g. Fresh Tomatoes",
+      "nameNe": "Name (Nepali)",
+      "nameNePlaceholder": "e.g. ताजा गोलभेडा",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your produce...",
+      "pricePerKg": "Price per kg (NPR)",
+      "availableQty": "Available Quantity (kg)",
+      "freshnessDate": "Freshness Date",
+      "photos": "Photos (up to 5)",
+      "saving": "Saving...",
+      "create": "Create Listing",
+      "update": "Update Listing",
+      "cancel": "Cancel",
+      "errors": {
+        "categoryRequired": "Please select a category.",
+        "nameRequired": "Both English and Nepali names are required.",
+        "priceInvalid": "Please enter a valid price.",
+        "qtyInvalid": "Please enter a valid quantity."
+      }
+    }
   },
   "languageSwitcher": {
     "en": "English",
