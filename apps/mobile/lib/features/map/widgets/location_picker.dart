@@ -79,6 +79,11 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
             permission == LocationPermission.deniedForever) {
           if (!mounted) return;
           setState(() => _isLocating = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permission denied. Tap the map to select a location manually.'),
+            ),
+          );
           return;
         }
       }

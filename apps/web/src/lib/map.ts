@@ -22,30 +22,34 @@ export async function reverseGeocode(
   lat: number,
   lng: number,
 ): Promise<GeocodingResult | null> {
-  const url = new URL("/reverse", NOMINATIM_BASE_URL);
-  url.searchParams.set("format", "jsonv2");
-  url.searchParams.set("lat", String(lat));
-  url.searchParams.set("lon", String(lng));
+  try {
+    const url = new URL("/reverse", NOMINATIM_BASE_URL);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lng));
 
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "JiriSewa/1.0 (jirisewa.com)" },
-  });
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "JiriSewa/1.0 (jirisewa.com)" },
+    });
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+
+    if (data.error) {
+      return null;
+    }
+
+    return {
+      displayName: data.display_name ?? "",
+      lat: parseFloat(data.lat),
+      lng: parseFloat(data.lon),
+    };
+  } catch {
     return null;
   }
-
-  const data = await res.json();
-
-  if (data.error) {
-    return null;
-  }
-
-  return {
-    displayName: data.display_name,
-    lat: parseFloat(data.lat),
-    lng: parseFloat(data.lon),
-  };
 }
 
 /**
@@ -55,29 +59,37 @@ export async function reverseGeocode(
 export async function forwardGeocode(
   query: string,
 ): Promise<GeocodingResult[]> {
-  const url = new URL("/search", NOMINATIM_BASE_URL);
-  url.searchParams.set("format", "jsonv2");
-  url.searchParams.set("q", query);
-  url.searchParams.set("countrycodes", "np");
-  url.searchParams.set("limit", "5");
+  try {
+    const url = new URL("/search", NOMINATIM_BASE_URL);
+    url.searchParams.set("format", "jsonv2");
+    url.searchParams.set("q", query);
+    url.searchParams.set("countrycodes", "np");
+    url.searchParams.set("limit", "5");
 
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": "JiriSewa/1.0 (jirisewa.com)" },
-  });
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "JiriSewa/1.0 (jirisewa.com)" },
+    });
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = await res.json();
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.map(
+      (item: { display_name: string; lat: string; lon: string }) => ({
+        displayName: item.display_name ?? "",
+        lat: parseFloat(item.lat),
+        lng: parseFloat(item.lon),
+      }),
+    );
+  } catch {
     return [];
   }
-
-  const data = await res.json();
-
-  return data.map(
-    (item: { display_name: string; lat: string; lon: string }) => ({
-      displayName: item.display_name,
-      lat: parseFloat(item.lat),
-      lng: parseFloat(item.lon),
-    }),
-  );
 }
 
 export interface RouteResult {
@@ -94,26 +106,30 @@ export async function fetchRoute(
   origin: LatLng,
   destination: LatLng,
 ): Promise<RouteResult | null> {
-  const coords = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
-  const url = `${OSRM_BASE_URL}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  try {
+    const coords = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
+    const url = `${OSRM_BASE_URL}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
 
-  const res = await fetch(url);
+    const res = await fetch(url);
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return null;
+    }
+
+    const data = await res.json();
+
+    if (data.code !== "Ok" || !data.routes?.length) {
+      return null;
+    }
+
+    const route = data.routes[0];
+
+    return {
+      coordinates: route.geometry.coordinates,
+      distanceMeters: route.distance,
+      durationSeconds: route.duration,
+    };
+  } catch {
     return null;
   }
-
-  const data = await res.json();
-
-  if (data.code !== "Ok" || !data.routes?.length) {
-    return null;
-  }
-
-  const route = data.routes[0];
-
-  return {
-    coordinates: route.geometry.coordinates,
-    distanceMeters: route.distance,
-    durationSeconds: route.duration,
-  };
 }
