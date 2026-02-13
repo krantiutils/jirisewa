@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Outfit } from "next/font/google";
-import { isValidLocale, locales, type Locale } from "@/lib/i18n";
+import { isValidLocale, locales } from "@/lib/i18n";
 
 const outfit = Outfit({
   variable: "--font-outfit",
