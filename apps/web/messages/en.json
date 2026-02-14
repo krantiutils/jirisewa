@@ -411,5 +411,54 @@
       "mapAttribution": "Map data © OpenStreetMap contributors",
       "copyright": "JiriSewa. All rights reserved."
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all as read",
+    "preferences": {
+      "title": "Notification Preferences",
+      "consumerGroup": "Order Updates",
+      "farmerGroup": "Farm Orders",
+      "riderGroup": "Trip & Delivery",
+      "categories": {
+        "order_matched": {
+          "title": "Order Matched",
+          "description": "When your order is matched with a rider"
+        },
+        "rider_picked_up": {
+          "title": "Produce Picked Up",
+          "description": "When the rider picks up your produce"
+        },
+        "rider_arriving": {
+          "title": "Rider Arriving",
+          "description": "When the rider is near your delivery location"
+        },
+        "order_delivered": {
+          "title": "Order Delivered",
+          "description": "When your order is delivered"
+        },
+        "new_order_for_farmer": {
+          "title": "New Order",
+          "description": "When someone orders your produce"
+        },
+        "rider_arriving_for_pickup": {
+          "title": "Rider Coming for Pickup",
+          "description": "When a rider is heading to your farm"
+        },
+        "new_order_match": {
+          "title": "New Order Match",
+          "description": "When an order is matched to your trip"
+        },
+        "trip_reminder": {
+          "title": "Trip Reminder",
+          "description": "Reminder before your scheduled trip"
+        },
+        "delivery_confirmed": {
+          "title": "Delivery Confirmed",
+          "description": "When the consumer confirms delivery"
+        }
+      }
+    }
   }
 }

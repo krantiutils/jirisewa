@@ -457,12 +457,240 @@ export type Database = {
           },
         ];
       };
+      user_devices: {
+        Row: {
+          id: string;
+          user_id: string;
+          fcm_token: string;
+          platform: "web" | "android" | "ios";
+          device_name: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          fcm_token: string;
+          platform: "web" | "android" | "ios";
+          device_name?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          fcm_token?: string;
+          platform?: "web" | "android" | "ios";
+          device_name?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_devices_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notification_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          category:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          category:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          category?:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          category:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          title_en: string;
+          title_ne: string;
+          body_en: string;
+          body_ne: string;
+          data: Record<string, unknown>;
+          read: boolean;
+          push_sent: boolean;
+          sms_fallback_sent: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          category:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          title_en: string;
+          title_ne: string;
+          body_en: string;
+          body_ne: string;
+          data?: Record<string, unknown>;
+          read?: boolean;
+          push_sent?: boolean;
+          sms_fallback_sent?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          category?:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          title_en?: string;
+          title_ne?: string;
+          body_en?: string;
+          body_ne?: string;
+          data?: Record<string, unknown>;
+          read?: boolean;
+          push_sent?: boolean;
+          sms_fallback_sent?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_notification: {
+        Args: {
+          p_user_id: string;
+          p_category:
+            | "order_matched"
+            | "rider_picked_up"
+            | "rider_arriving"
+            | "order_delivered"
+            | "new_order_for_farmer"
+            | "rider_arriving_for_pickup"
+            | "new_order_match"
+            | "trip_reminder"
+            | "delivery_confirmed";
+          p_title_en: string;
+          p_title_ne: string;
+          p_body_en: string;
+          p_body_ne: string;
+          p_data?: Record<string, unknown>;
+        };
+        Returns: Record<string, unknown>;
+      };
+      mark_notification_read: {
+        Args: { p_notification_id: string };
+        Returns: void;
+      };
+      mark_all_notifications_read: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
+      get_unread_notification_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+    };
     Enums: {
       app_language: "en" | "ne";
       app_role: "farmer" | "consumer" | "rider";
+      notification_category:
+        | "order_matched"
+        | "rider_picked_up"
+        | "rider_arriving"
+        | "order_delivered"
+        | "new_order_for_farmer"
+        | "rider_arriving_for_pickup"
+        | "new_order_match"
+        | "trip_reminder"
+        | "delivery_confirmed";
+      device_platform: "web" | "android" | "ios";
       order_status:
         | "pending"
         | "matched"

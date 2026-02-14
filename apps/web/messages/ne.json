@@ -411,5 +411,54 @@
       "mapAttribution": "नक्सा डाटा © OpenStreetMap योगदानकर्ताहरू",
       "copyright": "जिरीसेवा। सर्वाधिकार सुरक्षित।"
     }
+  },
+  "notifications": {
+    "title": "सूचनाहरू",
+    "empty": "अहिलेसम्म कुनै सूचना छैन",
+    "markAllRead": "सबै पढेको चिन्ह लगाउनुहोस्",
+    "preferences": {
+      "title": "सूचना प्राथमिकताहरू",
+      "consumerGroup": "अर्डर अपडेटहरू",
+      "farmerGroup": "खेत अर्डरहरू",
+      "riderGroup": "यात्रा र डेलिभरी",
+      "categories": {
+        "order_matched": {
+          "title": "अर्डर मिल्यो",
+          "description": "तपाईंको अर्डर राइडरसँग मिलेको बेला"
+        },
+        "rider_picked_up": {
+          "title": "सामान उठाइयो",
+          "description": "राइडरले तपाईंको सामान उठाएको बेला"
+        },
+        "rider_arriving": {
+          "title": "राइडर आउँदैछ",
+          "description": "राइडर तपाईंको डेलिभरी स्थान नजिक हुँदा"
+        },
+        "order_delivered": {
+          "title": "अर्डर डेलिभर भयो",
+          "description": "तपाईंको अर्डर डेलिभर हुँदा"
+        },
+        "new_order_for_farmer": {
+          "title": "नयाँ अर्डर",
+          "description": "कसैले तपाईंको उत्पादन अर्डर गर्दा"
+        },
+        "rider_arriving_for_pickup": {
+          "title": "राइडर सामान लिन आउँदैछ",
+          "description": "राइडर तपाईंको खेतमा आउँदा"
+        },
+        "new_order_match": {
+          "title": "नयाँ अर्डर मिल्यो",
+          "description": "तपाईंको यात्रामा अर्डर मिलेको बेला"
+        },
+        "trip_reminder": {
+          "title": "यात्रा सम्झना",
+          "description": "तपाईंको निर्धारित यात्रा अघि सम्झना"
+        },
+        "delivery_confirmed": {
+          "title": "डेलिभरी पुष्टि भयो",
+          "description": "उपभोक्ताले डेलिभरी पुष्टि गर्दा"
+        }
+      }
+    }
   }
 }

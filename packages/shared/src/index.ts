@@ -17,5 +17,7 @@ export {
   PaymentMethod,
   PaymentStatus,
   VehicleType,
+  NotificationCategory,
+  DevicePlatform,
 } from "./enums";
 export { normalizePhone, isValidNepalPhone, toE164 } from "./phone";
