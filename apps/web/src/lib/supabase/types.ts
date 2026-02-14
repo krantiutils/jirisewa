@@ -402,6 +402,48 @@ export type Database = {
           },
         ];
       };
+      rider_location_log: {
+        Row: {
+          id: string;
+          rider_id: string;
+          trip_id: string;
+          location: unknown;
+          speed_kmh: number | null;
+          recorded_at: string;
+        };
+        Insert: {
+          id?: string;
+          rider_id: string;
+          trip_id: string;
+          location: unknown;
+          speed_kmh?: number | null;
+          recorded_at?: string;
+        };
+        Update: {
+          id?: string;
+          rider_id?: string;
+          trip_id?: string;
+          location?: unknown;
+          speed_kmh?: number | null;
+          recorded_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rider_location_log_rider_id_fkey";
+            columns: ["rider_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rider_location_log_trip_id_fkey";
+            columns: ["trip_id"];
+            isOneToOne: false;
+            referencedRelation: "rider_trips";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ratings: {
         Row: {
           id: string;
