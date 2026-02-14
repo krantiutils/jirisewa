@@ -176,6 +176,8 @@
     "browseMarketplace": "Browse Marketplace",
     "moreItems": "more",
     "totalItems": "{count} items",
+    "orderNumber": "Order #{id}",
+    "placed": "Placed {date}",
     "tabs": {
       "active": "Active",
       "completed": "Completed"
@@ -202,7 +204,47 @@
     "paymentMethod": "Payment Method",
     "confirmDelivery": "Confirm Delivery Received",
     "cancelOrder": "Cancel Order",
-    "deliveryConfirmed": "Delivery confirmed! Thank you."
+    "deliveryConfirmed": "Delivery confirmed! Thank you.",
+    "totalWithDelivery": "Total: NPR {total} + NPR {fee} delivery",
+    "rateOrder": "Rate this order",
+    "rateFarmer": "Rate Farmer",
+    "rateRider": "Rate Rider",
+    "rated": "Rated",
+    "deliveredOn": "Delivered on {date}",
+    "rider": "Rider",
+    "farmer": "Farmer"
+  },
+  "ratings": {
+    "title": "Ratings & Reviews",
+    "submitRating": "Submit Rating",
+    "submitting": "Submitting...",
+    "rateYourExperience": "Rate your experience",
+    "rateFarmerTitle": "Rate Farmer — {name}",
+    "rateRiderTitle": "Rate Rider — {name}",
+    "produceQuality": "Produce Quality",
+    "deliveryQuality": "Delivery Quality",
+    "cooperation": "Cooperation",
+    "produceReadiness": "Produce Readiness",
+    "commentPlaceholder": "Share your experience (optional)",
+    "stars": {
+      "1": "Poor",
+      "2": "Fair",
+      "3": "Good",
+      "4": "Very Good",
+      "5": "Excellent"
+    },
+    "thankYou": "Thank you for your rating!",
+    "alreadyRated": "You have already rated this person for this order.",
+    "noRatings": "No ratings yet",
+    "reviews": "{count} reviews",
+    "averageRating": "{rating} out of 5",
+    "viewAllRatings": "View all ratings",
+    "ratedAs": "Rated as {role}",
+    "by": "by {name}",
+    "orderRef": "Order #{id}",
+    "close": "Close",
+    "cancel": "Cancel",
+    "error": "Failed to submit rating. Please try again."
   },
   "farmer": {
     "title": "Farmer Dashboard",

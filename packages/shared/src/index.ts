@@ -17,5 +17,6 @@ export {
   PaymentMethod,
   PaymentStatus,
   VehicleType,
+  RoleRated,
 } from "./enums";
 export { normalizePhone, isValidNepalPhone, toE164 } from "./phone";

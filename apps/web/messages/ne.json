@@ -176,6 +176,8 @@
     "browseMarketplace": "बजार हेर्नुहोस्",
     "moreItems": "थप",
     "totalItems": "{count} वस्तु",
+    "orderNumber": "अर्डर #{id}",
+    "placed": "{date} मा राखिएको",
     "tabs": {
       "active": "सक्रिय",
       "completed": "सम्पन्न"
@@ -202,7 +204,47 @@
     "paymentMethod": "भुक्तानी विधि",
     "confirmDelivery": "डेलिभरी प्राप्त पुष्टि गर्नुहोस्",
     "cancelOrder": "अर्डर रद्द गर्नुहोस्",
-    "deliveryConfirmed": "डेलिभरी पुष्टि भयो! धन्यवाद।"
+    "deliveryConfirmed": "डेलिभरी पुष्टि भयो! धन्यवाद।",
+    "totalWithDelivery": "जम्मा: रु {total} + रु {fee} डेलिभरी",
+    "rateOrder": "यो अर्डर मूल्याङ्कन गर्नुहोस्",
+    "rateFarmer": "किसानलाई मूल्याङ्कन गर्नुहोस्",
+    "rateRider": "चालकलाई मूल्याङ्कन गर्नुहोस्",
+    "rated": "मूल्याङ्कन गरिसकेको",
+    "deliveredOn": "{date} मा डेलिभर",
+    "rider": "चालक",
+    "farmer": "किसान"
+  },
+  "ratings": {
+    "title": "मूल्याङ्कन र समीक्षाहरू",
+    "submitRating": "मूल्याङ्कन पेश गर्नुहोस्",
+    "submitting": "पेश गर्दै...",
+    "rateYourExperience": "आफ्नो अनुभव मूल्याङ्कन गर्नुहोस्",
+    "rateFarmerTitle": "किसान मूल्याङ्कन — {name}",
+    "rateRiderTitle": "चालक मूल्याङ्कन — {name}",
+    "produceQuality": "उत्पादन गुणस्तर",
+    "deliveryQuality": "डेलिभरी गुणस्तर",
+    "cooperation": "सहकार्य",
+    "produceReadiness": "उत्पादन तयारी",
+    "commentPlaceholder": "आफ्नो अनुभव साझा गर्नुहोस् (ऐच्छिक)",
+    "stars": {
+      "1": "कमजोर",
+      "2": "ठीकै",
+      "3": "राम्रो",
+      "4": "धेरै राम्रो",
+      "5": "उत्कृष्ट"
+    },
+    "thankYou": "तपाईंको मूल्याङ्कनको लागि धन्यवाद!",
+    "alreadyRated": "तपाईंले यो अर्डरको लागि यो व्यक्तिलाई पहिल्यै मूल्याङ्कन गर्नुभएको छ।",
+    "noRatings": "अहिलेसम्म कुनै मूल्याङ्कन छैन",
+    "reviews": "{count} समीक्षा",
+    "averageRating": "५ मध्ये {rating}",
+    "viewAllRatings": "सबै मूल्याङ्कनहरू हेर्नुहोस्",
+    "ratedAs": "{role} को रूपमा मूल्याङ्कन",
+    "by": "{name} द्वारा",
+    "orderRef": "अर्डर #{id}",
+    "close": "बन्द गर्नुहोस्",
+    "cancel": "रद्द गर्नुहोस्",
+    "error": "मूल्याङ्कन पेश गर्न असफल। कृपया पुन: प्रयास गर्नुहोस्।"
   },
   "farmer": {
     "title": "किसान ड्यासबोर्ड",
