@@ -15,10 +15,20 @@ import {
   CheckCircle,
   Shield,
   AlertCircle,
+  RefreshCw,
+  FileText,
+  AlertTriangle,
 } from "lucide-react";
 import { OrderStatus } from "@jirisewa/shared";
-import { getOrder, cancelOrder, confirmDelivery } from "@/lib/actions/orders";
+import {
+  getOrder,
+  cancelOrder,
+  confirmDelivery,
+  checkReorderAvailability,
+} from "@/lib/actions/orders";
 import { retryEsewaPayment } from "@/lib/actions/payments";
+import type { ReorderItemAvailability } from "@/lib/actions/orders";
+import { useCart } from "@/lib/cart";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { Button } from "@/components/ui/Button";
 import type { OrderWithDetails } from "@/lib/types/order";
@@ -41,6 +51,7 @@ export default function OrderDetailPage() {
   const searchParams = useSearchParams();
   const t = useTranslations("orders");
   const esewaFormRef = useRef<HTMLFormElement>(null);
+  const { addItem, clearCart } = useCart();
 
   const [order, setOrder] = useState<OrderWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +78,11 @@ export default function OrderDetailPage() {
       esewaFormRef.current.submit();
     }
   }, [esewaForm]);
+
+  // Reorder state
+  const [reorderLoading, setReorderLoading] = useState(false);
+  const [reorderItems, setReorderItems] = useState<ReorderItemAvailability[] | null>(null);
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -120,6 +136,50 @@ export default function OrderDetailPage() {
     setActionLoading(false);
   };
 
+  const handleCheckReorder = async () => {
+    setReorderLoading(true);
+    setReorderError(null);
+    setReorderItems(null);
+
+    const result = await checkReorderAvailability(orderId);
+
+    if (result.error) {
+      setReorderError(result.error);
+    } else if (result.data) {
+      setReorderItems(result.data);
+    }
+
+    setReorderLoading(false);
+  };
+
+  const handleAddToCart = () => {
+    if (!reorderItems) return;
+
+    const availableItems = reorderItems.filter((item) => item.available);
+    if (availableItems.length === 0) return;
+
+    clearCart();
+
+    for (const item of availableItems) {
+      const qty = Math.min(
+        item.originalQtyKg,
+        item.availableQtyKg ?? item.originalQtyKg,
+      );
+      addItem({
+        listingId: item.listingId,
+        farmerId: item.farmerId,
+        quantityKg: qty,
+        pricePerKg: item.currentPricePerKg ?? item.originalPricePerKg,
+        nameEn: item.nameEn,
+        nameNe: item.nameNe,
+        farmerName: item.farmerName,
+        photo: item.photo,
+      });
+    }
+
+    router.push(`/${locale}/cart`);
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-muted flex items-center justify-center">
@@ -150,6 +210,7 @@ export default function OrderDetailPage() {
   );
   const isCancelled = order.status === OrderStatus.Cancelled;
   const isDelivered = order.status === OrderStatus.Delivered;
+  const isTerminal = isDelivered || isCancelled || order.status === OrderStatus.Disputed;
 
   const dateStr = new Date(order.created_at).toLocaleDateString(
     locale === "ne" ? "ne-NP" : "en-US",
@@ -161,6 +222,11 @@ export default function OrderDetailPage() {
       minute: "2-digit",
     },
   );
+
+  const availableCount = reorderItems?.filter((i) => i.available).length ?? 0;
+  const unavailableCount = reorderItems
+    ? reorderItems.length - availableCount
+    : 0;
 
   return (
     <main className="min-h-screen bg-muted">
@@ -443,6 +509,73 @@ export default function OrderDetailPage() {
           </div>
         </section>
 
+        {/* Receipt for delivered orders */}
+        {isDelivered && (
+          <section className="mt-6 rounded-lg border-2 border-green-200 bg-green-50 p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-green-600" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-green-700">
+                {t("receipt")}
+              </h2>
+            </div>
+            <div className="mt-3 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t("receiptOrderId")}</span>
+                <span className="font-mono text-xs text-gray-500">
+                  {order.id.slice(0, 8).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t("receiptDate")}</span>
+                <span>{dateStr}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t("receiptItems")}</span>
+                <span>{order.items.length}</span>
+              </div>
+              {order.items.map((item) => {
+                const name =
+                  locale === "ne"
+                    ? item.listing?.name_ne
+                    : item.listing?.name_en;
+                return (
+                  <div key={item.id} className="flex justify-between pl-4 text-xs text-gray-500">
+                    <span>{name} ({item.quantity_kg} kg)</span>
+                    <span>NPR {Number(item.subtotal).toFixed(2)}</span>
+                  </div>
+                );
+              })}
+              <div className="border-t border-green-200 pt-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t("receiptProduce")}</span>
+                  <span>NPR {Number(order.total_price).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">{t("receiptDelivery")}</span>
+                  <span>NPR {Number(order.delivery_fee).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-green-700">
+                  <span>{t("receiptTotal")}</span>
+                  <span>
+                    NPR{" "}
+                    {(
+                      Number(order.total_price) + Number(order.delivery_fee)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t("receiptPayment")}</span>
+                <span className="capitalize">{order.payment_method}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t("receiptPaymentStatus")}</span>
+                <span className="capitalize">{order.payment_status}</span>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Actions */}
         <section className="mt-6 space-y-3">
           {/* Retry eSewa payment for unpaid eSewa orders */}
@@ -503,6 +636,127 @@ export default function OrderDetailPage() {
               </p>
               {order.payment_method === "esewa" && order.payment_status === "settled" && (
                 <p className="mt-1 text-sm text-green-600">{t("paymentSettled")}</p>
+              )}
+            </div>
+          )}
+
+          {/* Reorder section for terminal orders */}
+          {isTerminal && (
+            <div className="mt-4">
+              {!reorderItems && (
+                <Button
+                  variant="secondary"
+                  className="w-full h-14 text-base"
+                  onClick={handleCheckReorder}
+                  disabled={reorderLoading}
+                >
+                  {reorderLoading ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-5 w-5" />
+                  )}
+                  {reorderLoading ? t("reorderChecking") : t("reorder")}
+                </Button>
+              )}
+
+              {reorderError && (
+                <div className="mt-3 rounded-md border-2 border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {reorderError}
+                </div>
+              )}
+
+              {reorderItems && (
+                <div className="mt-3 rounded-lg bg-white p-4 space-y-3">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    {t("reorderAvailability")}
+                  </h3>
+
+                  <div className="space-y-2">
+                    {reorderItems.map((item) => {
+                      const name =
+                        locale === "ne" ? item.nameNe : item.nameEn;
+                      const priceChanged =
+                        item.available &&
+                        item.currentPricePerKg !== null &&
+                        item.currentPricePerKg !== item.originalPricePerKg;
+                      return (
+                        <div
+                          key={item.listingId}
+                          className={`flex items-center gap-3 rounded-md p-2 ${
+                            item.available ? "bg-green-50" : "bg-gray-100"
+                          }`}
+                        >
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-gray-100">
+                            {item.photo ? (
+                              <Image
+                                src={item.photo}
+                                alt={name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-sm text-gray-300">
+                                🌿
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {item.originalQtyKg} kg
+                              {priceChanged && (
+                                <span className="ml-1 text-amber-600">
+                                  (NPR {item.originalPricePerKg} → {item.currentPricePerKg})
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-xs font-medium ${
+                              item.available
+                                ? "text-green-600"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {item.available
+                              ? t("reorderAvailable")
+                              : t("reorderUnavailable")}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {unavailableCount > 0 && (
+                    <div className="flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-700">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        {t("reorderPartial", { count: unavailableCount })}
+                      </span>
+                    </div>
+                  )}
+
+                  {availableCount > 0 && (
+                    <Button
+                      variant="primary"
+                      className="w-full h-14 text-base"
+                      onClick={handleAddToCart}
+                    >
+                      <RefreshCw className="mr-2 h-5 w-5" />
+                      {t("reorderAddToCart", { count: availableCount })}
+                    </Button>
+                  )}
+
+                  {availableCount === 0 && (
+                    <p className="text-center text-sm text-gray-500">
+                      {t("reorderNoneAvailable")}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           )}

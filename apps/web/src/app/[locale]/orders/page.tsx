@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Package } from "lucide-react";
+import { Package, Search, Filter, X } from "lucide-react";
 import { OrderStatus } from "@jirisewa/shared";
 import { listOrders } from "@/lib/actions/orders";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
@@ -22,6 +22,12 @@ const ACTIVE_STATUSES = new Set([
   OrderStatus.InTransit,
 ]);
 
+const COMPLETED_STATUSES: OrderStatus[] = [
+  OrderStatus.Delivered,
+  OrderStatus.Cancelled,
+  OrderStatus.Disputed,
+];
+
 export default function OrdersPage() {
   const params = useParams();
   const locale = params.locale as Locale;
@@ -32,6 +38,13 @@ export default function OrdersPage() {
   const [allOrders, setAllOrders] = useState<OrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [farmerSearch, setFarmerSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -53,33 +66,178 @@ export default function OrdersPage() {
     load();
   }, []);
 
+  const hasActiveFilters = statusFilter || farmerSearch || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setStatusFilter("");
+    setFarmerSearch("");
+    setDateFrom("");
+    setDateTo("");
+  };
+
   const orders = useMemo(() => {
+    let filtered = allOrders;
+
+    // Tab filter
     if (activeTab === "active") {
-      return allOrders.filter((o) =>
+      filtered = filtered.filter((o) =>
         ACTIVE_STATUSES.has(o.status as OrderStatus),
       );
+    } else {
+      filtered = filtered.filter(
+        (o) => !ACTIVE_STATUSES.has(o.status as OrderStatus),
+      );
     }
-    return allOrders.filter(
-      (o) => !ACTIVE_STATUSES.has(o.status as OrderStatus),
-    );
-  }, [allOrders, activeTab]);
+
+    // Status filter
+    if (statusFilter) {
+      filtered = filtered.filter((o) => o.status === statusFilter);
+    }
+
+    // Farmer search
+    if (farmerSearch.trim()) {
+      const search = farmerSearch.trim().toLowerCase();
+      filtered = filtered.filter((o) =>
+        o.items.some(
+          (item) => item.farmer?.name?.toLowerCase().includes(search),
+        ),
+      );
+    }
+
+    // Date range
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      filtered = filtered.filter(
+        (o) => new Date(o.created_at) >= from,
+      );
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(
+        (o) => new Date(o.created_at) <= to,
+      );
+    }
+
+    return filtered;
+  }, [allOrders, activeTab, statusFilter, farmerSearch, dateFrom, dateTo]);
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "active", label: t("tabs.active") },
     { key: "completed", label: t("tabs.completed") },
   ];
 
+  // Status options for current tab
+  const statusOptions =
+    activeTab === "active"
+      ? [OrderStatus.Pending, OrderStatus.Matched, OrderStatus.PickedUp, OrderStatus.InTransit]
+      : COMPLETED_STATUSES;
+
   return (
     <main className="min-h-screen bg-muted">
       <div className="mx-auto max-w-2xl px-4 py-8">
-        <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              showFilters || hasActiveFilters
+                ? "bg-primary text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            {t("filters")}
+          </button>
+        </div>
+
+        {/* Filters panel */}
+        {showFilters && (
+          <div className="mt-4 rounded-lg bg-white p-4 space-y-3">
+            {/* Farmer search */}
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {t("filterFarmer")}
+              </label>
+              <div className="relative mt-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={farmerSearch}
+                  onChange={(e) => setFarmerSearch(e.target.value)}
+                  placeholder={t("filterFarmerPlaceholder")}
+                  className="w-full rounded-md bg-gray-100 py-2.5 pl-9 pr-3 text-sm border-2 border-transparent focus:bg-white focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Status filter */}
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {t("filterStatus")}
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="mt-1 w-full rounded-md bg-gray-100 px-3 py-2.5 text-sm border-2 border-transparent focus:bg-white focus:border-primary focus:outline-none transition-all"
+              >
+                <option value="">{t("filterStatusAll")}</option>
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {t(`status.${s}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date range */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {t("filterDateFrom")}
+                </label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="mt-1 w-full rounded-md bg-gray-100 px-3 py-2.5 text-sm border-2 border-transparent focus:bg-white focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {t("filterDateTo")}
+                </label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="mt-1 w-full rounded-md bg-gray-100 px-3 py-2.5 text-sm border-2 border-transparent focus:bg-white focus:border-primary focus:outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("clearFilters")}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-6 flex gap-1 rounded-lg bg-white p-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setStatusFilter("");
+              }}
               className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-colors ${
                 activeTab === tab.key
                   ? "bg-primary text-white"
@@ -104,15 +262,26 @@ export default function OrdersPage() {
         ) : orders.length === 0 ? (
           <div className="py-12 text-center">
             <Package className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-3 text-gray-500">{t("noOrders")}</p>
-            {activeTab === "active" && (
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => router.push(`/${locale}/marketplace`)}
+            <p className="mt-3 text-gray-500">
+              {hasActiveFilters ? t("noFilterResults") : t("noOrders")}
+            </p>
+            {hasActiveFilters ? (
+              <button
+                onClick={clearFilters}
+                className="mt-3 text-sm font-medium text-primary hover:underline"
               >
-                {t("browseMarketplace")}
-              </Button>
+                {t("clearFilters")}
+              </button>
+            ) : (
+              activeTab === "active" && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => router.push(`/${locale}/marketplace`)}
+                >
+                  {t("browseMarketplace")}
+                </Button>
+              )
             )}
           </div>
         ) : (

@@ -566,6 +566,109 @@ export async function listOrdersByTrip(
   }
 }
 
+/**
+ * Reorder item availability result. One entry per item in the original order.
+ */
+export interface ReorderItemAvailability {
+  listingId: string;
+  farmerId: string;
+  nameEn: string;
+  nameNe: string;
+  farmerName: string;
+  photo: string | null;
+  originalQtyKg: number;
+  originalPricePerKg: number;
+  currentPricePerKg: number | null;
+  availableQtyKg: number | null;
+  isActive: boolean;
+  available: boolean;
+}
+
+/**
+ * Check availability of items from a previous order for reordering.
+ * Returns per-item availability including current prices and stock levels.
+ */
+export async function checkReorderAvailability(
+  orderId: string,
+): Promise<ActionResult<ReorderItemAvailability[]>> {
+  try {
+    const supabase = createServiceRoleClient();
+
+    // Fetch the order and verify ownership
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("consumer_id")
+      .eq("id", orderId)
+      .single();
+
+    if (orderError) {
+      console.error("checkReorderAvailability: order fetch error:", orderError);
+      return { error: "Order not found" };
+    }
+
+    if (order.consumer_id !== DEMO_CONSUMER_ID) {
+      return { error: "You can only reorder your own orders" };
+    }
+
+    // Fetch original order items with listing and farmer info
+    const { data: items, error: itemsError } = await supabase
+      .from("order_items")
+      .select(
+        `
+        listing_id,
+        farmer_id,
+        quantity_kg,
+        price_per_kg,
+        listing:produce_listings!order_items_listing_id_fkey(
+          name_en, name_ne, photos, price_per_kg, available_qty_kg, is_active
+        ),
+        farmer:users!order_items_farmer_id_fkey(name)
+      `,
+      )
+      .eq("order_id", orderId);
+
+    if (itemsError) {
+      console.error("checkReorderAvailability: items fetch error:", itemsError);
+      return { error: "Failed to fetch order items" };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: ReorderItemAvailability[] = (items ?? []).map((item: any) => {
+      const listing = Array.isArray(item.listing)
+        ? item.listing[0]
+        : item.listing;
+      const farmer = Array.isArray(item.farmer)
+        ? item.farmer[0]
+        : item.farmer;
+
+      const isActive = listing?.is_active ?? false;
+      const availableQty = listing?.available_qty_kg ?? 0;
+      const currentPrice = listing?.price_per_kg ?? null;
+      const available = isActive && availableQty > 0;
+
+      return {
+        listingId: item.listing_id,
+        farmerId: item.farmer_id,
+        nameEn: listing?.name_en ?? "",
+        nameNe: listing?.name_ne ?? "",
+        farmerName: farmer?.name ?? "",
+        photo: listing?.photos?.[0] ?? null,
+        originalQtyKg: item.quantity_kg,
+        originalPricePerKg: item.price_per_kg,
+        currentPricePerKg: currentPrice,
+        availableQtyKg: availableQty,
+        isActive,
+        available,
+      };
+    });
+
+    return { data: result };
+  } catch (err) {
+    console.error("checkReorderAvailability unexpected error:", err);
+    return { error: "Failed to check reorder availability" };
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeOrderRow(row: any): OrderWithDetails {
   const items: OrderItemWithDetails[] = (row.items ?? []).map(
