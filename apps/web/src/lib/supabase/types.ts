@@ -252,6 +252,7 @@ export type Database = {
           delivery_fee_distance: number;
           delivery_fee_weight: number;
           delivery_distance_km: number | null;
+          parent_order_id: string | null;
           payment_method: "cash" | "esewa" | "khalti";
           payment_status: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at: string;
@@ -278,6 +279,7 @@ export type Database = {
           delivery_fee_distance?: number;
           delivery_fee_weight?: number;
           delivery_distance_km?: number | null;
+          parent_order_id?: string | null;
           payment_method?: "cash" | "esewa" | "khalti";
           payment_status?: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at?: string;
@@ -304,6 +306,7 @@ export type Database = {
           delivery_fee_distance?: number;
           delivery_fee_weight?: number;
           delivery_distance_km?: number | null;
+          parent_order_id?: string | null;
           payment_method?: "cash" | "esewa" | "khalti";
           payment_status?: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at?: string;
@@ -346,6 +349,9 @@ export type Database = {
           pickup_confirmed: boolean;
           pickup_photo_url: string | null;
           delivery_confirmed: boolean;
+          pickup_status: "pending_pickup" | "picked_up" | "unavailable";
+          pickup_sequence: number;
+          pickup_confirmed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -359,6 +365,9 @@ export type Database = {
           pickup_confirmed?: boolean;
           pickup_photo_url?: string | null;
           delivery_confirmed?: boolean;
+          pickup_status?: "pending_pickup" | "picked_up" | "unavailable";
+          pickup_sequence?: number;
+          pickup_confirmed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -372,6 +381,9 @@ export type Database = {
           pickup_confirmed?: boolean;
           pickup_photo_url?: string | null;
           delivery_confirmed?: boolean;
+          pickup_status?: "pending_pickup" | "picked_up" | "unavailable";
+          pickup_sequence?: number;
+          pickup_confirmed_at?: string | null;
         };
         Relationships: [
           {
@@ -521,6 +533,54 @@ export type Database = {
           },
         ];
       };
+      farmer_payouts: {
+        Row: {
+          id: string;
+          order_id: string;
+          farmer_id: string;
+          amount: number;
+          status: "pending" | "settled" | "refunded";
+          settled_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          farmer_id: string;
+          amount: number;
+          status?: "pending" | "settled" | "refunded";
+          settled_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          farmer_id?: string;
+          amount?: number;
+          status?: "pending" | "settled" | "refunded";
+          settled_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "farmer_payouts_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "farmer_payouts_farmer_id_fkey";
+            columns: ["farmer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ratings: {
         Row: {
           id: string;
@@ -595,6 +655,8 @@ export type Database = {
       role_rated: "farmer" | "consumer" | "rider";
       trip_status: "scheduled" | "in_transit" | "completed" | "cancelled";
       vehicle_type: "bike" | "car" | "truck" | "bus" | "other";
+      order_item_status: "pending_pickup" | "picked_up" | "unavailable";
+      payout_status: "pending" | "settled" | "refunded";
     };
   };
 };

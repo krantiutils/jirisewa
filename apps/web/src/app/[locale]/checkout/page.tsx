@@ -160,48 +160,83 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Order summary */}
+        {/* Order summary — grouped by farmer */}
         <section className="mt-6">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             {t("orderSummary")}
           </h2>
-          <div className="mt-3 space-y-2">
-            {cart.items.map((item) => {
-              const name = locale === "ne" ? item.nameNe : item.nameEn;
-              return (
-                <div
-                  key={item.listingId}
-                  className="flex items-center gap-3 rounded-lg bg-white p-3"
-                >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gray-100">
-                    {item.photo ? (
-                      <Image
-                        src={item.photo}
-                        alt={name}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-lg text-gray-300">
-                        🌿
+          {(() => {
+            // Group cart items by farmer
+            const farmerGroups = new Map<string, typeof cart.items>();
+            for (const item of cart.items) {
+              const group = farmerGroups.get(item.farmerId) ?? [];
+              group.push(item);
+              farmerGroups.set(item.farmerId, group);
+            }
+            const isMultiFarmer = farmerGroups.size > 1;
+
+            return (
+              <div className="mt-3 space-y-4">
+                {[...farmerGroups.entries()].map(([farmerId, items], groupIdx) => (
+                  <div key={farmerId}>
+                    {isMultiFarmer && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                          {groupIdx + 1}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-600">
+                          {t("pickupFrom", { farmer: items[0].farmerName })}
+                        </span>
                       </div>
                     )}
+                    <div className="space-y-2">
+                      {items.map((item) => {
+                        const name = locale === "ne" ? item.nameNe : item.nameEn;
+                        return (
+                          <div
+                            key={item.listingId}
+                            className="flex items-center gap-3 rounded-lg bg-white p-3"
+                          >
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gray-100">
+                              {item.photo ? (
+                                <Image
+                                  src={item.photo}
+                                  alt={name}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-lg text-gray-300">
+                                  🌿
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate text-sm font-semibold">{name}</p>
+                              <p className="text-xs text-gray-500">
+                                {!isMultiFarmer && `${item.farmerName} · `}
+                                {item.quantityKg} kg &times; NPR {item.pricePerKg}
+                              </p>
+                            </div>
+                            <span className="text-sm font-bold">
+                              NPR {(item.quantityKg * item.pricePerKg).toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-semibold">{name}</p>
-                    <p className="text-xs text-gray-500">
-                      {item.quantityKg} kg &times; NPR {item.pricePerKg}
-                    </p>
-                  </div>
-                  <span className="text-sm font-bold">
-                    NPR {(item.quantityKg * item.pricePerKg).toFixed(2)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                ))}
+                {isMultiFarmer && (
+                  <p className="text-xs text-gray-500 italic">
+                    {t("multiFarmerNote", { count: farmerGroups.size })}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </section>
 
         {/* Delivery location */}

@@ -178,7 +178,9 @@
     "placeOrder": "अर्डर गर्नुहोस्",
     "placing": "अर्डर गर्दै...",
     "payWithEsewa": "इसेवाबाट तिर्नुहोस्",
-    "redirectingToEsewa": "इसेवामा लैजाँदै..."
+    "redirectingToEsewa": "इसेवामा लैजाँदै...",
+    "pickupFrom": "{farmer} बाट पिकअप",
+    "multiFarmerNote": "यो अर्डरमा {count} किसानहरूको सामान छ। प्रत्येक पिकअप छुट्टै स्टपमा हुन्छ।"
   },
   "orders": {
     "title": "मेरा अर्डरहरू",
@@ -267,7 +269,17 @@
     "reorderUnavailable": "अनुपलब्ध",
     "reorderPartial": "{count, plural, one {# वस्तु} other {# वस्तुहरू}} अब उपलब्ध छैन र छोडिनेछ।",
     "reorderAddToCart": "{count, plural, one {# वस्तु} other {# वस्तुहरू}} कार्टमा थप्नुहोस्",
-    "reorderNoneAvailable": "यो अर्डरका कुनै पनि वस्तु अहिले उपलब्ध छैनन्।"
+    "reorderNoneAvailable": "यो अर्डरका कुनै पनि वस्तु अहिले उपलब्ध छैनन्।",
+    "pickupStatus": "पिकअप स्थिति",
+    "pickupStop": "स्टप {num}",
+    "pickupStatusPending": "पिकअप बाँकी",
+    "pickupStatusPickedUp": "उठाइएको",
+    "pickupStatusUnavailable": "अनुपलब्ध",
+    "farmerPayouts": "किसान भुक्तानी",
+    "payoutPending": "बाँकी",
+    "payoutSettled": "भुक्तान भयो",
+    "payoutRefunded": "फिर्ता भयो",
+    "multiFarmerOrder": "बहु-किसान अर्डर — {count} खेतबाट सामान"
   },
   "ratings": {
     "title": "मूल्याङ्कन र समीक्षाहरू",
@@ -408,7 +420,15 @@
       "completing": "पूरा गर्दै...",
       "cancel": "यात्रा रद्द गर्नुहोस्",
       "confirmPickup": "पिकअप पुष्टि गर्नुहोस्",
-      "startDelivery": "डेलिभरी सुरु गर्नुहोस्"
+      "startDelivery": "डेलिभरी सुरु गर्नुहोस्",
+      "confirmFarmerPickup": "पिकअप पुष्टि — {farmer}",
+      "markUnavailable": "अनुपलब्ध चिन्ह लगाउनुहोस्",
+      "stopNumber": "स्टप {num}",
+      "allPickupsComplete": "सबै पिकअप सम्पन्न",
+      "itemsFromFarmer": "{farmer} बाट",
+      "pendingPickup": "बाँकी",
+      "pickedUpStatus": "उठाइएको",
+      "unavailableStatus": "अनुपलब्ध"
     },
     "tripStatus": {
       "scheduled": "तालिकाबद्ध",

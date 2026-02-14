@@ -48,3 +48,15 @@ export enum RoleRated {
   Consumer = "consumer",
   Rider = "rider",
 }
+
+export enum OrderItemStatus {
+  PendingPickup = "pending_pickup",
+  PickedUp = "picked_up",
+  Unavailable = "unavailable",
+}
+
+export enum PayoutStatus {
+  Pending = "pending",
+  Settled = "settled",
+  Refunded = "refunded",
+}

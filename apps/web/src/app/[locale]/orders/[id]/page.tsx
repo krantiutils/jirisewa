@@ -18,8 +18,10 @@ import {
   RefreshCw,
   FileText,
   AlertTriangle,
+  XCircle,
+  Package,
 } from "lucide-react";
-import { OrderStatus } from "@jirisewa/shared";
+import { OrderStatus, OrderItemStatus } from "@jirisewa/shared";
 import {
   getOrder,
   cancelOrder,
@@ -309,59 +311,158 @@ export default function OrderDetailPage() {
           </section>
         )}
 
-        {/* Items */}
+        {/* Items — grouped by farmer */}
         <section className="mt-6">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             {t("items")}
           </h2>
-          <div className="mt-3 space-y-2">
-            {order.items.map((item) => {
-              const itemName =
-                locale === "ne"
-                  ? item.listing?.name_ne
-                  : item.listing?.name_en;
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 rounded-lg bg-white p-3"
-                >
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gray-100">
-                    {item.listing?.photos?.[0] ? (
-                      <Image
-                        src={item.listing.photos[0]}
-                        alt={itemName ?? ""}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-lg text-gray-300">
-                        🌿
+          {(() => {
+            // Group items by farmer
+            const farmerGroups = new Map<string, typeof order.items>();
+            for (const item of order.items) {
+              const fid = item.farmer?.id ?? item.farmer_id;
+              const group = farmerGroups.get(fid) ?? [];
+              group.push(item);
+              farmerGroups.set(fid, group);
+            }
+            // Sort groups by pickup_sequence
+            const sortedGroups = [...farmerGroups.entries()].sort(
+              (a, b) => (a[1][0].pickup_sequence ?? 0) - (b[1][0].pickup_sequence ?? 0),
+            );
+            const isMultiFarmer = sortedGroups.length > 1;
+
+            return (
+              <div className="mt-3 space-y-4">
+                {isMultiFarmer && (
+                  <p className="text-xs text-gray-500 italic">
+                    {t("multiFarmerOrder", { count: sortedGroups.length })}
+                  </p>
+                )}
+                {sortedGroups.map(([farmerId, items], groupIdx) => {
+                  const pickupStatus = items[0].pickup_status;
+                  return (
+                    <div key={farmerId}>
+                      {isMultiFarmer && (
+                        <div className="mb-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                              {groupIdx + 1}
+                            </span>
+                            <span className="text-xs font-semibold text-gray-600">
+                              {t("fromFarmer", { farmer: items[0].farmer?.name ?? "" })}
+                            </span>
+                          </div>
+                          {pickupStatus && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              pickupStatus === OrderItemStatus.PickedUp
+                                ? "bg-green-100 text-green-700"
+                                : pickupStatus === OrderItemStatus.Unavailable
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}>
+                              {pickupStatus === OrderItemStatus.PickedUp ? (
+                                <><CheckCircle className="h-3 w-3" /> {t("pickupStatusPickedUp")}</>
+                              ) : pickupStatus === OrderItemStatus.Unavailable ? (
+                                <><XCircle className="h-3 w-3" /> {t("pickupStatusUnavailable")}</>
+                              ) : (
+                                <><Package className="h-3 w-3" /> {t("pickupStatusPending")}</>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        {items.map((item) => {
+                          const itemName =
+                            locale === "ne"
+                              ? item.listing?.name_ne
+                              : item.listing?.name_en;
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex items-center gap-3 rounded-lg bg-white p-3 ${
+                                pickupStatus === OrderItemStatus.Unavailable ? "opacity-50" : ""
+                              }`}
+                            >
+                              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-gray-100">
+                                {item.listing?.photos?.[0] ? (
+                                  <Image
+                                    src={item.listing.photos[0]}
+                                    alt={itemName ?? ""}
+                                    fill
+                                    sizes="48px"
+                                    className="object-cover"
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-lg text-gray-300">
+                                    🌿
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-sm font-semibold">{itemName}</p>
+                                <p className="text-xs text-gray-500">
+                                  {!isMultiFarmer && t("fromFarmer", { farmer: item.farmer?.name ?? "" })}
+                                  {!isMultiFarmer && " · "}
+                                  {item.quantity_kg} kg
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-bold">
+                                  NPR {Number(item.subtotal).toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-semibold">{itemName}</p>
-                    <p className="text-xs text-gray-500">
-                      {t("fromFarmer", {
-                        farmer: item.farmer?.name ?? "",
-                      })}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold">
-                      NPR {Number(item.subtotal).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {item.quantity_kg} kg
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </section>
+
+        {/* Farmer payouts (when available) */}
+        {order.farmerPayouts && order.farmerPayouts.length > 1 && (
+          <section className="mt-6 rounded-lg bg-white p-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
+              {t("farmerPayouts")}
+            </h2>
+            <div className="mt-3 space-y-2">
+              {order.farmerPayouts.map((payout) => {
+                const farmerName = order.items.find(
+                  (i) => (i.farmer?.id ?? i.farmer_id) === payout.farmer_id,
+                )?.farmer?.name ?? "Unknown";
+                return (
+                  <div key={payout.id} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">{farmerName}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        NPR {Number(payout.amount).toFixed(2)}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        payout.status === "settled"
+                          ? "bg-green-100 text-green-700"
+                          : payout.status === "refunded"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}>
+                        {payout.status === "settled"
+                          ? t("payoutSettled")
+                          : payout.status === "refunded"
+                          ? t("payoutRefunded")
+                          : t("payoutPending")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Delivery info */}
         <section className="mt-6 rounded-lg bg-white p-4">
