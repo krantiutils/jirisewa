@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { AdminSidebar } from "./_components/AdminSidebar";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({
   children,
   params,
