@@ -1,4 +1,4 @@
-import { createSign, createVerify } from "crypto";
+import { createSign } from "crypto";
 import { readFileSync } from "fs";
 
 // connectIPS e-Payment integration
@@ -62,23 +62,21 @@ function getBaseUrl(): string {
 // Cache the private key to avoid repeated file reads
 let cachedPrivateKey: string | null = null;
 
+/**
+ * Load the RSA private key for signing connectIPS requests.
+ *
+ * The key must be a PEM-format private key file.
+ * Extract from PFX with: openssl pkcs12 -in cert.pfx -nocerts -nodes -out key.pem
+ */
 function getPrivateKey(): string {
   if (cachedPrivateKey) return cachedPrivateKey;
 
-  const pfxPath = process.env.CONNECTIPS_PFX_PATH;
-  if (!pfxPath) {
-    throw new Error("CONNECTIPS_PFX_PATH environment variable is not set");
+  const keyPath = process.env.CONNECTIPS_KEY_PATH;
+  if (!keyPath) {
+    throw new Error("CONNECTIPS_KEY_PATH environment variable is not set (path to PEM private key)");
   }
 
-  const pfxPassword = process.env.CONNECTIPS_PFX_PASSWORD;
-  if (!pfxPassword) {
-    throw new Error("CONNECTIPS_PFX_PASSWORD environment variable is not set");
-  }
-
-  // For Next.js, we expect the private key to be extracted from the PFX
-  // and stored as a PEM file. The PFX_PATH should point to the PEM private key.
-  // Extract with: openssl pkcs12 -in cert.pfx -nocerts -nodes -out key.pem
-  const keyPem = readFileSync(pfxPath, "utf-8");
+  const keyPem = readFileSync(keyPath, "utf-8");
   cachedPrivateKey = keyPem;
   return keyPem;
 }
@@ -103,28 +101,6 @@ export function generateToken(fields: {
   sign.end();
 
   return sign.sign(privateKey, "base64");
-}
-
-/**
- * Verify an RSA-SHA256 signature from connectIPS callback.
- */
-export function verifyToken(
-  fields: {
-    merchantId: string;
-    appId: string;
-    referenceId: string;
-    txnAmt: string;
-  },
-  receivedToken: string,
-  publicKey: string,
-): boolean {
-  const message = `MERCHANTID=${fields.merchantId},APPID=${fields.appId},REFERENCEID=${fields.referenceId},TXNAMT=${fields.txnAmt}`;
-
-  const verify = createVerify("SHA256");
-  verify.update(message);
-  verify.end();
-
-  return verify.verify(publicKey, receivedToken, "base64");
 }
 
 export interface ConnectIPSPaymentParams {

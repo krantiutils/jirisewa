@@ -123,15 +123,28 @@ export async function GET(request: NextRequest) {
       "Received:",
       lookupResult.total_amount,
     );
+
+    // Record the mismatch for audit instead of leaving transaction in PENDING
+    await supabase
+      .from("khalti_transactions")
+      .update({
+        status: "FAILED",
+        pidx,
+        khalti_status: "AMOUNT_MISMATCH",
+        transaction_id: lookupResult.transaction_id,
+      })
+      .eq("id", txn.id)
+      .eq("status", "PENDING");
+
     return NextResponse.redirect(
       `${baseUrl}/en/orders/${txn.order_id}?payment=amount_mismatch`,
     );
   }
 
-  // Payment verified — update transaction and order
+  // Payment verified — atomically update transaction (only if still PENDING)
   const now = new Date().toISOString();
 
-  const { error: updateTxnError } = await supabase
+  const { error: updateTxnError, count: updatedCount } = await supabase
     .from("khalti_transactions")
     .update({
       status: "COMPLETE",
@@ -141,10 +154,21 @@ export async function GET(request: NextRequest) {
       khalti_fee: lookupResult.fee,
       verified_at: now,
     })
-    .eq("id", txn.id);
+    .eq("id", txn.id)
+    .eq("status", "PENDING");
 
   if (updateTxnError) {
     console.error("Khalti callback: failed to update transaction:", updateTxnError);
+    return NextResponse.redirect(
+      `${baseUrl}/en/orders/${txn.order_id}?payment=verification_failed`,
+    );
+  }
+
+  // If no rows updated, another request already processed this
+  if (updatedCount === 0) {
+    return NextResponse.redirect(
+      `${baseUrl}/en/orders/${txn.order_id}?payment=success`,
+    );
   }
 
   // Mark order payment as escrowed (held until delivery confirmation)
