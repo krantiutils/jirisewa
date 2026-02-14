@@ -10,6 +10,7 @@
     "orders": "Orders",
     "farmer": "Farmer Dashboard",
     "rider": "Rider Dashboard",
+    "messages": "Messages",
     "login": "Login",
     "register": "Register"
   },
@@ -751,5 +752,29 @@
         }
       }
     }
+  },
+  "chat": {
+    "title": "Messages",
+    "noConversations": "No messages yet",
+    "noConversationsHint": "Start a conversation from an order page.",
+    "searchPlaceholder": "Search conversations...",
+    "you": "You",
+    "image": "Photo",
+    "location": "Location",
+    "unread": "{count} unread",
+    "orderRef": "Order #{id}",
+    "typeMessage": "Type a message...",
+    "send": "Send",
+    "sendImage": "Send image",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "online": "Online",
+    "offline": "Offline",
+    "typing": "Typing...",
+    "messageChat": "Message",
+    "chatWith": "Chat with {name}",
+    "backToMessages": "Back to messages",
+    "newMessage": "New message from {name}",
+    "loadMore": "Load earlier messages"
   }
 }

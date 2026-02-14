@@ -33,6 +33,7 @@ import { retryEsewaPayment } from "@/lib/actions/payments";
 import type { ReorderItemAvailability } from "@/lib/helpers/orders";
 import { useCart } from "@/lib/cart";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
+import { OrderChatButton } from "@/components/chat/OrderChatButton";
 import { Button } from "@/components/ui/Button";
 import type { OrderWithDetails } from "@/lib/types/order";
 import type { EsewaPaymentFormData } from "@/lib/types/order";
@@ -545,6 +546,37 @@ export default function OrderDetailPage() {
                 </div>
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Quick-access chat buttons */}
+        {order.status !== OrderStatus.Cancelled && (
+          <section className="mt-6 space-y-2">
+            {order.rider && (
+              <OrderChatButton
+                orderId={order.id}
+                otherUserId={order.rider.id}
+                otherUserName={order.rider.name}
+                otherUserRole="rider"
+              />
+            )}
+            {/* Chat with each farmer */}
+            {Array.from(
+              new Map(
+                order.items.map((item) => [
+                  item.farmer?.id ?? item.farmer_id,
+                  item.farmer ?? { id: item.farmer_id, name: "Farmer", avatar_url: null },
+                ]),
+              ),
+            ).map(([farmerId, farmer]) => (
+              <OrderChatButton
+                key={farmerId}
+                orderId={order.id}
+                otherUserId={farmerId}
+                otherUserName={farmer.name}
+                otherUserRole="farmer"
+              />
+            ))}
           </section>
         )}
 

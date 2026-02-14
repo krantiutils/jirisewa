@@ -85,3 +85,9 @@ export enum PingStatus {
   Declined = "declined",
   Expired = "expired",
 }
+
+export enum MessageType {
+  Text = "text",
+  Image = "image",
+  Location = "location",
+}

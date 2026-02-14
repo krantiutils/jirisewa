@@ -10,6 +10,7 @@
     "orders": "अर्डरहरू",
     "farmer": "किसान ड्यासबोर्ड",
     "rider": "चालक ड्यासबोर्ड",
+    "messages": "सन्देशहरू",
     "login": "लगइन",
     "register": "दर्ता"
   },
@@ -751,5 +752,29 @@
         }
       }
     }
+  },
+  "chat": {
+    "title": "सन्देशहरू",
+    "noConversations": "अहिलेसम्म कुनै सन्देश छैन",
+    "noConversationsHint": "अर्डर पृष्ठबाट कुराकानी सुरु गर्नुहोस्।",
+    "searchPlaceholder": "कुराकानी खोज्नुहोस्...",
+    "you": "तपाईं",
+    "image": "तस्बिर",
+    "location": "स्थान",
+    "unread": "{count} नपढेको",
+    "orderRef": "अर्डर #{id}",
+    "typeMessage": "सन्देश लेख्नुहोस्...",
+    "send": "पठाउनुहोस्",
+    "sendImage": "तस्बिर पठाउनुहोस्",
+    "today": "आज",
+    "yesterday": "हिजो",
+    "online": "अनलाइन",
+    "offline": "अफलाइन",
+    "typing": "टाइप गर्दैछ...",
+    "messageChat": "सन्देश",
+    "chatWith": "{name} सँग च्याट",
+    "backToMessages": "सन्देशहरूमा फर्कनुहोस्",
+    "newMessage": "{name} बाट नयाँ सन्देश",
+    "loadMore": "पुराना सन्देशहरू लोड गर्नुहोस्"
   }
 }

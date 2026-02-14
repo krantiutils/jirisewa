@@ -918,6 +918,80 @@ export type Database = {
           },
         ];
       };
+      chat_conversations: {
+        Row: {
+          id: string;
+          order_id: string;
+          participant_ids: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          participant_ids: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          participant_ids?: string[];
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          message_type: "text" | "image" | "location";
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          content: string;
+          message_type?: "text" | "image" | "location";
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          content?: string;
+          message_type?: "text" | "image" | "location";
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "chat_conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       order_pings: {
         Row: {
           id: string;
@@ -1056,6 +1130,7 @@ export type Database = {
       order_item_status: "pending_pickup" | "picked_up" | "unavailable";
       payout_status: "pending" | "settled" | "refunded";
       ping_status: "pending" | "accepted" | "declined" | "expired";
+      message_type: "text" | "image" | "location";
     };
   };
 };
