@@ -15,10 +15,13 @@ export const NOMINATIM_BASE_URL =
 export const OSRM_BASE_URL =
   "https://router.project-osrm.org" as const;
 
-/** Jiri, Nepal — launch area default center */
-export const MAP_DEFAULT_CENTER = { lat: 27.6306, lng: 86.2305 } as const;
+/** Nepal geographic center — default map center when no user location */
+export const MAP_DEFAULT_CENTER = { lat: 28.3949, lng: 84.1240 } as const;
 
-export const MAP_DEFAULT_ZOOM = 13 as const;
+/** Jiri, Nepal — original launch area (Dolakha district) */
+export const JIRI_CENTER = { lat: 27.6306, lng: 86.2305 } as const;
+
+export const MAP_DEFAULT_ZOOM = 8 as const;
 
 /** Nepal bounding box for constraining map views */
 export const NEPAL_BOUNDS = {

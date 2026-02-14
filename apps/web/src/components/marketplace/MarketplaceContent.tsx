@@ -6,7 +6,7 @@ import { SlidersHorizontal, SearchX, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { ProduceCard } from "./ProduceCard";
 import { FilterSidebar, type FilterState } from "./FilterSidebar";
-import type { ProduceCategory, ProduceListingWithDetails } from "@/lib/supabase/types";
+import type { ProduceCategory, ProduceListingWithDetails, MunicipalitySearchResult } from "@/lib/supabase/types";
 
 interface MarketplaceContentProps {
   initialListings: ProduceListingWithDetails[];
@@ -22,6 +22,7 @@ const INITIAL_FILTERS: FilterState = {
   radius_km: "",
   sort_by: "price_asc",
   search: "",
+  municipality_id: "",
 };
 
 const DEBOUNCE_MS = 300;
@@ -41,6 +42,7 @@ export function MarketplaceContent({
   const [error, setError] = useState<string | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [municipality, setMunicipality] = useState<MunicipalitySearchResult | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     ...INITIAL_FILTERS,
     category_id: initialCategoryId ?? "",
@@ -67,6 +69,7 @@ export function MarketplaceContent({
       if (currentFilters.radius_km) params.set("radius_km", currentFilters.radius_km);
       if (currentFilters.sort_by) params.set("sort_by", currentFilters.sort_by);
       if (currentFilters.search) params.set("search", currentFilters.search);
+      if (currentFilters.municipality_id) params.set("municipality_id", currentFilters.municipality_id);
       if (location) {
         params.set("lat", String(location.lat));
         params.set("lng", String(location.lng));
@@ -124,6 +127,7 @@ export function MarketplaceContent({
 
   const handleClearFilters = useCallback(() => {
     setFilters(INITIAL_FILTERS);
+    setMunicipality(null);
   }, []);
 
   const handleLocationChange = useCallback((lat: number, lng: number) => {
@@ -147,6 +151,8 @@ export function MarketplaceContent({
         onClearFilters={handleClearFilters}
         location={location}
         onLocationChange={handleLocationChange}
+        municipality={municipality}
+        onMunicipalityChange={setMunicipality}
         mobileOpen={mobileFilterOpen}
         onMobileClose={() => setMobileFilterOpen(false)}
       />

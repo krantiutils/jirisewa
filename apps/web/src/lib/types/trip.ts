@@ -23,6 +23,8 @@ export interface RiderTrip {
   optimized_route: Record<string, unknown> | null;
   total_distance_km: number | null;
   estimated_duration_minutes: number | null;
+  origin_municipality_id: string | null;
+  destination_municipality_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +46,8 @@ export interface Trip {
   optimizedRoute: Record<string, unknown> | null;
   totalDistanceKm: number | null;
   estimatedDurationMinutes: number | null;
+  originMunicipalityId: string | null;
+  destinationMunicipalityId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,6 +61,8 @@ export interface CreateTripInput {
   routeGeoJson: [number, number][] | null; // [lng, lat] GeoJSON coordinate order
   departureAt: string; // ISO 8601
   availableCapacityKg: number;
+  originMunicipalityId?: string;
+  destinationMunicipalityId?: string;
 }
 
 /** Input for updating an existing trip. */
@@ -139,6 +145,8 @@ export function parseRiderTrip(row: RiderTrip): Trip {
     optimizedRoute: row.optimized_route ?? null,
     totalDistanceKm: row.total_distance_km != null ? Number(row.total_distance_km) : null,
     estimatedDurationMinutes: row.estimated_duration_minutes ?? null,
+    originMunicipalityId: row.origin_municipality_id ?? null,
+    destinationMunicipalityId: row.destination_municipality_id ?? null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

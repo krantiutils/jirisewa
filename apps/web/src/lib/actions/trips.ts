@@ -49,6 +49,13 @@ export async function createTrip(
       insertData.route = routeToWkt(input.routeGeoJson);
     }
 
+    if (input.originMunicipalityId) {
+      insertData.origin_municipality_id = input.originMunicipalityId;
+    }
+    if (input.destinationMunicipalityId) {
+      insertData.destination_municipality_id = input.destinationMunicipalityId;
+    }
+
     const { data, error } = await supabase
       .from("rider_trips")
       .insert(insertData)

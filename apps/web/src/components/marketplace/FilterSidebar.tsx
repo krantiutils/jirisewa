@@ -4,7 +4,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { SlidersHorizontal, X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { LocationPicker } from "./LocationPicker";
-import type { ProduceCategory } from "@/lib/supabase/types";
+import { MunicipalityPicker } from "@/components/MunicipalityPicker";
+import type { ProduceCategory, MunicipalitySearchResult } from "@/lib/supabase/types";
 import type { Locale } from "@/lib/i18n";
 
 export interface FilterState {
@@ -14,6 +15,7 @@ export interface FilterState {
   radius_km: string;
   sort_by: string;
   search: string;
+  municipality_id: string;
 }
 
 interface FilterSidebarProps {
@@ -23,6 +25,8 @@ interface FilterSidebarProps {
   onClearFilters: () => void;
   location: { lat: number; lng: number } | null;
   onLocationChange: (lat: number, lng: number) => void;
+  municipality: MunicipalitySearchResult | null;
+  onMunicipalityChange: (m: MunicipalitySearchResult | null) => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
 }
@@ -36,6 +40,8 @@ export function FilterSidebar({
   onClearFilters,
   location,
   onLocationChange,
+  municipality,
+  onMunicipalityChange,
   mobileOpen,
   onMobileClose,
 }: FilterSidebarProps) {
@@ -47,7 +53,8 @@ export function FilterSidebar({
     filters.min_price ||
     filters.max_price ||
     filters.radius_km ||
-    filters.search;
+    filters.search ||
+    filters.municipality_id;
 
   const content = (
     <div className="space-y-6">
@@ -80,6 +87,16 @@ export function FilterSidebar({
           currentLocation={location}
         />
       </div>
+
+      {/* Municipality */}
+      <MunicipalityPicker
+        value={municipality}
+        onChange={(m) => {
+          onMunicipalityChange(m);
+          onFilterChange("municipality_id", m?.id ?? "");
+        }}
+        label={t("municipality")}
+      />
 
       {/* Category */}
       <div>
