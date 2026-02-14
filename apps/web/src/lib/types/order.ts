@@ -38,10 +38,24 @@ export interface PlaceOrderInput {
   deliveryAddress: string;
   deliveryLat: number;
   deliveryLng: number;
+  deliveryFee: number;
+  deliveryFeeBase: number;
+  deliveryFeeDistance: number;
+  deliveryFeeWeight: number;
+  deliveryDistanceKm: number | null;
   items: {
     listingId: string;
     farmerId: string;
     quantityKg: number;
     pricePerKg: number;
   }[];
+}
+
+export interface DeliveryFeeEstimate {
+  baseFee: number;
+  distanceFee: number;
+  weightFee: number;
+  totalFee: number;
+  distanceKm: number;
+  weightKg: number;
 }

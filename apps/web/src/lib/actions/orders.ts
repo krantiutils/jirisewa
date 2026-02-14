@@ -101,7 +101,11 @@ export async function placeOrder(
         delivery_address: input.deliveryAddress,
         delivery_location: pointToWkt(input.deliveryLng, input.deliveryLat),
         total_price: Math.round(totalPrice * 100) / 100,
-        delivery_fee: 0,
+        delivery_fee: input.deliveryFee,
+        delivery_fee_base: input.deliveryFeeBase,
+        delivery_fee_distance: input.deliveryFeeDistance,
+        delivery_fee_weight: input.deliveryFeeWeight,
+        delivery_distance_km: input.deliveryDistanceKm,
         payment_method: "cash",
         payment_status: "pending",
       })

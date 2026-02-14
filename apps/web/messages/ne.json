@@ -149,7 +149,7 @@
     "fromFarmer": "{farmer} बाट",
     "remove": "हटाउनुहोस्",
     "subtotal": "उपजम्मा",
-    "deliveryFeeNote": "सवारी चालक मिलान पछि डेलिभरी शुल्क गणना गरिनेछ।",
+    "deliveryFeeNote": "डेलिभरी शुल्क चेकआउटमा दूरी र तौलको आधारमा गणना गरिनेछ।",
     "proceedToCheckout": "चेकआउटमा जानुहोस्"
   },
   "checkout": {
@@ -165,6 +165,13 @@
     "subtotal": "उपजम्मा",
     "deliveryFee": "डेलिभरी शुल्क",
     "calculatedAfterMatch": "चालक मिलान पछि गणना गरिनेछ",
+    "calculatingFee": "डेलिभरी शुल्क गणना गर्दै...",
+    "feeError": "डेलिभरी शुल्क गणना गर्न सकिएन। कृपया फरक डेलिभरी स्थान प्रयास गर्नुहोस्।",
+    "feeBreakdown": "शुल्क विवरण",
+    "baseFee": "आधार शुल्क",
+    "distanceFee": "दूरी ({km} किमी)",
+    "weightFee": "तौल ({kg} केजी)",
+    "estimatedFee": "अनुमानित डेलिभरी शुल्क",
     "total": "जम्मा",
     "placeOrder": "अर्डर गर्नुहोस्",
     "placing": "अर्डर गर्दै..."
@@ -198,6 +205,9 @@
     "riderInfo": "सवारी चालक जानकारी",
     "subtotal": "उपजम्मा",
     "deliveryFee": "डेलिभरी शुल्क",
+    "baseFee": "आधार शुल्क",
+    "distanceFee": "दूरी ({km} किमी)",
+    "weightFee": "तौल ({kg} केजी)",
     "total": "जम्मा",
     "paymentMethod": "भुक्तानी विधि",
     "confirmDelivery": "डेलिभरी प्राप्त पुष्टि गर्नुहोस्",

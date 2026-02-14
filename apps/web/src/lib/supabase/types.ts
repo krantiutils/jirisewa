@@ -191,6 +191,42 @@ export type Database = {
           },
         ];
       };
+      delivery_rates: {
+        Row: {
+          id: string;
+          base_fee_npr: number;
+          per_km_rate_npr: number;
+          per_kg_rate_npr: number;
+          min_fee_npr: number;
+          max_fee_npr: number | null;
+          is_active: boolean;
+          effective_from: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          base_fee_npr: number;
+          per_km_rate_npr: number;
+          per_kg_rate_npr: number;
+          min_fee_npr?: number;
+          max_fee_npr?: number | null;
+          is_active?: boolean;
+          effective_from?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          base_fee_npr?: number;
+          per_km_rate_npr?: number;
+          per_kg_rate_npr?: number;
+          min_fee_npr?: number;
+          max_fee_npr?: number | null;
+          is_active?: boolean;
+          effective_from?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       orders: {
         Row: {
           id: string;
@@ -209,6 +245,10 @@ export type Database = {
           delivery_location: unknown;
           total_price: number;
           delivery_fee: number;
+          delivery_fee_base: number;
+          delivery_fee_distance: number;
+          delivery_fee_weight: number;
+          delivery_distance_km: number | null;
           payment_method: "cash" | "esewa" | "khalti";
           payment_status: "pending" | "collected" | "settled";
           created_at: string;
@@ -231,6 +271,10 @@ export type Database = {
           delivery_location: unknown;
           total_price: number;
           delivery_fee?: number;
+          delivery_fee_base?: number;
+          delivery_fee_distance?: number;
+          delivery_fee_weight?: number;
+          delivery_distance_km?: number | null;
           payment_method?: "cash" | "esewa" | "khalti";
           payment_status?: "pending" | "collected" | "settled";
           created_at?: string;
@@ -253,6 +297,10 @@ export type Database = {
           delivery_location?: unknown;
           total_price?: number;
           delivery_fee?: number;
+          delivery_fee_base?: number;
+          delivery_fee_distance?: number;
+          delivery_fee_weight?: number;
+          delivery_distance_km?: number | null;
           payment_method?: "cash" | "esewa" | "khalti";
           payment_status?: "pending" | "collected" | "settled";
           created_at?: string;

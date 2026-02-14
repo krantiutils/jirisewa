@@ -149,7 +149,7 @@
     "fromFarmer": "from {farmer}",
     "remove": "Remove",
     "subtotal": "Subtotal",
-    "deliveryFeeNote": "Delivery fee will be calculated after rider matching.",
+    "deliveryFeeNote": "Delivery fee will be calculated at checkout based on distance and weight.",
     "proceedToCheckout": "Proceed to Checkout"
   },
   "checkout": {
@@ -165,6 +165,13 @@
     "subtotal": "Subtotal",
     "deliveryFee": "Delivery Fee",
     "calculatedAfterMatch": "Calculated after rider match",
+    "calculatingFee": "Calculating delivery fee...",
+    "feeError": "Could not calculate delivery fee. Please try a different delivery location.",
+    "feeBreakdown": "Fee Breakdown",
+    "baseFee": "Base Fee",
+    "distanceFee": "Distance ({km} km)",
+    "weightFee": "Weight ({kg} kg)",
+    "estimatedFee": "Estimated Delivery Fee",
     "total": "Total",
     "placeOrder": "Place Order",
     "placing": "Placing order..."
@@ -198,6 +205,9 @@
     "riderInfo": "Rider Information",
     "subtotal": "Subtotal",
     "deliveryFee": "Delivery Fee",
+    "baseFee": "Base Fee",
+    "distanceFee": "Distance ({km} km)",
+    "weightFee": "Weight ({kg} kg)",
     "total": "Total",
     "paymentMethod": "Payment Method",
     "confirmDelivery": "Confirm Delivery Received",
