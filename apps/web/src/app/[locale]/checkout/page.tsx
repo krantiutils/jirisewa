@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -11,11 +11,14 @@ import { placeOrder } from "@/lib/actions/orders";
 import { Button } from "@/components/ui/Button";
 import type { Locale } from "@/lib/i18n";
 import type { LatLng } from "@/lib/map";
+import type { EsewaPaymentFormData } from "@/lib/types/order";
 
 const LocationPicker = dynamic(
   () => import("@/components/map/LocationPicker"),
   { ssr: false },
 );
+
+type PaymentMethodOption = "cash" | "esewa";
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -23,11 +26,14 @@ export default function CheckoutPage() {
   const router = useRouter();
   const t = useTranslations("checkout");
   const { cart, hydrated, clearCart } = useCart();
+  const esewaFormRef = useRef<HTMLFormElement>(null);
 
   const [deliveryLocation, setDeliveryLocation] = useState<LatLng | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodOption>("cash");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [esewaForm, setEsewaForm] = useState<EsewaPaymentFormData | null>(null);
 
   const subtotal = getCartSubtotal(cart);
 
@@ -37,6 +43,13 @@ export default function CheckoutPage() {
       router.push(`/${locale}/cart`);
     }
   }, [hydrated, cart.items.length, locale, router]);
+
+  // Auto-submit the hidden eSewa form when form data is set
+  useEffect(() => {
+    if (esewaForm && esewaFormRef.current) {
+      esewaFormRef.current.submit();
+    }
+  }, [esewaForm]);
 
   if (!hydrated || cart.items.length === 0) {
     return (
@@ -64,6 +77,7 @@ export default function CheckoutPage() {
       deliveryAddress: deliveryAddress || t("deliveryLocationSet"),
       deliveryLat: deliveryLocation.lat,
       deliveryLng: deliveryLocation.lng,
+      paymentMethod,
       items: cart.items.map((item) => ({
         listingId: item.listingId,
         farmerId: item.farmerId,
@@ -79,6 +93,15 @@ export default function CheckoutPage() {
     }
 
     clearCart();
+
+    // For eSewa: redirect to eSewa payment page via hidden form POST
+    if (result.data.esewaForm) {
+      setEsewaForm(result.data.esewaForm);
+      // Form auto-submits via useEffect above
+      return;
+    }
+
+    // For cash: go directly to order detail
     router.push(`/${locale}/orders/${result.data.orderId}`);
   };
 
@@ -158,21 +181,75 @@ export default function CheckoutPage() {
           )}
         </section>
 
-        {/* Payment */}
+        {/* Payment method selection */}
         <section className="mt-8">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
             {t("payment")}
           </h2>
-          <div className="mt-3 rounded-lg bg-white p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+          <div className="mt-3 space-y-2">
+            {/* Cash on Delivery */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("cash")}
+              className={`w-full flex items-center gap-3 rounded-lg bg-white p-4 text-left transition-all ${
+                paymentMethod === "cash"
+                  ? "ring-2 ring-primary border-primary"
+                  : "border-2 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 shrink-0">
                 <span className="text-lg">💵</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-foreground">{t("cashOnDelivery")}</p>
                 <p className="text-sm text-gray-500">{t("cashOnDeliveryHint")}</p>
               </div>
-            </div>
+              <div
+                className={`h-5 w-5 rounded-full border-2 shrink-0 ${
+                  paymentMethod === "cash"
+                    ? "border-primary bg-primary"
+                    : "border-gray-300"
+                }`}
+              >
+                {paymentMethod === "cash" && (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* eSewa */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("esewa")}
+              className={`w-full flex items-center gap-3 rounded-lg bg-white p-4 text-left transition-all ${
+                paymentMethod === "esewa"
+                  ? "ring-2 ring-primary border-primary"
+                  : "border-2 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 shrink-0">
+                <span className="text-lg font-bold text-green-600">e</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">{t("esewaPayment")}</p>
+                <p className="text-sm text-gray-500">{t("esewaPaymentHint")}</p>
+              </div>
+              <div
+                className={`h-5 w-5 rounded-full border-2 shrink-0 ${
+                  paymentMethod === "esewa"
+                    ? "border-primary bg-primary"
+                    : "border-gray-300"
+                }`}
+              >
+                {paymentMethod === "esewa" && (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
           </div>
         </section>
 
@@ -204,14 +281,30 @@ export default function CheckoutPage() {
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {t("placing")}
+                {paymentMethod === "esewa" ? t("redirectingToEsewa") : t("placing")}
               </>
+            ) : paymentMethod === "esewa" ? (
+              t("payWithEsewa")
             ) : (
               t("placeOrder")
             )}
           </Button>
         </section>
       </div>
+
+      {/* Hidden form for eSewa redirect (POST to eSewa payment page) */}
+      {esewaForm && (
+        <form
+          ref={esewaFormRef}
+          method="POST"
+          action={esewaForm.url}
+          className="hidden"
+        >
+          {Object.entries(esewaForm.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+        </form>
+      )}
     </main>
   );
 }

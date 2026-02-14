@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import {
@@ -13,12 +13,16 @@ import {
   Phone,
   Loader2,
   CheckCircle,
+  Shield,
+  AlertCircle,
 } from "lucide-react";
 import { OrderStatus } from "@jirisewa/shared";
 import { getOrder, cancelOrder, confirmDelivery } from "@/lib/actions/orders";
+import { retryEsewaPayment } from "@/lib/actions/payments";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { Button } from "@/components/ui/Button";
 import type { OrderWithDetails } from "@/lib/types/order";
+import type { EsewaPaymentFormData } from "@/lib/types/order";
 import type { Locale } from "@/lib/i18n";
 
 const STATUS_STEPS: OrderStatus[] = [
@@ -34,12 +38,35 @@ export default function OrderDetailPage() {
   const locale = params.locale as Locale;
   const orderId = params.id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations("orders");
+  const esewaFormRef = useRef<HTMLFormElement>(null);
 
   const [order, setOrder] = useState<OrderWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [esewaForm, setEsewaForm] = useState<EsewaPaymentFormData | null>(null);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+
+  // Show payment status message from URL params (after eSewa redirect)
+  useEffect(() => {
+    const paymentParam = searchParams.get("payment");
+    if (paymentParam === "success") {
+      setPaymentMessage(t("paymentSuccess"));
+    } else if (paymentParam === "failed") {
+      setPaymentMessage(t("paymentFailed"));
+    } else if (paymentParam === "verification_failed") {
+      setPaymentMessage(t("paymentVerificationFailed"));
+    }
+  }, [searchParams, t]);
+
+  // Auto-submit eSewa form when set
+  useEffect(() => {
+    if (esewaForm && esewaFormRef.current) {
+      esewaFormRef.current.submit();
+    }
+  }, [esewaForm]);
 
   useEffect(() => {
     async function load() {
@@ -77,6 +104,18 @@ export default function OrderDetailPage() {
     } else {
       const refreshed = await getOrder(orderId);
       if (refreshed.data) setOrder(refreshed.data);
+    }
+    setActionLoading(false);
+  };
+
+  const handleRetryEsewaPayment = async () => {
+    setActionLoading(true);
+    setError(null);
+    const result = await retryEsewaPayment(orderId);
+    if (result.error) {
+      setError(result.error);
+    } else if (result.data) {
+      setEsewaForm(result.data);
     }
     setActionLoading(false);
   };
@@ -309,6 +348,41 @@ export default function OrderDetailPage() {
           </section>
         )}
 
+        {/* Payment message from eSewa redirect */}
+        {paymentMessage && (
+          <div className={`mt-6 rounded-lg p-4 text-center ${
+            searchParams.get("payment") === "success"
+              ? "bg-green-50"
+              : "bg-amber-50"
+          }`}>
+            {searchParams.get("payment") === "success" ? (
+              <Shield className="mx-auto h-6 w-6 text-green-600" />
+            ) : (
+              <AlertCircle className="mx-auto h-6 w-6 text-amber-600" />
+            )}
+            <p className={`mt-1 text-sm font-medium ${
+              searchParams.get("payment") === "success"
+                ? "text-green-700"
+                : "text-amber-700"
+            }`}>
+              {paymentMessage}
+            </p>
+          </div>
+        )}
+
+        {/* eSewa escrow status */}
+        {order.payment_method === "esewa" && order.payment_status === "escrowed" && (
+          <section className="mt-6 rounded-lg bg-blue-50 p-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600 shrink-0" />
+              <div>
+                <p className="font-semibold text-blue-700 text-sm">{t("paymentEscrowed")}</p>
+                <p className="text-xs text-blue-600">{t("paymentEscrowedHint")}</p>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Price summary */}
         <section className="mt-6 rounded-lg bg-white p-4">
           <div className="space-y-2">
@@ -333,13 +407,45 @@ export default function OrderDetailPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">{t("paymentMethod")}</span>
-              <span className="capitalize">{order.payment_method}</span>
+              <span className="capitalize">
+                {order.payment_method === "esewa" ? "eSewa" : order.payment_method}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">{t("paymentStatus")}</span>
+              <span className={`capitalize font-medium ${
+                order.payment_status === "escrowed" ? "text-blue-600" :
+                order.payment_status === "settled" ? "text-green-600" :
+                order.payment_status === "refunded" ? "text-amber-600" :
+                "text-gray-700"
+              }`}>
+                {t(`paymentStatusValues.${order.payment_status}`)}
+              </span>
             </div>
           </div>
         </section>
 
         {/* Actions */}
         <section className="mt-6 space-y-3">
+          {/* Retry eSewa payment for unpaid eSewa orders */}
+          {order.payment_method === "esewa" &&
+            order.payment_status === "pending" &&
+            order.status !== OrderStatus.Cancelled && (
+            <Button
+              variant="primary"
+              className="w-full h-14 text-base"
+              onClick={handleRetryEsewaPayment}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <span className="mr-2 text-lg font-bold">e</span>
+              )}
+              {t("retryEsewaPayment")}
+            </Button>
+          )}
+
           {order.status === OrderStatus.InTransit && (
             <Button
               variant="primary"
@@ -377,10 +483,27 @@ export default function OrderDetailPage() {
               <p className="mt-2 font-semibold text-green-700">
                 {t("deliveryConfirmed")}
               </p>
+              {order.payment_method === "esewa" && order.payment_status === "settled" && (
+                <p className="mt-1 text-sm text-green-600">{t("paymentSettled")}</p>
+              )}
             </div>
           )}
         </section>
       </div>
+
+      {/* Hidden form for eSewa redirect */}
+      {esewaForm && (
+        <form
+          ref={esewaFormRef}
+          method="POST"
+          action={esewaForm.url}
+          className="hidden"
+        >
+          {Object.entries(esewaForm.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+        </form>
+      )}
     </main>
   );
 }

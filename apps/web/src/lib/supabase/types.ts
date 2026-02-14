@@ -210,7 +210,7 @@ export type Database = {
           total_price: number;
           delivery_fee: number;
           payment_method: "cash" | "esewa" | "khalti";
-          payment_status: "pending" | "collected" | "settled";
+          payment_status: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at: string;
           updated_at: string;
         };
@@ -232,7 +232,7 @@ export type Database = {
           total_price: number;
           delivery_fee?: number;
           payment_method?: "cash" | "esewa" | "khalti";
-          payment_status?: "pending" | "collected" | "settled";
+          payment_status?: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at?: string;
           updated_at?: string;
         };
@@ -254,7 +254,7 @@ export type Database = {
           total_price?: number;
           delivery_fee?: number;
           payment_method?: "cash" | "esewa" | "khalti";
-          payment_status?: "pending" | "collected" | "settled";
+          payment_status?: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at?: string;
           updated_at?: string;
         };
@@ -402,6 +402,74 @@ export type Database = {
           },
         ];
       };
+      esewa_transactions: {
+        Row: {
+          id: string;
+          order_id: string;
+          transaction_uuid: string;
+          product_code: string;
+          amount: number;
+          tax_amount: number;
+          service_charge: number;
+          delivery_charge: number;
+          total_amount: number;
+          status: string;
+          esewa_ref_id: string | null;
+          esewa_status: string | null;
+          verified_at: string | null;
+          escrow_released_at: string | null;
+          refunded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          transaction_uuid: string;
+          product_code: string;
+          amount: number;
+          tax_amount?: number;
+          service_charge?: number;
+          delivery_charge?: number;
+          total_amount: number;
+          status?: string;
+          esewa_ref_id?: string | null;
+          esewa_status?: string | null;
+          verified_at?: string | null;
+          escrow_released_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          transaction_uuid?: string;
+          product_code?: string;
+          amount?: number;
+          tax_amount?: number;
+          service_charge?: number;
+          delivery_charge?: number;
+          total_amount?: number;
+          status?: string;
+          esewa_ref_id?: string | null;
+          esewa_status?: string | null;
+          verified_at?: string | null;
+          escrow_released_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "esewa_transactions_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ratings: {
         Row: {
           id: string;
@@ -472,7 +540,7 @@ export type Database = {
         | "cancelled"
         | "disputed";
       payment_method: "cash" | "esewa" | "khalti";
-      payment_status: "pending" | "collected" | "settled";
+      payment_status: "pending" | "escrowed" | "collected" | "settled" | "refunded";
       role_rated: "farmer" | "consumer" | "rider";
       trip_status: "scheduled" | "in_transit" | "completed" | "cancelled";
       vehicle_type: "bike" | "car" | "truck" | "bus" | "other";

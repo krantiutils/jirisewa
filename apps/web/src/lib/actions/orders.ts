@@ -1,12 +1,14 @@
 "use server";
 
-import { OrderStatus } from "@jirisewa/shared";
+import { OrderStatus, PaymentStatus } from "@jirisewa/shared";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import { buildPaymentFormData, generateTransactionUuid } from "@/lib/esewa";
 import type { ActionResult } from "@/lib/types/action";
 import type {
   PlaceOrderInput,
   OrderWithDetails,
   OrderItemWithDetails,
+  EsewaPaymentFormData,
 } from "@/lib/types/order";
 
 // TODO: Replace hardcoded consumer ID with authenticated user once auth is implemented
@@ -23,7 +25,7 @@ function pointToWkt(lng: number, lat: number): string {
  */
 export async function placeOrder(
   input: PlaceOrderInput,
-): Promise<ActionResult<{ orderId: string }>> {
+): Promise<ActionResult<{ orderId: string; esewaForm?: EsewaPaymentFormData }>> {
   try {
     if (input.items.length === 0) {
       return { error: "Cart is empty" };
@@ -92,6 +94,11 @@ export async function placeOrder(
       0,
     );
 
+    const validPaymentMethods = ["cash", "esewa"] as const;
+    const paymentMethod = validPaymentMethods.includes(input.paymentMethod as typeof validPaymentMethods[number])
+      ? input.paymentMethod
+      : "cash";
+
     // Create the order
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -102,7 +109,7 @@ export async function placeOrder(
         delivery_location: pointToWkt(input.deliveryLng, input.deliveryLat),
         total_price: Math.round(totalPrice * 100) / 100,
         delivery_fee: 0,
-        payment_method: "cash",
+        payment_method: paymentMethod,
         payment_status: "pending",
       })
       .select("id")
@@ -138,6 +145,52 @@ export async function placeOrder(
         console.error("placeOrder: cleanup failed for order:", order.id, cleanupError);
       }
       return { error: itemsError.message };
+    }
+
+    // For eSewa payments, create transaction record and return form data for redirect
+    if (paymentMethod === "esewa") {
+      const roundedTotal = Math.round(totalPrice * 100) / 100;
+      const transactionUuid = generateTransactionUuid(order.id);
+
+      const { error: txnError } = await supabase
+        .from("esewa_transactions")
+        .insert({
+          order_id: order.id,
+          transaction_uuid: transactionUuid,
+          product_code: process.env.ESEWA_PRODUCT_CODE ?? "EPAYTEST",
+          amount: roundedTotal,
+          tax_amount: 0,
+          service_charge: 0,
+          delivery_charge: 0,
+          total_amount: roundedTotal,
+          status: "PENDING",
+        });
+
+      if (txnError) {
+        console.error("placeOrder: failed to create eSewa transaction:", txnError);
+        // Clean up order and items
+        await supabase.from("order_items").delete().eq("order_id", order.id);
+        await supabase.from("orders").delete().eq("id", order.id);
+        return { error: "Failed to initiate eSewa payment" };
+      }
+
+      const esewaForm = buildPaymentFormData({
+        orderId: order.id,
+        amount: roundedTotal,
+        deliveryCharge: 0,
+        transactionUuid,
+      });
+
+      return {
+        data: {
+          orderId: order.id,
+          esewaForm: {
+            orderId: order.id,
+            url: esewaForm.url,
+            fields: esewaForm.fields,
+          },
+        },
+      };
     }
 
     return { data: { orderId: order.id } };
@@ -243,7 +296,7 @@ export async function cancelOrder(
 
     const { data: existing, error: fetchError } = await supabase
       .from("orders")
-      .select("status, consumer_id")
+      .select("status, consumer_id, payment_method, payment_status")
       .eq("id", orderId)
       .single();
 
@@ -265,9 +318,37 @@ export async function cancelOrder(
       };
     }
 
+    // For eSewa orders that have been paid (escrowed), mark as refunded
+    let newPaymentStatus = existing.payment_status;
+    if (
+      existing.payment_method === "esewa" &&
+      existing.payment_status === PaymentStatus.Escrowed
+    ) {
+      newPaymentStatus = PaymentStatus.Refunded;
+
+      // Mark the transaction as refunded
+      const { error: txnError } = await supabase
+        .from("esewa_transactions")
+        .update({
+          status: "REFUNDED",
+          refunded_at: new Date().toISOString(),
+        })
+        .eq("order_id", orderId)
+        .eq("status", "COMPLETE");
+
+      if (txnError) {
+        console.error("cancelOrder: failed to update eSewa transaction:", txnError);
+        // Note: actual eSewa refund would need merchant API integration
+        // For now we record the intent; admin processes the actual refund
+      }
+    }
+
     const { error } = await supabase
       .from("orders")
-      .update({ status: OrderStatus.Cancelled })
+      .update({
+        status: OrderStatus.Cancelled,
+        payment_status: newPaymentStatus,
+      })
       .eq("id", orderId);
 
     if (error) {
@@ -293,7 +374,7 @@ export async function confirmDelivery(
 
     const { data: existing, error: fetchError } = await supabase
       .from("orders")
-      .select("status, consumer_id")
+      .select("status, consumer_id, payment_method, payment_status")
       .eq("id", orderId)
       .single();
 
@@ -309,11 +390,35 @@ export async function confirmDelivery(
       return { error: "Only in-transit orders can be confirmed as delivered" };
     }
 
+    // For eSewa orders: release escrow on delivery confirmation
+    // For cash orders: mark as collected (rider collected cash from consumer)
+    let newPaymentStatus: string;
+    if (existing.payment_method === "esewa" && existing.payment_status === PaymentStatus.Escrowed) {
+      newPaymentStatus = PaymentStatus.Settled;
+
+      // Mark escrow as released in the transaction record
+      const { error: txnError } = await supabase
+        .from("esewa_transactions")
+        .update({
+          escrow_released_at: new Date().toISOString(),
+          status: "SETTLED",
+        })
+        .eq("order_id", orderId)
+        .eq("status", "COMPLETE");
+
+      if (txnError) {
+        console.error("confirmDelivery: failed to update eSewa transaction:", txnError);
+        // Non-fatal: we still mark the order as delivered
+      }
+    } else {
+      newPaymentStatus = PaymentStatus.Collected;
+    }
+
     const { error } = await supabase
       .from("orders")
       .update({
         status: OrderStatus.Delivered,
-        payment_status: "collected",
+        payment_status: newPaymentStatus,
       })
       .eq("id", orderId);
 
