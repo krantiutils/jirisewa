@@ -37,8 +37,7 @@ export default function TripPlanPage() {
   const [error, setError] = useState<string | null>(null);
   const [optimizing, setOptimizing] = useState(false);
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async () => {
     const [tripResult, stopsResult, ordersResult] = await Promise.all([
       getTrip(tripId),
       listTripStops(tripId),
@@ -53,12 +52,16 @@ export default function TripPlanPage() {
 
     if (stopsResult.data) setStops(stopsResult.data);
     if (ordersResult.data) setOrders(ordersResult.data);
-    setLoading(false);
   }, [tripId]);
 
   useEffect(() => {
+    async function loadAll() {
+      setLoading(true);
+      await reload();
+      setLoading(false);
+    }
     loadAll();
-  }, [loadAll]);
+  }, [reload]);
 
   const handleOptimize = useCallback(async () => {
     setOptimizing(true);
@@ -80,9 +83,9 @@ export default function TripPlanPage() {
       setError(optResult.error);
     }
 
-    await loadAll();
+    await reload();
     setOptimizing(false);
-  }, [tripId, stops.length, orders.length, loadAll]);
+  }, [tripId, stops.length, orders.length, reload]);
 
   if (loading) {
     return (
