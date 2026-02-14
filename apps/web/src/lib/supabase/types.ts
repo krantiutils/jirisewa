@@ -256,7 +256,7 @@ export type Database = {
           delivery_fee_weight: number;
           delivery_distance_km: number | null;
           parent_order_id: string | null;
-          payment_method: "cash" | "esewa" | "khalti";
+          payment_method: "cash" | "esewa" | "khalti" | "connectips";
           payment_status: "pending" | "escrowed" | "collected" | "settled" | "refunded";
           created_at: string;
           updated_at: string;
@@ -529,6 +529,127 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "esewa_transactions_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      khalti_transactions: {
+        Row: {
+          id: string;
+          order_id: string;
+          purchase_order_id: string;
+          pidx: string | null;
+          amount_paisa: number;
+          total_amount: number;
+          status: string;
+          khalti_status: string | null;
+          transaction_id: string | null;
+          khalti_fee: number | null;
+          refunded: boolean;
+          verified_at: string | null;
+          escrow_released_at: string | null;
+          refunded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          purchase_order_id: string;
+          pidx?: string | null;
+          amount_paisa: number;
+          total_amount: number;
+          status?: string;
+          khalti_status?: string | null;
+          transaction_id?: string | null;
+          khalti_fee?: number | null;
+          refunded?: boolean;
+          verified_at?: string | null;
+          escrow_released_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          purchase_order_id?: string;
+          pidx?: string | null;
+          amount_paisa?: number;
+          total_amount?: number;
+          status?: string;
+          khalti_status?: string | null;
+          transaction_id?: string | null;
+          khalti_fee?: number | null;
+          refunded?: boolean;
+          verified_at?: string | null;
+          escrow_released_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "khalti_transactions_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      connectips_transactions: {
+        Row: {
+          id: string;
+          order_id: string;
+          txn_id: string;
+          reference_id: string;
+          amount_paisa: number;
+          total_amount: number;
+          status: string;
+          connectips_status: string | null;
+          verified_at: string | null;
+          escrow_released_at: string | null;
+          refunded_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          txn_id: string;
+          reference_id: string;
+          amount_paisa: number;
+          total_amount: number;
+          status?: string;
+          connectips_status?: string | null;
+          verified_at?: string | null;
+          escrow_released_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          txn_id?: string;
+          reference_id?: string;
+          amount_paisa?: number;
+          total_amount?: number;
+          status?: string;
+          connectips_status?: string | null;
+          verified_at?: string | null;
+          escrow_released_at?: string | null;
+          refunded_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "connectips_transactions_order_id_fkey";
             columns: ["order_id"];
             isOneToOne: false;
             referencedRelation: "orders";
@@ -1181,7 +1302,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "disputed";
-      payment_method: "cash" | "esewa" | "khalti";
+      payment_method: "cash" | "esewa" | "khalti" | "connectips";
       payment_status: "pending" | "escrowed" | "collected" | "settled" | "refunded";
       role_rated: "farmer" | "consumer" | "rider";
       trip_status: "scheduled" | "in_transit" | "completed" | "cancelled";

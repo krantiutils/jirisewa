@@ -55,7 +55,7 @@ export interface PlaceOrderInput {
   deliveryAddress: string;
   deliveryLat: number;
   deliveryLng: number;
-  paymentMethod: "cash" | "esewa";
+  paymentMethod: "cash" | "esewa" | "khalti" | "connectips";
   deliveryFee: number;
   deliveryFeeBase: number;
   deliveryFeeDistance: number;
@@ -70,6 +70,18 @@ export interface PlaceOrderInput {
 }
 
 export interface EsewaPaymentFormData {
+  orderId: string;
+  url: string;
+  fields: Record<string, string>;
+}
+
+export interface KhaltiPaymentData {
+  orderId: string;
+  paymentUrl: string;
+  pidx: string;
+}
+
+export interface ConnectIPSPaymentFormData {
   orderId: string;
   url: string;
   fields: Record<string, string>;

@@ -12,14 +12,14 @@ import { calculateDeliveryFee } from "@/lib/actions/delivery-fee";
 import { Button } from "@/components/ui/Button";
 import type { Locale } from "@/lib/i18n";
 import type { LatLng } from "@/lib/map";
-import type { EsewaPaymentFormData, DeliveryFeeEstimate } from "@/lib/types/order";
+import type { EsewaPaymentFormData, ConnectIPSPaymentFormData, DeliveryFeeEstimate } from "@/lib/types/order";
 
 const LocationPicker = dynamic(
   () => import("@/components/map/LocationPicker"),
   { ssr: false },
 );
 
-type PaymentMethodOption = "cash" | "esewa";
+type PaymentMethodOption = "cash" | "esewa" | "khalti" | "connectips";
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const t = useTranslations("checkout");
   const { cart, hydrated, clearCart } = useCart();
   const esewaFormRef = useRef<HTMLFormElement>(null);
+  const connectipsFormRef = useRef<HTMLFormElement>(null);
 
   const [deliveryLocation, setDeliveryLocation] = useState<LatLng | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -35,6 +36,7 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [esewaForm, setEsewaForm] = useState<EsewaPaymentFormData | null>(null);
+  const [connectipsForm, setConnectipsForm] = useState<ConnectIPSPaymentFormData | null>(null);
 
   const [feeEstimate, setFeeEstimate] = useState<DeliveryFeeEstimate | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
@@ -50,12 +52,18 @@ export default function CheckoutPage() {
     }
   }, [hydrated, cart.items.length, locale, router]);
 
-  // Auto-submit the hidden eSewa form when form data is set
+  // Auto-submit hidden payment forms when form data is set
   useEffect(() => {
     if (esewaForm && esewaFormRef.current) {
       esewaFormRef.current.submit();
     }
   }, [esewaForm]);
+
+  useEffect(() => {
+    if (connectipsForm && connectipsFormRef.current) {
+      connectipsFormRef.current.submit();
+    }
+  }, [connectipsForm]);
 
   // Calculate delivery fee when location changes
   const computeFee = useCallback(async (location: LatLng) => {
@@ -133,7 +141,18 @@ export default function CheckoutPage() {
     // For eSewa: redirect to eSewa payment page via hidden form POST
     if (result.data.esewaForm) {
       setEsewaForm(result.data.esewaForm);
-      // Form auto-submits via useEffect above
+      return;
+    }
+
+    // For Khalti: redirect to Khalti payment URL (API-based, not form POST)
+    if (result.data.khaltiPayment) {
+      window.location.href = result.data.khaltiPayment.paymentUrl;
+      return;
+    }
+
+    // For connectIPS: redirect via hidden form POST
+    if (result.data.connectipsForm) {
+      setConnectipsForm(result.data.connectipsForm);
       return;
     }
 
@@ -329,6 +348,70 @@ export default function CheckoutPage() {
                 )}
               </div>
             </button>
+
+            {/* Khalti */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("khalti")}
+              className={`w-full flex items-center gap-3 rounded-lg bg-white p-4 text-left transition-all ${
+                paymentMethod === "khalti"
+                  ? "ring-2 ring-primary border-primary"
+                  : "border-2 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 shrink-0">
+                <span className="text-lg font-bold text-purple-600">K</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">{t("khaltiPayment")}</p>
+                <p className="text-sm text-gray-500">{t("khaltiPaymentHint")}</p>
+              </div>
+              <div
+                className={`h-5 w-5 rounded-full border-2 shrink-0 ${
+                  paymentMethod === "khalti"
+                    ? "border-primary bg-primary"
+                    : "border-gray-300"
+                }`}
+              >
+                {paymentMethod === "khalti" && (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
+
+            {/* connectIPS */}
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("connectips")}
+              className={`w-full flex items-center gap-3 rounded-lg bg-white p-4 text-left transition-all ${
+                paymentMethod === "connectips"
+                  ? "ring-2 ring-primary border-primary"
+                  : "border-2 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 shrink-0">
+                <span className="text-sm font-bold text-blue-600">IPS</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">{t("connectipsPayment")}</p>
+                <p className="text-sm text-gray-500">{t("connectipsPaymentHint")}</p>
+              </div>
+              <div
+                className={`h-5 w-5 rounded-full border-2 shrink-0 ${
+                  paymentMethod === "connectips"
+                    ? "border-primary bg-primary"
+                    : "border-gray-300"
+                }`}
+              >
+                {paymentMethod === "connectips" && (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-white" />
+                  </div>
+                )}
+              </div>
+            </button>
           </div>
         </section>
 
@@ -398,10 +481,14 @@ export default function CheckoutPage() {
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                {paymentMethod === "esewa" ? t("redirectingToEsewa") : t("placing")}
+                {paymentMethod === "cash" ? t("placing") : t("redirectingToPayment")}
               </>
             ) : paymentMethod === "esewa" ? (
               t("payWithEsewa")
+            ) : paymentMethod === "khalti" ? (
+              t("payWithKhalti")
+            ) : paymentMethod === "connectips" ? (
+              t("payWithConnectIPS")
             ) : (
               t("placeOrder")
             )}
@@ -418,6 +505,20 @@ export default function CheckoutPage() {
           className="hidden"
         >
           {Object.entries(esewaForm.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+        </form>
+      )}
+
+      {/* Hidden form for connectIPS redirect (POST to connectIPS gateway) */}
+      {connectipsForm && (
+        <form
+          ref={connectipsFormRef}
+          method="POST"
+          action={connectipsForm.url}
+          className="hidden"
+        >
+          {Object.entries(connectipsForm.fields).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}
         </form>

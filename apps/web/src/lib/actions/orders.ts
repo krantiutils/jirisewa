@@ -2,7 +2,9 @@
 
 import { OrderStatus, OrderItemStatus, PaymentStatus, PayoutStatus, PingStatus } from "@jirisewa/shared";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { buildPaymentFormData, generateTransactionUuid } from "@/lib/esewa";
+import { buildPaymentFormData as buildEsewaFormData, generateTransactionUuid } from "@/lib/esewa";
+import { initiatePayment as initiateKhaltiPayment, generatePurchaseOrderId, toPaisa as khaltiToPaisa } from "@/lib/khalti";
+import { buildPaymentFormData as buildConnectIPSFormData, generateTxnId, generateReferenceId, toPaisa as connectipsToPaisa } from "@/lib/connectips";
 import { findAndPingRiders } from "@/lib/actions/pings";
 import type { ActionResult } from "@/lib/types/action";
 import type {
@@ -10,6 +12,8 @@ import type {
   OrderWithDetails,
   OrderItemWithDetails,
   EsewaPaymentFormData,
+  KhaltiPaymentData,
+  ConnectIPSPaymentFormData,
 } from "@/lib/types/order";
 import type { ReorderItemAvailability } from "@/lib/helpers/orders";
 import {
@@ -41,7 +45,7 @@ function pointToWkt(lng: number, lat: number): string {
  */
 export async function placeOrder(
   input: PlaceOrderInput,
-): Promise<ActionResult<{ orderId: string; esewaForm?: EsewaPaymentFormData }>> {
+): Promise<ActionResult<{ orderId: string; esewaForm?: EsewaPaymentFormData; khaltiPayment?: KhaltiPaymentData; connectipsForm?: ConnectIPSPaymentFormData }>> {
   try {
     if (input.items.length === 0) {
       return { error: "Cart is empty" };
@@ -110,7 +114,7 @@ export async function placeOrder(
       0,
     );
 
-    const validPaymentMethods = ["cash", "esewa"] as const;
+    const validPaymentMethods = ["cash", "esewa", "khalti", "connectips"] as const;
     const paymentMethod = validPaymentMethods.includes(input.paymentMethod as typeof validPaymentMethods[number])
       ? input.paymentMethod
       : "cash";
@@ -251,7 +255,7 @@ export async function placeOrder(
         return { error: "Failed to initiate eSewa payment" };
       }
 
-      const esewaForm = buildPaymentFormData({
+      const esewaForm = buildEsewaFormData({
         orderId: order.id,
         amount: roundedTotal,
         deliveryCharge: deliveryFee,
@@ -272,6 +276,125 @@ export async function placeOrder(
             orderId: order.id,
             url: esewaForm.url,
             fields: esewaForm.fields,
+          },
+        },
+      };
+    }
+
+    // For Khalti payments, create transaction record and initiate via API
+    if (paymentMethod === "khalti") {
+      const roundedTotal = Math.round(totalPrice * 100) / 100;
+      const totalWithDelivery = roundedTotal + deliveryFee;
+      const purchaseOrderId = generatePurchaseOrderId(order.id);
+      const amountPaisa = khaltiToPaisa(totalWithDelivery);
+
+      const { error: txnError } = await supabase
+        .from("khalti_transactions")
+        .insert({
+          order_id: order.id,
+          purchase_order_id: purchaseOrderId,
+          amount_paisa: amountPaisa,
+          total_amount: totalWithDelivery,
+          status: "PENDING",
+        });
+
+      if (txnError) {
+        console.error("placeOrder: failed to create Khalti transaction:", txnError);
+        await supabase.from("farmer_payouts").delete().eq("order_id", order.id);
+        await supabase.from("order_items").delete().eq("order_id", order.id);
+        await supabase.from("orders").delete().eq("id", order.id);
+        return { error: "Failed to initiate Khalti payment" };
+      }
+
+      const khaltiResponse = await initiateKhaltiPayment({
+        orderId: order.id,
+        purchaseOrderId,
+        purchaseOrderName: "JiriSewa Order",
+        amountPaisa,
+      });
+
+      if (!khaltiResponse) {
+        console.error("placeOrder: Khalti API initiation failed");
+        await supabase.from("khalti_transactions").delete().eq("purchase_order_id", purchaseOrderId);
+        await supabase.from("farmer_payouts").delete().eq("order_id", order.id);
+        await supabase.from("order_items").delete().eq("order_id", order.id);
+        await supabase.from("orders").delete().eq("id", order.id);
+        return { error: "Failed to initiate Khalti payment" };
+      }
+
+      // Store the pidx for later lookup
+      await supabase
+        .from("khalti_transactions")
+        .update({ pidx: khaltiResponse.pidx })
+        .eq("purchase_order_id", purchaseOrderId);
+
+      // Trigger rider matching (non-fatal)
+      try {
+        await findAndPingRiders(order.id);
+      } catch (pingErr) {
+        console.error("placeOrder: rider ping failed (non-fatal):", pingErr);
+      }
+
+      return {
+        data: {
+          orderId: order.id,
+          khaltiPayment: {
+            orderId: order.id,
+            paymentUrl: khaltiResponse.payment_url,
+            pidx: khaltiResponse.pidx,
+          },
+        },
+      };
+    }
+
+    // For connectIPS payments, create transaction record and return form data
+    if (paymentMethod === "connectips") {
+      const roundedTotal = Math.round(totalPrice * 100) / 100;
+      const totalWithDelivery = roundedTotal + deliveryFee;
+      const txnId = generateTxnId(order.id);
+      const referenceId = generateReferenceId(order.id);
+      const amountPaisa = connectipsToPaisa(totalWithDelivery);
+
+      const { error: txnError } = await supabase
+        .from("connectips_transactions")
+        .insert({
+          order_id: order.id,
+          txn_id: txnId,
+          reference_id: referenceId,
+          amount_paisa: amountPaisa,
+          total_amount: totalWithDelivery,
+          status: "PENDING",
+        });
+
+      if (txnError) {
+        console.error("placeOrder: failed to create connectIPS transaction:", txnError);
+        await supabase.from("farmer_payouts").delete().eq("order_id", order.id);
+        await supabase.from("order_items").delete().eq("order_id", order.id);
+        await supabase.from("orders").delete().eq("id", order.id);
+        return { error: "Failed to initiate connectIPS payment" };
+      }
+
+      const connectipsForm = buildConnectIPSFormData({
+        orderId: order.id,
+        txnId,
+        referenceId,
+        amountPaisa,
+      });
+
+      // Trigger rider matching (non-fatal)
+      try {
+        await findAndPingRiders(order.id);
+      } catch (pingErr) {
+        console.error("placeOrder: rider ping failed (non-fatal):", pingErr);
+      }
+
+      return {
+        data: {
+          orderId: order.id,
+          connectipsForm: {
+            orderId: order.id,
+            url: connectipsForm.url,
+            fields: connectipsForm.fields,
           },
         },
       };
@@ -695,25 +818,40 @@ export async function cancelOrder(
       };
     }
 
-    // For eSewa orders that have been paid (escrowed), mark as refunded
+    // For digital payment orders that have been paid (escrowed), mark as refunded
     let newPaymentStatus = existing.payment_status;
-    if (
-      existing.payment_method === "esewa" &&
-      existing.payment_status === PaymentStatus.Escrowed
-    ) {
+    const isDigitalPayment = ["esewa", "khalti", "connectips"].includes(existing.payment_method);
+    if (isDigitalPayment && existing.payment_status === PaymentStatus.Escrowed) {
       newPaymentStatus = PaymentStatus.Refunded;
+      const now = new Date().toISOString();
 
-      const { error: txnError } = await supabase
-        .from("esewa_transactions")
-        .update({
-          status: "REFUNDED",
-          refunded_at: new Date().toISOString(),
-        })
-        .eq("order_id", orderId)
-        .eq("status", "COMPLETE");
-
-      if (txnError) {
-        console.error("cancelOrder: failed to update eSewa transaction:", txnError);
+      if (existing.payment_method === "esewa") {
+        const { error: txnError } = await supabase
+          .from("esewa_transactions")
+          .update({ status: "REFUNDED", refunded_at: now })
+          .eq("order_id", orderId)
+          .eq("status", "COMPLETE");
+        if (txnError) {
+          console.error("cancelOrder: failed to update eSewa transaction:", txnError);
+        }
+      } else if (existing.payment_method === "khalti") {
+        const { error: txnError } = await supabase
+          .from("khalti_transactions")
+          .update({ status: "REFUNDED", refunded: true, refunded_at: now })
+          .eq("order_id", orderId)
+          .eq("status", "COMPLETE");
+        if (txnError) {
+          console.error("cancelOrder: failed to update Khalti transaction:", txnError);
+        }
+      } else if (existing.payment_method === "connectips") {
+        const { error: txnError } = await supabase
+          .from("connectips_transactions")
+          .update({ status: "REFUNDED", refunded_at: now })
+          .eq("order_id", orderId)
+          .eq("status", "COMPLETE");
+        if (txnError) {
+          console.error("cancelOrder: failed to update connectIPS transaction:", txnError);
+        }
       }
     }
 
@@ -790,20 +928,40 @@ export async function confirmDelivery(
     }
 
     let newPaymentStatus: string;
-    if (existing.payment_method === "esewa" && existing.payment_status === PaymentStatus.Escrowed) {
+    const isDigitalEscrowed = ["esewa", "khalti", "connectips"].includes(existing.payment_method)
+      && existing.payment_status === PaymentStatus.Escrowed;
+
+    if (isDigitalEscrowed) {
       newPaymentStatus = PaymentStatus.Settled;
+      const now = new Date().toISOString();
 
-      const { error: txnError } = await supabase
-        .from("esewa_transactions")
-        .update({
-          escrow_released_at: new Date().toISOString(),
-          status: "SETTLED",
-        })
-        .eq("order_id", orderId)
-        .eq("status", "COMPLETE");
-
-      if (txnError) {
-        console.error("confirmDelivery: failed to update eSewa transaction:", txnError);
+      if (existing.payment_method === "esewa") {
+        const { error: txnError } = await supabase
+          .from("esewa_transactions")
+          .update({ escrow_released_at: now, status: "SETTLED" })
+          .eq("order_id", orderId)
+          .eq("status", "COMPLETE");
+        if (txnError) {
+          console.error("confirmDelivery: failed to update eSewa transaction:", txnError);
+        }
+      } else if (existing.payment_method === "khalti") {
+        const { error: txnError } = await supabase
+          .from("khalti_transactions")
+          .update({ escrow_released_at: now, status: "SETTLED" })
+          .eq("order_id", orderId)
+          .eq("status", "COMPLETE");
+        if (txnError) {
+          console.error("confirmDelivery: failed to update Khalti transaction:", txnError);
+        }
+      } else if (existing.payment_method === "connectips") {
+        const { error: txnError } = await supabase
+          .from("connectips_transactions")
+          .update({ escrow_released_at: now, status: "SETTLED" })
+          .eq("order_id", orderId)
+          .eq("status", "COMPLETE");
+        if (txnError) {
+          console.error("confirmDelivery: failed to update connectIPS transaction:", txnError);
+        }
       }
     } else {
       newPaymentStatus = PaymentStatus.Collected;
