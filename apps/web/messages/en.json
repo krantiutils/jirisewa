@@ -122,6 +122,7 @@
     "comingSoon": "Coming soon",
     "backToMarketplace": "Back to marketplace",
     "addToCart": "Add to Cart",
+    "addedToCart": "Added!",
     "quantity": "Quantity (kg)",
     "pricePerKg": "NPR {price}/kg",
     "totalPrice": "Total: NPR {total}",
@@ -138,9 +139,70 @@
     "shareTitle": "{name} — Fresh from {farmer} on JiriSewa",
     "photos": "Photos"
   },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "emptyHint": "Browse the marketplace to find fresh produce.",
+    "browseMarketplace": "Browse Marketplace",
+    "continueShopping": "Continue shopping",
+    "clearAll": "Clear all",
+    "fromFarmer": "from {farmer}",
+    "remove": "Remove",
+    "subtotal": "Subtotal",
+    "deliveryFeeNote": "Delivery fee will be calculated after rider matching.",
+    "proceedToCheckout": "Proceed to Checkout"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "orderSummary": "Order Summary",
+    "deliveryLocation": "Delivery Location",
+    "deliveryLocationHint": "Tap the map to set your delivery location.",
+    "deliveryLocationSet": "Delivery location set",
+    "selectDeliveryLocation": "Please select a delivery location on the map.",
+    "payment": "Payment",
+    "cashOnDelivery": "Cash on Delivery",
+    "cashOnDeliveryHint": "Pay the rider in cash when your order is delivered.",
+    "subtotal": "Subtotal",
+    "deliveryFee": "Delivery Fee",
+    "calculatedAfterMatch": "Calculated after rider match",
+    "total": "Total",
+    "placeOrder": "Place Order",
+    "placing": "Placing order..."
+  },
   "orders": {
-    "title": "Orders",
-    "comingSoon": "Coming soon"
+    "title": "My Orders",
+    "loading": "Loading...",
+    "noOrders": "No orders yet",
+    "browseMarketplace": "Browse Marketplace",
+    "moreItems": "more",
+    "totalItems": "{count} items",
+    "tabs": {
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "status": {
+      "pending": "Pending",
+      "matched": "Matched",
+      "picked_up": "Picked Up",
+      "in_transit": "In Transit",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "disputed": "Disputed"
+    },
+    "orderDetail": "Order Details",
+    "notFound": "Order not found",
+    "backToOrders": "Back to orders",
+    "items": "Items",
+    "fromFarmer": "from {farmer}",
+    "deliveryAddress": "Delivery Address",
+    "riderInfo": "Rider Information",
+    "subtotal": "Subtotal",
+    "deliveryFee": "Delivery Fee",
+    "total": "Total",
+    "paymentMethod": "Payment Method",
+    "confirmDelivery": "Confirm Delivery Received",
+    "cancelOrder": "Cancel Order",
+    "deliveryConfirmed": "Delivery confirmed! Thank you."
   },
   "farmer": {
     "title": "Farmer Dashboard",
@@ -247,7 +309,9 @@
       "starting": "Starting...",
       "completeTrip": "Complete Trip",
       "completing": "Completing...",
-      "cancel": "Cancel Trip"
+      "cancel": "Cancel Trip",
+      "confirmPickup": "Confirm Pickup",
+      "startDelivery": "Start Delivery"
     },
     "tripStatus": {
       "scheduled": "Scheduled",

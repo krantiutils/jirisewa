@@ -122,6 +122,7 @@
     "comingSoon": "छिट्टै आउँदैछ",
     "backToMarketplace": "बजारमा फर्कनुहोस्",
     "addToCart": "कार्टमा थप्नुहोस्",
+    "addedToCart": "थपियो!",
     "quantity": "परिमाण (केजी)",
     "pricePerKg": "रु {price}/केजी",
     "totalPrice": "जम्मा: रु {total}",
@@ -138,9 +139,70 @@
     "shareTitle": "{name} — जिरीसेवामा {farmer} बाट ताजा",
     "photos": "तस्बिरहरू"
   },
+  "cart": {
+    "title": "किनमेल कार्ट",
+    "empty": "तपाईंको कार्ट खाली छ",
+    "emptyHint": "ताजा उत्पादन फेला पार्न बजार हेर्नुहोस्।",
+    "browseMarketplace": "बजार हेर्नुहोस्",
+    "continueShopping": "किनमेल जारी राख्नुहोस्",
+    "clearAll": "सबै हटाउनुहोस्",
+    "fromFarmer": "{farmer} बाट",
+    "remove": "हटाउनुहोस्",
+    "subtotal": "उपजम्मा",
+    "deliveryFeeNote": "सवारी चालक मिलान पछि डेलिभरी शुल्क गणना गरिनेछ।",
+    "proceedToCheckout": "चेकआउटमा जानुहोस्"
+  },
+  "checkout": {
+    "title": "चेकआउट",
+    "orderSummary": "अर्डर सारांश",
+    "deliveryLocation": "डेलिभरी स्थान",
+    "deliveryLocationHint": "डेलिभरी स्थान सेट गर्न नक्सामा ट्याप गर्नुहोस्।",
+    "deliveryLocationSet": "डेलिभरी स्थान सेट भयो",
+    "selectDeliveryLocation": "कृपया नक्सामा डेलिभरी स्थान चयन गर्नुहोस्।",
+    "payment": "भुक्तानी",
+    "cashOnDelivery": "डेलिभरीमा नगद",
+    "cashOnDeliveryHint": "अर्डर डेलिभर भएपछि सवारी चालकलाई नगदमा तिर्नुहोस्।",
+    "subtotal": "उपजम्मा",
+    "deliveryFee": "डेलिभरी शुल्क",
+    "calculatedAfterMatch": "चालक मिलान पछि गणना गरिनेछ",
+    "total": "जम्मा",
+    "placeOrder": "अर्डर गर्नुहोस्",
+    "placing": "अर्डर गर्दै..."
+  },
   "orders": {
-    "title": "अर्डरहरू",
-    "comingSoon": "छिट्टै आउँदैछ"
+    "title": "मेरा अर्डरहरू",
+    "loading": "लोड हुँदैछ...",
+    "noOrders": "अहिलेसम्म कुनै अर्डर छैन",
+    "browseMarketplace": "बजार हेर्नुहोस्",
+    "moreItems": "थप",
+    "totalItems": "{count} वस्तु",
+    "tabs": {
+      "active": "सक्रिय",
+      "completed": "सम्पन्न"
+    },
+    "status": {
+      "pending": "बाँकी",
+      "matched": "मिलेको",
+      "picked_up": "उठाइएको",
+      "in_transit": "बाटोमा",
+      "delivered": "डेलिभर भयो",
+      "cancelled": "रद्द",
+      "disputed": "विवाद"
+    },
+    "orderDetail": "अर्डर विवरण",
+    "notFound": "अर्डर भेटिएन",
+    "backToOrders": "अर्डरहरूमा फर्कनुहोस्",
+    "items": "वस्तुहरू",
+    "fromFarmer": "{farmer} बाट",
+    "deliveryAddress": "डेलिभरी ठेगाना",
+    "riderInfo": "सवारी चालक जानकारी",
+    "subtotal": "उपजम्मा",
+    "deliveryFee": "डेलिभरी शुल्क",
+    "total": "जम्मा",
+    "paymentMethod": "भुक्तानी विधि",
+    "confirmDelivery": "डेलिभरी प्राप्त पुष्टि गर्नुहोस्",
+    "cancelOrder": "अर्डर रद्द गर्नुहोस्",
+    "deliveryConfirmed": "डेलिभरी पुष्टि भयो! धन्यवाद।"
   },
   "farmer": {
     "title": "किसान ड्यासबोर्ड",
@@ -247,7 +309,9 @@
       "starting": "सुरु गर्दै...",
       "completeTrip": "यात्रा पूरा गर्नुहोस्",
       "completing": "पूरा गर्दै...",
-      "cancel": "यात्रा रद्द गर्नुहोस्"
+      "cancel": "यात्रा रद्द गर्नुहोस्",
+      "confirmPickup": "पिकअप पुष्टि गर्नुहोस्",
+      "startDelivery": "डेलिभरी सुरु गर्नुहोस्"
     },
     "tripStatus": {
       "scheduled": "तालिकाबद्ध",

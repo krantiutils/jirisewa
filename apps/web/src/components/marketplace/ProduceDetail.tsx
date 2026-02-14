@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
+import { useCart } from "@/lib/cart";
 import type { ProduceListingWithDetails } from "@/lib/supabase/types";
 import type { Locale } from "@/lib/i18n";
 
@@ -25,8 +26,10 @@ interface ProduceDetailProps {
 export function ProduceDetail({ listing }: ProduceDetailProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("produce");
+  const { addItem } = useCart();
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
 
   const name = locale === "ne" ? listing.name_ne : listing.name_en;
   const categoryName =
@@ -170,9 +173,26 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                 </span>
               </div>
 
-              <Button variant="primary" className="mt-4 w-full h-14 text-base">
+              <Button
+                variant="primary"
+                className="mt-4 w-full h-14 text-base"
+                onClick={() => {
+                  addItem({
+                    listingId: listing.id,
+                    farmerId: listing.farmer_id,
+                    quantityKg: quantity,
+                    pricePerKg: listing.price_per_kg,
+                    nameEn: listing.name_en,
+                    nameNe: listing.name_ne,
+                    farmerName: listing.farmer.name,
+                    photo: listing.photos[0] ?? null,
+                  });
+                  setAdded(true);
+                  setTimeout(() => setAdded(false), 2000);
+                }}
+              >
                 <ShoppingCart className="mr-2 h-5 w-5" />
-                {t("addToCart")}
+                {added ? t("addedToCart") : t("addToCart")}
               </Button>
             </div>
 

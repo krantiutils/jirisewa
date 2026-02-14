@@ -11,6 +11,8 @@ import Link from "next/link";
 import { routing } from "@/i18n/routing";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AuthProvider } from "@/components/AuthProvider";
+import { CartProvider } from "@/lib/cart";
+import { CartHeaderLink } from "@/components/cart/CartHeaderLink";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -67,32 +69,43 @@ export default async function LocaleLayout({
       <body className={`${outfit.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
-            <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
-              <div className="flex items-center gap-6">
-                <Link
-                  href={`/${locale}`}
-                  className="text-lg font-bold text-primary"
-                >
-                  {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
-                </Link>
-                <nav className="hidden items-center gap-4 text-sm sm:flex">
+            <CartProvider>
+              <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
+                <div className="flex items-center gap-6">
                   <Link
-                    href={`/${locale}/produce`}
-                    className="text-gray-600 hover:text-primary transition-colors"
+                    href={`/${locale}`}
+                    className="text-lg font-bold text-primary"
                   >
-                    {nav("produce")}
+                    {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
                   </Link>
-                  <Link
-                    href={`/${locale}/rider/dashboard`}
-                    className="text-gray-600 hover:text-primary transition-colors"
-                  >
-                    {nav("rider")}
-                  </Link>
-                </nav>
-              </div>
-              <LanguageSwitcher />
-            </header>
-            {children}
+                  <nav className="hidden items-center gap-4 text-sm sm:flex">
+                    <Link
+                      href={`/${locale}/marketplace`}
+                      className="text-gray-600 hover:text-primary transition-colors"
+                    >
+                      {nav("marketplace")}
+                    </Link>
+                    <Link
+                      href={`/${locale}/orders`}
+                      className="text-gray-600 hover:text-primary transition-colors"
+                    >
+                      {nav("orders")}
+                    </Link>
+                    <Link
+                      href={`/${locale}/rider/dashboard`}
+                      className="text-gray-600 hover:text-primary transition-colors"
+                    >
+                      {nav("rider")}
+                    </Link>
+                  </nav>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CartHeaderLink locale={locale} />
+                  <LanguageSwitcher />
+                </div>
+              </header>
+              {children}
+            </CartProvider>
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

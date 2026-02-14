@@ -24,10 +24,8 @@ function routeToWkt(coordinates: [number, number][]): string {
   return `LINESTRING(${points})`;
 }
 
-export interface ActionResult<T = void> {
-  data?: T;
-  error?: string;
-}
+export type { ActionResult } from "@/lib/types/action";
+import type { ActionResult } from "@/lib/types/action";
 
 export async function createTrip(
   input: CreateTripInput,

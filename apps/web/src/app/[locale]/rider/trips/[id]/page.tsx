@@ -14,7 +14,14 @@ import {
   completeTrip,
   cancelTrip,
 } from "@/lib/actions/trips";
+import {
+  listOrdersByTrip,
+  confirmPickup,
+  startDelivery,
+} from "@/lib/actions/orders";
+import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import type { Trip } from "@/lib/types/trip";
+import type { OrderWithDetails, OrderStatus } from "@/lib/types/order";
 
 const TripRouteMap = dynamic(
   () => import("@/components/map/TripRouteMap"),
@@ -29,9 +36,17 @@ export default function TripDetailPage() {
   const tripId = params.id as string;
 
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [matchedOrders, setMatchedOrders] = useState<OrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const loadOrders = useCallback(async () => {
+    const result = await listOrdersByTrip(tripId);
+    if (result.data) {
+      setMatchedOrders(result.data);
+    }
+  }, [tripId]);
 
   useEffect(() => {
     async function load() {
@@ -44,11 +59,12 @@ export default function TripDetailPage() {
         setTrip(result.data);
       }
 
+      await loadOrders();
       setLoading(false);
     }
 
     load();
-  }, [tripId]);
+  }, [tripId, loadOrders]);
 
   const handleStart = useCallback(async () => {
     setActionLoading(true);
@@ -198,14 +214,43 @@ export default function TripDetailPage() {
           </dl>
         </Card>
 
-        {/* Matched Orders — placeholder */}
+        {/* Matched Orders */}
         <Card className="mb-6">
           <h2 className="mb-4 text-lg font-semibold">
             {t("tripDetail.matchedOrders")}
           </h2>
-          <p className="text-sm text-gray-500">
-            {t("tripDetail.noMatchedOrders")}
-          </p>
+          {matchedOrders.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              {t("tripDetail.noMatchedOrders")}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {matchedOrders.map((order) => (
+                <MatchedOrderCard
+                  key={order.id}
+                  order={order}
+                  locale={locale}
+                  onAction={async (action) => {
+                    setActionLoading(true);
+                    setError(null);
+                    let result;
+                    if (action === "pickup") {
+                      result = await confirmPickup(order.id);
+                    } else if (action === "deliver") {
+                      result = await startDelivery(order.id);
+                    }
+                    if (result?.error) {
+                      setError(result.error);
+                    } else {
+                      await loadOrders();
+                    }
+                    setActionLoading(false);
+                  }}
+                  disabled={actionLoading}
+                />
+              ))}
+            </div>
+          )}
         </Card>
 
         {/* Action Buttons */}
@@ -253,6 +298,69 @@ export default function TripDetailPage() {
             </Button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function MatchedOrderCard({
+  order,
+  locale,
+  onAction,
+  disabled,
+}: {
+  order: OrderWithDetails;
+  locale: string;
+  onAction: (action: "pickup" | "deliver") => Promise<void>;
+  disabled: boolean;
+}) {
+  const t = useTranslations("rider");
+  const totalKg = order.items.reduce((sum, i) => sum + i.quantity_kg, 0);
+  const itemNames = order.items
+    .map((i) =>
+      locale === "ne" ? i.listing?.name_ne : i.listing?.name_en,
+    )
+    .filter(Boolean)
+    .join(", ");
+
+  return (
+    <div className="rounded-md border border-gray-200 p-3">
+      <div className="flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {itemNames}
+          </p>
+          <p className="text-xs text-gray-500">
+            {totalKg} kg &middot; NPR {Number(order.total_price).toFixed(0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-500 truncate">
+            {order.delivery_address}
+          </p>
+        </div>
+        <OrderStatusBadge status={order.status as OrderStatus} />
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        {order.status === "matched" && (
+          <Button
+            variant="primary"
+            className="h-9 flex-1 text-xs"
+            onClick={() => onAction("pickup")}
+            disabled={disabled}
+          >
+            {t("tripDetail.confirmPickup")}
+          </Button>
+        )}
+        {order.status === "picked_up" && (
+          <Button
+            variant="primary"
+            className="h-9 flex-1 text-xs"
+            onClick={() => onAction("deliver")}
+            disabled={disabled}
+          >
+            {t("tripDetail.startDelivery")}
+          </Button>
+        )}
       </div>
     </div>
   );

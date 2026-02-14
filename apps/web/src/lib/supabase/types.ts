@@ -266,6 +266,20 @@ export type Database = {
             referencedRelation: "users";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "orders_rider_id_fkey";
+            columns: ["rider_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "orders_rider_trip_id_fkey";
+            columns: ["rider_trip_id"];
+            isOneToOne: false;
+            referencedRelation: "rider_trips";
+            referencedColumns: ["id"];
+          },
         ];
       };
       order_items: {
