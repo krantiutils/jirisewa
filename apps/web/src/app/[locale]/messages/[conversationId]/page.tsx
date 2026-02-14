@@ -45,6 +45,7 @@ export default function ConversationPage() {
   const [inputText, setInputText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -121,23 +122,37 @@ export default function ConversationPage() {
     if (!text && !imageFile) return;
 
     setSending(true);
+    setError(null);
 
     try {
       if (imageFile) {
-        // Upload image first, then send as image message
         const formData = new FormData();
         formData.append("file", imageFile);
         const uploadResult = await uploadChatImage(formData);
+        if (uploadResult.error) {
+          setError(uploadResult.error);
+          setSending(false);
+          return;
+        }
         if (uploadResult.data) {
-          await sendMessage(conversationId, uploadResult.data.url, "image");
+          const sendResult = await sendMessage(conversationId, uploadResult.data.url, "image");
+          if (sendResult.error) {
+            setError(sendResult.error);
+            setSending(false);
+            return;
+          }
         }
         setImageFile(null);
         setImagePreview(null);
       }
 
       if (text) {
-        await sendMessage(conversationId, text, "text");
-        setInputText("");
+        const sendResult = await sendMessage(conversationId, text, "text");
+        if (sendResult.error) {
+          setError(sendResult.error);
+        } else {
+          setInputText("");
+        }
       }
     } finally {
       setSending(false);
@@ -157,7 +172,8 @@ export default function ConversationPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      return; // 5MB limit
+      setError("File too large (max 5MB)");
+      return;
     }
 
     setImageFile(file);
@@ -331,6 +347,13 @@ export default function ConversationPage() {
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="border-t border-gray-200 px-4 py-2">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
 
       {/* Image preview */}
       {imagePreview && (
