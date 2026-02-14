@@ -45,11 +45,6 @@ test.describe("Create Produce Listing", () => {
     await categorySelect.selectOption({ index: 1 });
 
     // Fill name fields
-    const nameEnInput = page
-      .locator("input")
-      .filter({ hasText: "" })
-      .nth(0);
-    // Use labels to find inputs more reliably
     await page
       .getByPlaceholder("e.g. Fresh Tomatoes")
       .fill("E2E Test Spinach");
