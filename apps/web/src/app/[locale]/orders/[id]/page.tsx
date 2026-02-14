@@ -390,10 +390,28 @@ export default function OrderDetailPage() {
               <span className="text-gray-500">{t("subtotal")}</span>
               <span>NPR {Number(order.total_price).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm font-medium">
               <span className="text-gray-500">{t("deliveryFee")}</span>
               <span>NPR {Number(order.delivery_fee).toFixed(2)}</span>
             </div>
+            {Number(order.delivery_fee) > 0 && (
+              <div className="ml-4 space-y-1 border-l-2 border-gray-100 pl-3">
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>{t("baseFee")}</span>
+                  <span>NPR {Number(order.delivery_fee_base).toFixed(2)}</span>
+                </div>
+                {order.delivery_distance_km != null && (
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>{t("distanceFee", { km: Number(order.delivery_distance_km).toFixed(1) })}</span>
+                    <span>NPR {Number(order.delivery_fee_distance).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>{t("weightFee", { kg: order.items.reduce((s, i) => s + Number(i.quantity_kg), 0).toFixed(1) })}</span>
+                  <span>NPR {Number(order.delivery_fee_weight).toFixed(2)}</span>
+                </div>
+              </div>
+            )}
             <div className="border-t pt-2">
               <div className="flex justify-between font-bold">
                 <span>{t("total")}</span>

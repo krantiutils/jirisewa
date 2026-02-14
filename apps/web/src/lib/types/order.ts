@@ -39,6 +39,11 @@ export interface PlaceOrderInput {
   deliveryLat: number;
   deliveryLng: number;
   paymentMethod: "cash" | "esewa";
+  deliveryFee: number;
+  deliveryFeeBase: number;
+  deliveryFeeDistance: number;
+  deliveryFeeWeight: number;
+  deliveryDistanceKm: number | null;
   items: {
     listingId: string;
     farmerId: string;
@@ -51,4 +56,13 @@ export interface EsewaPaymentFormData {
   orderId: string;
   url: string;
   fields: Record<string, string>;
+}
+
+export interface DeliveryFeeEstimate {
+  baseFee: number;
+  distanceFee: number;
+  weightFee: number;
+  totalFee: number;
+  distanceKm: number;
+  weightKg: number;
 }
