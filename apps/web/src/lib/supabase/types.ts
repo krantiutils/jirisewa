@@ -988,6 +988,167 @@ export type Database = {
           },
         ];
       };
+      subscription_plans: {
+        Row: {
+          id: string;
+          farmer_id: string;
+          name_en: string;
+          name_ne: string;
+          description_en: string | null;
+          description_ne: string | null;
+          price: number;
+          frequency: "weekly" | "biweekly" | "monthly";
+          items: Array<{ category_en: string; category_ne: string; approx_kg: number }>;
+          max_subscribers: number;
+          delivery_day: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          farmer_id: string;
+          name_en: string;
+          name_ne: string;
+          description_en?: string | null;
+          description_ne?: string | null;
+          price: number;
+          frequency?: "weekly" | "biweekly" | "monthly";
+          items?: Array<{ category_en: string; category_ne: string; approx_kg: number }>;
+          max_subscribers?: number;
+          delivery_day?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          farmer_id?: string;
+          name_en?: string;
+          name_ne?: string;
+          description_en?: string | null;
+          description_ne?: string | null;
+          price?: number;
+          frequency?: "weekly" | "biweekly" | "monthly";
+          items?: Array<{ category_en: string; category_ne: string; approx_kg: number }>;
+          max_subscribers?: number;
+          delivery_day?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_farmer_id_fkey";
+            columns: ["farmer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          plan_id: string;
+          consumer_id: string;
+          status: "active" | "paused" | "cancelled";
+          next_delivery_date: string;
+          payment_method: "cash" | "esewa" | "khalti";
+          created_at: string;
+          updated_at: string;
+          paused_at: string | null;
+          cancelled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          plan_id: string;
+          consumer_id: string;
+          status?: "active" | "paused" | "cancelled";
+          next_delivery_date: string;
+          payment_method?: "cash" | "esewa" | "khalti";
+          created_at?: string;
+          updated_at?: string;
+          paused_at?: string | null;
+          cancelled_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          plan_id?: string;
+          consumer_id?: string;
+          status?: "active" | "paused" | "cancelled";
+          next_delivery_date?: string;
+          payment_method?: "cash" | "esewa" | "khalti";
+          created_at?: string;
+          updated_at?: string;
+          paused_at?: string | null;
+          cancelled_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscriptions_consumer_id_fkey";
+            columns: ["consumer_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      subscription_deliveries: {
+        Row: {
+          id: string;
+          subscription_id: string;
+          order_id: string | null;
+          scheduled_date: string;
+          actual_items: Array<{ category_en: string; category_ne: string; approx_kg: number }> | null;
+          status: "scheduled" | "order_created" | "delivered" | "skipped";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          subscription_id: string;
+          order_id?: string | null;
+          scheduled_date: string;
+          actual_items?: Array<{ category_en: string; category_ne: string; approx_kg: number }> | null;
+          status?: "scheduled" | "order_created" | "delivered" | "skipped";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          subscription_id?: string;
+          order_id?: string | null;
+          scheduled_date?: string;
+          actual_items?: Array<{ category_en: string; category_ne: string; approx_kg: number }> | null;
+          status?: "scheduled" | "order_created" | "delivered" | "skipped";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscription_deliveries_subscription_id_fkey";
+            columns: ["subscription_id"];
+            isOneToOne: false;
+            referencedRelation: "subscriptions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscription_deliveries_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1056,6 +1217,9 @@ export type Database = {
       order_item_status: "pending_pickup" | "picked_up" | "unavailable";
       payout_status: "pending" | "settled" | "refunded";
       ping_status: "pending" | "accepted" | "declined" | "expired";
+      subscription_frequency: "weekly" | "biweekly" | "monthly";
+      subscription_status: "active" | "paused" | "cancelled";
+      subscription_delivery_status: "scheduled" | "order_created" | "delivered" | "skipped";
     };
   };
 };
