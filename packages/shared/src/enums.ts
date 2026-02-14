@@ -48,3 +48,10 @@ export enum RoleRated {
   Consumer = "consumer",
   Rider = "rider",
 }
+
+export enum PingStatus {
+  Pending = "pending",
+  Accepted = "accepted",
+  Declined = "declined",
+  Expired = "expired",
+}

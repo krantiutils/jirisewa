@@ -7,7 +7,9 @@ import { TripStatus } from "@jirisewa/shared";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TripStatusBadge } from "@/components/rider/TripStatusBadge";
+import { PingNotificationPanel } from "@/components/rider/PingNotificationPanel";
 import { listTrips } from "@/lib/actions/trips";
+import { usePingSubscription } from "@/lib/hooks/usePingSubscription";
 import type { Trip } from "@/lib/types/trip";
 
 type TabKey = "upcoming" | "active" | "completed";
@@ -64,6 +66,7 @@ export default function RiderDashboard() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { pings, removePing } = usePingSubscription();
 
   useEffect(() => {
     async function load() {
@@ -136,6 +139,14 @@ export default function RiderDashboard() {
           <div className="mb-4 rounded-md border-2 border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
+        )}
+
+        {/* Ping notifications — shown on active tab */}
+        {activeTab === "active" && pings.length > 0 && (
+          <PingNotificationPanel
+            pings={pings}
+            onPingRemoved={removePing}
+          />
         )}
 
         {/* Trip List */}
