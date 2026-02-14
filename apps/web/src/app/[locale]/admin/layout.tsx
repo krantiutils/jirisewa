@@ -1,5 +1,4 @@
 import { setRequestLocale } from "next-intl/server";
-import { getTranslations } from "next-intl/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { AdminSidebar } from "./_components/AdminSidebar";
 
@@ -16,8 +15,6 @@ export default async function AdminLayout({
   setRequestLocale(locale);
 
   await requireAdmin(locale);
-
-  const t = await getTranslations("admin");
 
   return (
     <div className="flex min-h-[calc(100vh-57px)]">

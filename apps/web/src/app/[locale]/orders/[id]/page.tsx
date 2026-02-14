@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -82,18 +82,14 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [esewaForm, setEsewaForm] = useState<EsewaPaymentFormData | null>(null);
-  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
 
-  // Show payment status message from URL params (after eSewa redirect)
-  useEffect(() => {
+  // Derive payment status message from URL params (after eSewa redirect)
+  const paymentMessage = useMemo(() => {
     const paymentParam = searchParams.get("payment");
-    if (paymentParam === "success") {
-      setPaymentMessage(t("paymentSuccess"));
-    } else if (paymentParam === "failed") {
-      setPaymentMessage(t("paymentFailed"));
-    } else if (paymentParam === "verification_failed") {
-      setPaymentMessage(t("paymentVerificationFailed"));
-    }
+    if (paymentParam === "success") return t("paymentSuccess");
+    if (paymentParam === "failed") return t("paymentFailed");
+    if (paymentParam === "verification_failed") return t("paymentVerificationFailed");
+    return null;
   }, [searchParams, t]);
 
   // Auto-submit eSewa form when set

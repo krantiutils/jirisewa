@@ -28,7 +28,6 @@ const statusColors: Record<string, "primary" | "secondary" | "accent"> = {
 export function OrderCard({ order, ratingStatus }: OrderCardProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("orders");
-  const tRatings = useTranslations("ratings");
   const [expanded, setExpanded] = useState(false);
   const [ratingModal, setRatingModal] = useState<{
     ratedId: string;
