@@ -59,8 +59,6 @@ test.describe("Farmer Order Management", () => {
     await page.goto("/en/orders");
     await page.waitForLoadState("networkidle");
 
-    // Start on Active tab
-    const activeTab = page.getByRole("button", { name: "Active" });
     const completedTab = page.getByRole("button", { name: "Completed" });
 
     // Screenshot: active orders tab

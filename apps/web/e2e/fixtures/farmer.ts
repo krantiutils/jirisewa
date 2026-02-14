@@ -12,6 +12,7 @@ export const test = base.extend<{
   farmerDashboard: async ({ page }, use) => {
     await page.goto("/en/farmer/dashboard");
     await page.waitForLoadState("networkidle");
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 });
