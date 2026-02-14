@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
+import 'package:jirisewa_mobile/core/services/session_service.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
-import 'package:jirisewa_mobile/features/auth/screens/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,36 +20,33 @@ Future<void> main() async {
     ),
   );
 
-  runApp(const JiriSewaApp());
+  final sessionService = SessionService(Supabase.instance.client);
+
+  runApp(JiriSewaApp(sessionService: sessionService));
 }
 
-class JiriSewaApp extends StatelessWidget {
-  const JiriSewaApp({super.key});
+class JiriSewaApp extends StatefulWidget {
+  final SessionService sessionService;
+
+  const JiriSewaApp({super.key, required this.sessionService});
+
+  @override
+  State<JiriSewaApp> createState() => _JiriSewaAppState();
+}
+
+class _JiriSewaAppState extends State<JiriSewaApp> {
+  late final _router = buildRouter(widget.sessionService);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'JiriSewa',
-      theme: buildAppTheme(),
-      home: const AuthGate(),
-      debugShowCheckedModeBanner: false,
+    return SessionProvider(
+      service: widget.sessionService,
+      child: MaterialApp.router(
+        title: 'JiriSewa',
+        theme: buildAppTheme(),
+        routerConfig: _router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
-  }
-}
-
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
-
-    if (session != null) {
-      return const Scaffold(
-        body: Center(child: Text('JiriSewa')),
-      );
-    }
-
-    return const LoginScreen();
   }
 }
