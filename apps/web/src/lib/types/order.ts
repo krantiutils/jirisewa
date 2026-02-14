@@ -38,10 +38,17 @@ export interface PlaceOrderInput {
   deliveryAddress: string;
   deliveryLat: number;
   deliveryLng: number;
+  paymentMethod: "cash" | "esewa";
   items: {
     listingId: string;
     farmerId: string;
     quantityKg: number;
     pricePerKg: number;
   }[];
+}
+
+export interface EsewaPaymentFormData {
+  orderId: string;
+  url: string;
+  fields: Record<string, string>;
 }

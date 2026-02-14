@@ -29,8 +29,10 @@ export enum PaymentMethod {
 
 export enum PaymentStatus {
   Pending = "pending",
+  Escrowed = "escrowed",
   Collected = "collected",
   Settled = "settled",
+  Refunded = "refunded",
 }
 
 export enum VehicleType {
