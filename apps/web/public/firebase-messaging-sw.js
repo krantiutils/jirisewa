@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 // Firebase Cloud Messaging service worker for background push notifications.
 // This file MUST be at the root of the public directory for FCM to discover it.
 
