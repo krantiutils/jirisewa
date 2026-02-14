@@ -14,6 +14,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 const TEST_FARMER_PHONE = "+9779800000001";
+const TEST_FARMER_EMAIL = "e2e-farmer@jirisewa.test";
 const TEST_FARMER_NAME = "E2E Test Farmer";
 const TEST_FARM_NAME = "E2E Test Farm";
 const TEST_PASSWORD = "e2e-test-password-jirisewa-2026";
@@ -36,21 +37,33 @@ setup("authenticate as farmer and seed data", async ({ page }) => {
   });
 
   // --- Create or find the test farmer user ---
+  // Use email+password auth for local E2E tests (phone auth requires an SMS
+  // provider which isn't available in local Supabase). The user profile still
+  // stores the phone number for app-level display.
   const { data: existingUsers } = await supabase.auth.admin.listUsers();
   let userId: string;
 
+  const normalizedPhone = TEST_FARMER_PHONE.replace(/^\+/, "");
   const existingUser = existingUsers?.users?.find(
-    (u) => u.phone === TEST_FARMER_PHONE,
+    (u) =>
+      u.email === TEST_FARMER_EMAIL ||
+      u.phone === TEST_FARMER_PHONE ||
+      u.phone === normalizedPhone,
   );
 
   if (existingUser) {
     userId = existingUser.id;
-    // Ensure password is set for programmatic login
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.auth.admin as any).updateUser(userId, { password: TEST_PASSWORD });
+    // Ensure email and password are set for programmatic login
+    await supabase.auth.admin.updateUserById(userId, {
+      email: TEST_FARMER_EMAIL,
+      email_confirm: true,
+      password: TEST_PASSWORD,
+    });
   } else {
     const { data: newUser, error: createError } =
       await supabase.auth.admin.createUser({
+        email: TEST_FARMER_EMAIL,
+        email_confirm: true,
         phone: TEST_FARMER_PHONE,
         phone_confirm: true,
         password: TEST_PASSWORD,
@@ -164,7 +177,7 @@ setup("authenticate as farmer and seed data", async ({ page }) => {
         apikey: SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({
-        phone: TEST_FARMER_PHONE,
+        email: TEST_FARMER_EMAIL,
         password: TEST_PASSWORD,
       }),
     },
@@ -256,11 +269,16 @@ async function seedTestOrder(
 ) {
   // Create a test consumer
   const consumerPhone = "+9779800000002";
+  const consumerEmail = "e2e-consumer@jirisewa.test";
   const { data: existingUsers } = await supabase.auth.admin.listUsers();
   let consumerId: string;
 
+  const normalizedConsumerPhone = consumerPhone.replace(/^\+/, "");
   const existingConsumer = existingUsers?.users?.find(
-    (u) => u.phone === consumerPhone,
+    (u) =>
+      u.email === consumerEmail ||
+      u.phone === consumerPhone ||
+      u.phone === normalizedConsumerPhone,
   );
 
   if (existingConsumer) {
@@ -268,6 +286,8 @@ async function seedTestOrder(
   } else {
     const { data: newConsumer, error: consumerError } =
       await supabase.auth.admin.createUser({
+        email: consumerEmail,
+        email_confirm: true,
         phone: consumerPhone,
         phone_confirm: true,
       });

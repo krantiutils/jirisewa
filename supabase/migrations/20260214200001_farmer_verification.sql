@@ -127,6 +127,11 @@ CREATE POLICY "Admin view all verification docs"
 -- Update search_produce_listings to include farmer_verified
 -- and boost verified farmers in results
 -- ==========================================================
+DROP FUNCTION IF EXISTS search_produce_listings(
+    double precision, double precision, double precision, uuid,
+    numeric, numeric, text, text, integer, integer
+);
+
 CREATE OR REPLACE FUNCTION search_produce_listings(
     p_lat double precision,
     p_lng double precision,

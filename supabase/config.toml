@@ -1,10 +1,8 @@
-[project]
-id = "jirisewa"
-name = "JiriSewa"
+project_id = "jirisewa"
 
 [db]
 port = 54322
-major_version = 16
+major_version = 17
 
 [db.pooler]
 enabled = false
@@ -24,8 +22,17 @@ schemas = ["public"]
 enabled = true
 site_url = "http://localhost:3000"
 
-[auth.external.phone]
-enabled = true
+[auth.sms]
+enable_signup = true
+enable_confirmations = false
+template = "Your code is {{ .Code }}"
+max_frequency = "0s"
+
+[auth.sms.test_otp]
+9779800000001 = "123456"
+9779800000002 = "123456"
+9779800000003 = "123456"
+9779800000004 = "123456"
 
 [storage]
 enabled = true
