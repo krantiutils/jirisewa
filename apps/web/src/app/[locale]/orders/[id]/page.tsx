@@ -19,6 +19,7 @@ import {
   FileText,
   AlertTriangle,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { OrderStatus } from "@jirisewa/shared";
 import {
   getOrder,
@@ -34,6 +35,27 @@ import { Button } from "@/components/ui/Button";
 import type { OrderWithDetails } from "@/lib/types/order";
 import type { EsewaPaymentFormData } from "@/lib/types/order";
 import type { Locale } from "@/lib/i18n";
+import { parseGeoPoint } from "@/lib/types/trip";
+
+const RiderTrackingSection = dynamic(
+  () => import("@/components/orders/RiderTrackingSection"),
+  { ssr: false },
+);
+
+/**
+ * Parse delivery_location (PostGIS geography) into {lat, lng}.
+ * Handles both GeoJSON and WKT from Supabase.
+ */
+function parseDeliveryLocation(
+  value: unknown,
+): { lat: number; lng: number } | null {
+  if (!value || typeof value !== "string") return null;
+  try {
+    return parseGeoPoint(value);
+  } catch {
+    return null;
+  }
+}
 
 const STATUS_STEPS: OrderStatus[] = [
   OrderStatus.Pending,
@@ -308,6 +330,21 @@ export default function OrderDetailPage() {
             </div>
           </section>
         )}
+
+        {/* Rider tracking map */}
+        {order.rider_trip_id &&
+          !isCancelled &&
+          !isDelivered &&
+          (() => {
+            const deliveryLoc = parseDeliveryLocation(order.delivery_location);
+            return deliveryLoc ? (
+              <RiderTrackingSection
+                tripId={order.rider_trip_id}
+                deliveryLocation={deliveryLoc}
+                orderStatus={order.status}
+              />
+            ) : null;
+          })()}
 
         {/* Items */}
         <section className="mt-6">
