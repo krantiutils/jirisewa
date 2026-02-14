@@ -155,6 +155,9 @@ export async function getFarmerAnalytics(
   if (ratingResult.error) {
     return { success: false, error: ratingResult.error.message };
   }
+  if (userResult.error) {
+    return { success: false, error: userResult.error.message };
+  }
 
   const fulfillmentRow = (fulfillmentResult.data as FulfillmentRate[])?.[0] ?? {
     total_orders: 0,
