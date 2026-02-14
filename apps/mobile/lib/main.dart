@@ -1,12 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
+import 'package:jirisewa_mobile/core/services/session_service.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/core/services/push_notification_service.dart';
-import 'package:jirisewa_mobile/features/auth/screens/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,93 +28,33 @@ Future<void> main() async {
   // Initialize push notification service
   await PushNotificationService.instance.initialize();
 
-  runApp(const JiriSewaApp());
+  final sessionService = SessionService(Supabase.instance.client);
+
+  runApp(JiriSewaApp(sessionService: sessionService));
 }
 
-class JiriSewaApp extends StatelessWidget {
-  const JiriSewaApp({super.key});
+class JiriSewaApp extends StatefulWidget {
+  final SessionService sessionService;
+
+  const JiriSewaApp({super.key, required this.sessionService});
+
+  @override
+  State<JiriSewaApp> createState() => _JiriSewaAppState();
+}
+
+class _JiriSewaAppState extends State<JiriSewaApp> {
+  late final _router = buildRouter(widget.sessionService);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'JiriSewa',
-      theme: buildAppTheme(),
-      home: const AuthGate(),
-      debugShowCheckedModeBanner: false,
+    return SessionProvider(
+      service: widget.sessionService,
+      child: MaterialApp.router(
+        title: 'JiriSewa',
+        theme: buildAppTheme(),
+        routerConfig: _router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
-  }
-}
-
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
-
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  StreamSubscription<RemoteMessage>? _foregroundMessageSub;
-  late final StreamSubscription<AuthState> _authSubscription;
-  Session? _currentSession;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentSession = Supabase.instance.client.auth.currentSession;
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (data) {
-        if (!mounted) return;
-        setState(() {
-          _currentSession = data.session;
-        });
-        if (data.session != null) {
-          _setupPushNotifications();
-        }
-      },
-    );
-
-    if (_currentSession != null) {
-      _setupPushNotifications();
-    }
-  }
-
-  Future<void> _setupPushNotifications() async {
-    await PushNotificationService.instance.requestPermissionAndRegister();
-
-    // Avoid duplicate listeners
-    _foregroundMessageSub?.cancel();
-
-    _foregroundMessageSub =
-        PushNotificationService.instance.onForegroundMessage((message) {
-      if (!mounted) return;
-      if (message.notification != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${message.notification!.title ?? ''}: ${message.notification!.body ?? ''}',
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _foregroundMessageSub?.cancel();
-    _authSubscription.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_currentSession != null) {
-      return const Scaffold(
-        body: Center(child: Text('JiriSewa')),
-      );
-    }
-
-    return const LoginScreen();
   }
 }

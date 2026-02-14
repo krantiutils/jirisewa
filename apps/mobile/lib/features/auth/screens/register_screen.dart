@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
+import 'package:jirisewa_mobile/core/services/session_service.dart';
 
 enum UserRole { farmer, consumer, rider }
 
@@ -124,9 +128,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      // Navigate to home
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } catch (_) {
+      // Refresh session service so it picks up the new profile/roles,
+      // then GoRouter redirect navigates to /home.
+      final session = SessionProvider.read(context);
+      await session.refreshProfile();
+
+      if (!mounted) return;
+      context.go(AppRoutes.home);
+    } on PostgrestException catch (e) {
+      setState(() {
+        _loading = false;
+        _error = 'Registration failed: ${e.message}';
+      });
+    } catch (e) {
+      debugPrint('Registration error: $e');
       setState(() {
         _loading = false;
         _error = 'Registration failed. Please try again.';

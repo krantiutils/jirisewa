@@ -1,9 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:jirisewa_mobile/core/phone_validation.dart';
-import 'package:jirisewa_mobile/features/auth/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -95,24 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (response.user != null) {
-        // Check if user has completed registration
-        final profile = await _supabase
-            .from('users')
-            .select('name')
-            .eq('id', response.user!.id)
-            .maybeSingle();
-
-        if (!mounted) return;
-
+        // SessionService picks up the auth state change via onAuthStateChange,
+        // fetches the profile, then notifies listeners. GoRouter's
+        // refreshListenable triggers redirect: → /register or /home.
+        // No manual navigation needed here.
         setState(() => _loading = false);
-
-        if (profile == null || profile['name'] == null) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const RegisterScreen()),
-          );
-        } else {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
       } else {
         setState(() {
           _loading = false;
