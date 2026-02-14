@@ -148,7 +148,8 @@ CREATE POLICY notifications_update ON notifications
 -- ==========================================================
 -- RPC: create_notification
 -- Server-side function to create a notification and return
--- device tokens for FCM push. Called by edge functions.
+-- device tokens for FCM push. Called by edge functions only.
+-- Restricted to service_role — authenticated users cannot call this.
 -- ==========================================================
 CREATE OR REPLACE FUNCTION create_notification(
     p_user_id uuid,
@@ -249,3 +250,10 @@ BEGIN
     RETURN v_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================================================
+-- Access control: restrict create_notification to service_role
+-- Authenticated users must not call this directly.
+-- ==========================================================
+REVOKE EXECUTE ON FUNCTION create_notification FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION create_notification TO service_role;

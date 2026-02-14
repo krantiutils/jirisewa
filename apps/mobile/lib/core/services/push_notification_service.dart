@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -22,6 +24,7 @@ class PushNotificationService {
   FirebaseMessaging? _messaging;
   String? _currentToken;
   bool _initialized = false;
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
   /// Initialize FCM and register background handler.
   /// Call this once during app startup, after Firebase.initializeApp().
@@ -94,7 +97,11 @@ class PushNotificationService {
 
   /// Listen for token refreshes and re-register when they occur.
   void _listenForTokenRefresh() {
-    _messaging!.onTokenRefresh.listen((newToken) async {
+    // Cancel any existing subscription to prevent leaks
+    _tokenRefreshSubscription?.cancel();
+
+    _tokenRefreshSubscription =
+        _messaging!.onTokenRefresh.listen((newToken) async {
       if (_currentToken != null && _currentToken != newToken) {
         // Deactivate old token
         try {
@@ -117,14 +124,19 @@ class PushNotificationService {
   }
 
   /// Set up foreground message handler.
-  /// Returns the stream of messages received while the app is in foreground.
-  void onForegroundMessage(void Function(RemoteMessage) handler) {
-    FirebaseMessaging.onMessage.listen(handler);
+  /// Returns a StreamSubscription that must be cancelled by the caller.
+  StreamSubscription<RemoteMessage> onForegroundMessage(
+    void Function(RemoteMessage) handler,
+  ) {
+    return FirebaseMessaging.onMessage.listen(handler);
   }
 
   /// Set up handler for when user taps a notification (app was in background).
-  void onMessageOpenedApp(void Function(RemoteMessage) handler) {
-    FirebaseMessaging.onMessageOpenedApp.listen(handler);
+  /// Returns a StreamSubscription that must be cancelled by the caller.
+  StreamSubscription<RemoteMessage> onMessageOpenedApp(
+    void Function(RemoteMessage) handler,
+  ) {
+    return FirebaseMessaging.onMessageOpenedApp.listen(handler);
   }
 
   /// Check if the app was opened from a terminated state via notification tap.
@@ -151,5 +163,11 @@ class PushNotificationService {
     } catch (e) {
       debugPrint('Failed to unregister FCM token: $e');
     }
+  }
+
+  /// Clean up resources. Call when the service is no longer needed.
+  void dispose() {
+    _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
   }
 }

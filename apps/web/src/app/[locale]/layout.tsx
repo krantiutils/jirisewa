@@ -106,8 +106,8 @@ export default async function LocaleLayout({
                   <CartHeaderLink locale={locale} />
                   <LanguageSwitcher />
                 </div>
-              <PushNotificationManager />
               </header>
+              <PushNotificationManager />
               {children}
             </CartProvider>
           </AuthProvider>

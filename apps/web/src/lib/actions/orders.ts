@@ -53,7 +53,7 @@ export async function placeOrder(
     const listingIds = input.items.map((i) => i.listingId);
     const { data: listings, error: listingError } = await supabase
       .from("produce_listings")
-      .select("id, farmer_id, price_per_kg, available_qty_kg, location")
+      .select("id, farmer_id, price_per_kg, available_qty_kg, location, name_en")
       .in("id", listingIds)
       .eq("is_active", true);
 
@@ -165,7 +165,7 @@ export async function placeOrder(
         existing.qty += item.quantityKg;
       } else {
         farmerNotifications.set(item.farmerId, {
-          name: "produce",
+          name: listing.name_en,
           qty: item.quantityKg,
         });
       }
@@ -481,7 +481,7 @@ export async function confirmPickup(
 
     const { data: existing, error: fetchError } = await supabase
       .from("orders")
-      .select("status, rider_id")
+      .select("status, rider_id, consumer_id")
       .eq("id", orderId)
       .single();
 
@@ -507,18 +507,10 @@ export async function confirmPickup(
       return { error: error.message };
     }
 
-    // Fetch consumer_id to notify them
-    const { data: orderData } = await supabase
-      .from("orders")
-      .select("consumer_id")
-      .eq("id", orderId)
-      .single();
-
-    if (orderData) {
-      notifyRiderPickedUp(orderData.consumer_id, orderId).catch(
-        (err) => console.error("Notification error (rider picked up):", err),
-      );
-    }
+    // Notify consumer that produce was picked up
+    notifyRiderPickedUp(existing.consumer_id, orderId).catch(
+      (err) => console.error("Notification error (rider picked up):", err),
+    );
 
     return {};
   } catch (err) {
