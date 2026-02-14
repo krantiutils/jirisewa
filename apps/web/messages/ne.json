@@ -8,6 +8,7 @@
     "produce": "उत्पादन",
     "marketplace": "बजार",
     "orders": "अर्डरहरू",
+    "subscriptions": "सदस्यताहरू",
     "farmer": "किसान ड्यासबोर्ड",
     "rider": "चालक ड्यासबोर्ड",
     "login": "लगइन",
@@ -701,6 +702,82 @@
       "showing": "{from}-{to} मध्ये {total} देखाउँदै",
       "prev": "अघिल्लो",
       "next": "अर्को"
+    }
+  },
+  "subscriptions": {
+    "title": "सदस्यता बाकसहरू",
+    "subtitle": "हरेक हप्ता ताजा उत्पादन तपाईंको ढोकामा",
+    "loading": "लोड हुँदैछ...",
+    "noPlans": "अहिलेसम्म कुनै सदस्यता योजना उपलब्ध छैन।",
+    "noSubscriptions": "तपाईंको कुनै सक्रिय सदस्यता छैन।",
+    "browseButton": "योजनाहरू हेर्नुहोस्",
+    "tabs": {
+      "browse": "योजनाहरू हेर्नुहोस्",
+      "my": "मेरा सदस्यताहरू"
+    },
+    "frequency": {
+      "weekly": "हप्ताको",
+      "biweekly": "दुई हप्ताको",
+      "monthly": "महिनाको"
+    },
+    "status": {
+      "active": "सक्रिय",
+      "paused": "रोकिएको",
+      "cancelled": "रद्द गरिएको"
+    },
+    "byFarmer": "{name} बाट",
+    "deliveryOn": "{day} मा डेलिभरी",
+    "spotsLeft": "{count} ठाउँ बाँकी",
+    "subscribe": "सदस्यता लिनुहोस्",
+    "subscribing": "सदस्यता लिँदै...",
+    "subscribed": "सदस्यता लिइसक्नुभयो",
+    "full": "भरिएको",
+    "nextDelivery": "अर्को डेलिभरी: {date}",
+    "pausedMessage": "तपाईंको सदस्यता रोकिएको छ। जुनसुकै बेला पुनः सुरु गर्नुहोस्।",
+    "pause": "रोक्नुहोस्",
+    "resume": "पुनः सुरु",
+    "cancel": "रद्द गर्नुहोस्"
+  },
+  "farmerSubscriptions": {
+    "title": "सदस्यता योजनाहरू",
+    "createPlan": "योजना बनाउनुहोस्",
+    "newPlan": "नयाँ सदस्यता योजना",
+    "loading": "लोड हुँदैछ...",
+    "noPlans": "तपाईंसँग अहिलेसम्म कुनै सदस्यता योजना छैन।",
+    "createFirstPlan": "पहिलो योजना बनाउनुहोस्",
+    "active": "सक्रिय",
+    "inactive": "निष्क्रिय",
+    "subscribers": "सदस्यहरू",
+    "deactivate": "निष्क्रिय बनाउनुहोस्",
+    "activate": "सक्रिय बनाउनुहोस्",
+    "nameEn": "नाम (अंग्रेजी)",
+    "nameEnPlaceholder": "जस्तै Weekly Veggie Box",
+    "nameNe": "नाम (नेपाली)",
+    "nameNePlaceholder": "जस्तै हप्ताको तरकारी बाकस",
+    "descriptionEn": "विवरण (अंग्रेजी)",
+    "descriptionNe": "विवरण (नेपाली)",
+    "descriptionPlaceholder": "यस बाकसमा के छ...",
+    "price": "मूल्य (NPR)",
+    "frequency": {
+      "weekly": "हप्ताको",
+      "biweekly": "दुई हप्ताको",
+      "monthly": "महिनाको"
+    },
+    "frequencyWeekly": "हप्ताको",
+    "frequencyBiweekly": "दुई हप्ताको",
+    "frequencyMonthly": "महिनाको",
+    "maxSubscribers": "अधिकतम सदस्य",
+    "deliveryDay": "डेलिभरी दिन",
+    "boxItems": "बाकस सामग्री",
+    "addItem": "थप्नुहोस्",
+    "itemNameEn": "सामान (अंग्रेजी)",
+    "itemNameNe": "सामान (नेपाली)",
+    "cancel": "रद्द गर्नुहोस्",
+    "saving": "सुरक्षित गर्दै...",
+    "createPlanButton": "योजना बनाउनुहोस्",
+    "errors": {
+      "nameRequired": "दुवै भाषामा योजनाको नाम आवश्यक छ।",
+      "priceInvalid": "कृपया मान्य मूल्य प्रविष्ट गर्नुहोस्।"
     }
   },
   "notifications": {
