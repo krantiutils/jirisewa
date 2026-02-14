@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Playwright test files are not React — disable react-hooks rules
+  {
+    files: ["tests/**/*.ts"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    },
+  },
 ]);
 
 export default eslintConfig;

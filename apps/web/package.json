@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next out"
+    "clean": "rm -rf .next out",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:update-snapshots": "playwright test --update-snapshots"
   },
   "dependencies": {
     "@jirisewa/shared": "workspace:*",
@@ -24,6 +27,7 @@
     "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
