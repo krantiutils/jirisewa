@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { getUnreadCount, listNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications";
 
@@ -25,19 +25,26 @@ export function NotificationBell() {
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchUnreadCount = useCallback(async () => {
-    const result = await getUnreadCount();
-    if (result.data !== undefined) {
-      setUnreadCount(result.data);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchUnreadCount();
+    let cancelled = false;
+
+    async function fetchCount() {
+      const result = await getUnreadCount();
+      if (!cancelled && result.data !== undefined) {
+        setUnreadCount(result.data);
+      }
+    }
+
     // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+    const interval = setInterval(fetchCount, 30000);
+    // Initial fetch via interval trigger at 0ms
+    const immediate = setTimeout(fetchCount, 0);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      clearTimeout(immediate);
+    };
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
