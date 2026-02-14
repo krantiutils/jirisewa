@@ -85,3 +85,8 @@ export enum PingStatus {
   Declined = "declined",
   Expired = "expired",
 }
+
+export enum StopType {
+  Pickup = "pickup",
+  Delivery = "delivery",
+}

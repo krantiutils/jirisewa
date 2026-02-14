@@ -19,6 +19,10 @@ export interface RiderTrip {
   available_capacity_kg: number;
   remaining_capacity_kg: number;
   status: TripStatus;
+  total_stops: number;
+  optimized_route: Record<string, unknown> | null;
+  total_distance_km: number | null;
+  estimated_duration_minutes: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +40,10 @@ export interface Trip {
   availableCapacityKg: number;
   remainingCapacityKg: number;
   status: TripStatus;
+  totalStops: number;
+  optimizedRoute: Record<string, unknown> | null;
+  totalDistanceKm: number | null;
+  estimatedDurationMinutes: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,6 +135,10 @@ export function parseRiderTrip(row: RiderTrip): Trip {
     availableCapacityKg: Number(row.available_capacity_kg),
     remainingCapacityKg: Number(row.remaining_capacity_kg),
     status: row.status,
+    totalStops: row.total_stops ?? 0,
+    optimizedRoute: row.optimized_route ?? null,
+    totalDistanceKm: row.total_distance_km != null ? Number(row.total_distance_km) : null,
+    estimatedDurationMinutes: row.estimated_duration_minutes ?? null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
