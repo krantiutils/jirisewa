@@ -40,6 +40,28 @@ export const pickupMarkerIcon = L.divIcon({
   popupAnchor: [0, -18],
 });
 
+/** Numbered stop marker — amber circle with sequence number. */
+export function numberedStopIcon(
+  num: number,
+  type: "pickup" | "delivery",
+  completed = false,
+): L.DivIcon {
+  const bg = completed ? "#9CA3AF" : type === "pickup" ? "#10B981" : "#F59E0B";
+  return L.divIcon({
+    className: "",
+    html: `<div style="
+      width:28px;height:28px;border-radius:50%;
+      background:${bg};border:2px solid #fff;
+      box-shadow:0 2px 4px rgba(0,0,0,0.25);
+      display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:700;color:#fff;font-family:sans-serif;
+    ">${num}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -16],
+  });
+}
+
 /** Delivery destination marker — red pin */
 export const deliveryMarkerIcon = L.divIcon({
   className: "",
