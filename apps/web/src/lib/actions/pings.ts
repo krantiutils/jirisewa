@@ -3,8 +3,10 @@
 import {
   OrderStatus,
   PingStatus,
+  StopType,
   PING_EXPIRY_MS,
   MAX_DETOUR_M,
+  MAX_DETOUR_PERCENTAGE,
   MAX_PINGS_PER_ORDER,
   OSRM_BASE_URL,
 } from "@jirisewa/shared";
@@ -252,14 +254,54 @@ export async function acceptPing(
         .eq("id", ping.trip_id);
     }
 
-    // 6. Recalculate route via OSRM (non-fatal)
+    // 6. Create trip_stops for the new pickup/delivery locations
+    const pickupLocations = ping.pickup_locations as unknown as PingLocation[];
+    const deliveryLocation = ping.delivery_location as unknown as { lat: number; lng: number; address?: string };
+
+    try {
+      // Get current max sequence_order
+      const { data: existingStops } = await supabase
+        .from("trip_stops")
+        .select("sequence_order")
+        .eq("trip_id", ping.trip_id)
+        .order("sequence_order", { ascending: false })
+        .limit(1);
+
+      let nextSeq = (existingStops?.[0]?.sequence_order ?? -1) + 1;
+
+      // Insert pickup stops
+      for (const pl of pickupLocations) {
+        await supabase.from("trip_stops").insert({
+          trip_id: ping.trip_id,
+          stop_type: StopType.Pickup,
+          location: `POINT(${pl.lng} ${pl.lat})`,
+          address: pl.farmerName ?? null,
+          sequence_order: nextSeq++,
+          order_item_ids: [],
+        });
+      }
+
+      // Insert delivery stop
+      await supabase.from("trip_stops").insert({
+        trip_id: ping.trip_id,
+        stop_type: StopType.Delivery,
+        location: `POINT(${deliveryLocation.lng} ${deliveryLocation.lat})`,
+        address: deliveryLocation.address ?? null,
+        sequence_order: nextSeq,
+        order_item_ids: [],
+      });
+    } catch (stopErr) {
+      console.error("acceptPing: failed to create trip stops:", stopErr);
+    }
+
+    // 7. Recalculate and optimize route via OSRM (non-fatal)
     let routeUpdated = false;
     try {
       routeUpdated = await recalculateRouteWithStops(
         supabase,
         ping.trip_id,
-        ping.pickup_locations as unknown as PingLocation[],
-        ping.delivery_location as unknown as { lat: number; lng: number },
+        pickupLocations,
+        deliveryLocation,
       );
     } catch (routeErr) {
       console.error("acceptPing: route recalculation failed:", routeErr);
@@ -357,8 +399,9 @@ export async function listPendingPings(): Promise<ActionResult<OrderPing[]>> {
 /**
  * Recalculate the trip route via OSRM including new pickup/delivery stops.
  *
- * Builds waypoints: current_position → pickups → delivery → trip_destination
- * Then updates rider_trips.route with the new LineString.
+ * Builds waypoints: current_position → pickups → delivery → trip_destination.
+ * Checks detour threshold (MAX_DETOUR_PERCENTAGE) and logs a warning if exceeded.
+ * Updates rider_trips with new route, distance, and duration metadata.
  */
 async function recalculateRouteWithStops(
   supabase: ReturnType<typeof createServiceRoleClient>,
@@ -369,7 +412,7 @@ async function recalculateRouteWithStops(
   // Get the trip's current data
   const { data: trip, error: tripError } = await supabase
     .from("rider_trips")
-    .select("rider_id, destination, route")
+    .select("rider_id, destination, route, total_distance_km")
     .eq("id", tripId)
     .single();
 
@@ -377,6 +420,10 @@ async function recalculateRouteWithStops(
     console.error("recalculateRoute: trip not found:", tripError);
     return false;
   }
+
+  const previousDistanceKm = trip.total_distance_km
+    ? Number(trip.total_distance_km)
+    : null;
 
   // Get rider's latest location as starting point
   const { data: latestLoc } = await supabase
@@ -415,7 +462,6 @@ async function recalculateRouteWithStops(
   if (currentPos) {
     waypoints.push(currentPos);
   } else {
-    // Fallback: use first pickup as starting point
     if (pickupLocations.length > 0) {
       waypoints.push({ lat: pickupLocations[0].lat, lng: pickupLocations[0].lng });
     } else {
@@ -449,14 +495,43 @@ async function recalculateRouteWithStops(
     return false;
   }
 
-  const routeCoords = data.routes[0].geometry.coordinates as [number, number][];
+  const route = data.routes[0];
+  const routeCoords = route.geometry.coordinates as [number, number][];
+  const newDistanceKm = Math.round((route.distance / 1000) * 100) / 100;
+  const newDurationMinutes = Math.round(route.duration / 60);
+
+  // Check detour threshold
+  if (previousDistanceKm != null && previousDistanceKm > 0) {
+    const detourRatio = (newDistanceKm - previousDistanceKm) / previousDistanceKm;
+    if (detourRatio > MAX_DETOUR_PERCENTAGE) {
+      console.warn(
+        `recalculateRoute: detour exceeds threshold. ` +
+          `Previous: ${previousDistanceKm}km, New: ${newDistanceKm}km, ` +
+          `Detour: ${(detourRatio * 100).toFixed(1)}% (max ${MAX_DETOUR_PERCENTAGE * 100}%)`,
+      );
+      // Still update the route but log the warning.
+      // In production, this could reject the order or notify the rider.
+    }
+  }
+
   // Convert GeoJSON [lng, lat] to WKT LINESTRING
   const wktPoints = routeCoords.map(([lng, lat]) => `${lng} ${lat}`).join(",");
   const routeWkt = `LINESTRING(${wktPoints})`;
 
+  // Count stops for this trip
+  const { count: stopCount } = await supabase
+    .from("trip_stops")
+    .select("id", { count: "exact", head: true })
+    .eq("trip_id", tripId);
+
   const { error: updateError } = await supabase
     .from("rider_trips")
-    .update({ route: routeWkt })
+    .update({
+      route: routeWkt,
+      total_distance_km: newDistanceKm,
+      estimated_duration_minutes: newDurationMinutes,
+      total_stops: stopCount ?? 0,
+    })
     .eq("id", tripId);
 
   if (updateError) {
