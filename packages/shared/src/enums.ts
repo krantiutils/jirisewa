@@ -144,3 +144,8 @@ export enum SubscriptionDeliveryStatus {
   Delivered = "delivered",
   Skipped = "skipped",
 }
+
+export enum StopType {
+  Pickup = "pickup",
+  Delivery = "delivery",
+}

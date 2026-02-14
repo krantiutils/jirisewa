@@ -12,6 +12,7 @@ export {
   PING_EXPIRY_MS,
   MAX_DETOUR_M,
   MAX_PINGS_PER_ORDER,
+  MAX_DETOUR_PERCENTAGE,
 } from "./constants";
 export {
   UserRole,
@@ -34,5 +35,6 @@ export {
   SubscriptionFrequency,
   SubscriptionStatus,
   SubscriptionDeliveryStatus,
+  StopType,
 } from "./enums";
 export { normalizePhone, isValidNepalPhone, toE164 } from "./phone";

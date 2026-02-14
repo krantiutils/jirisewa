@@ -35,3 +35,6 @@ export const MAX_DETOUR_M = 5000;
 
 /** Maximum number of riders to ping per order */
 export const MAX_PINGS_PER_ORDER = 10;
+
+/** Maximum acceptable detour percentage when adding a new order mid-trip (20%) */
+export const MAX_DETOUR_PERCENTAGE = 0.20;
