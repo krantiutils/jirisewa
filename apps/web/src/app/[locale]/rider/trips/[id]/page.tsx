@@ -17,11 +17,14 @@ import {
 import {
   listOrdersByTrip,
   confirmPickup,
+  confirmFarmerPickup,
+  markItemsUnavailable,
   startDelivery,
 } from "@/lib/actions/orders";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
+import { OrderItemStatus } from "@jirisewa/shared";
 import type { Trip } from "@/lib/types/trip";
-import type { OrderWithDetails, OrderStatus } from "@/lib/types/order";
+import type { OrderWithDetails, OrderStatus, OrderItemWithDetails } from "@/lib/types/order";
 
 const TripRouteMap = dynamic(
   () => import("@/components/map/TripRouteMap"),
@@ -230,12 +233,16 @@ export default function TripDetailPage() {
                   key={order.id}
                   order={order}
                   locale={locale}
-                  onAction={async (action) => {
+                  onAction={async (action, farmerId) => {
                     setActionLoading(true);
                     setError(null);
                     let result;
-                    if (action === "pickup") {
+                    if (action === "pickup" && farmerId) {
+                      result = await confirmFarmerPickup(order.id, farmerId);
+                    } else if (action === "pickup") {
                       result = await confirmPickup(order.id);
+                    } else if (action === "unavailable" && farmerId) {
+                      result = await markItemsUnavailable(order.id, farmerId);
                     } else if (action === "deliver") {
                       result = await startDelivery(order.id);
                     }
@@ -311,26 +318,30 @@ function MatchedOrderCard({
 }: {
   order: OrderWithDetails;
   locale: string;
-  onAction: (action: "pickup" | "deliver") => Promise<void>;
+  onAction: (action: "pickup" | "deliver" | "unavailable", farmerId?: string) => Promise<void>;
   disabled: boolean;
 }) {
   const t = useTranslations("rider");
   const totalKg = order.items.reduce((sum, i) => sum + i.quantity_kg, 0);
-  const itemNames = order.items
-    .map((i) =>
-      locale === "ne" ? i.listing?.name_ne : i.listing?.name_en,
-    )
-    .filter(Boolean)
-    .join(", ");
+
+  // Group items by farmer for multi-farmer display
+  const farmerGroups = new Map<string, OrderItemWithDetails[]>();
+  for (const item of order.items) {
+    const fid = item.farmer?.id ?? item.farmer_id;
+    const group = farmerGroups.get(fid) ?? [];
+    group.push(item);
+    farmerGroups.set(fid, group);
+  }
+  const sortedGroups = [...farmerGroups.entries()].sort(
+    (a, b) => (a[1][0].pickup_sequence ?? 0) - (b[1][0].pickup_sequence ?? 0),
+  );
+  const isMultiFarmer = sortedGroups.length > 1;
 
   return (
     <div className="rounded-md border border-gray-200 p-3">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">
-            {itemNames}
-          </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-sm font-semibold text-foreground">
             {totalKg} kg &middot; NPR {Number(order.total_price).toFixed(0)}
           </p>
           <p className="mt-1 text-xs text-gray-500 truncate">
@@ -340,28 +351,109 @@ function MatchedOrderCard({
         <OrderStatusBadge status={order.status as OrderStatus} />
       </div>
 
-      <div className="mt-3 flex gap-2">
-        {order.status === "matched" && (
+      {/* Per-farmer pickup sections */}
+      {order.status === "matched" && isMultiFarmer ? (
+        <div className="mt-3 space-y-3">
+          {sortedGroups.map(([farmerId, items], idx) => {
+            const farmerName = items[0].farmer?.name ?? "Unknown";
+            const pickupStatus = items[0].pickup_status;
+            const groupKg = items.reduce((s, i) => s + i.quantity_kg, 0);
+            const itemNames = items
+              .map((i) => (locale === "ne" ? i.listing?.name_ne : i.listing?.name_en))
+              .filter(Boolean)
+              .join(", ");
+            const isPending = pickupStatus === OrderItemStatus.PendingPickup;
+            const isPickedUp = pickupStatus === OrderItemStatus.PickedUp;
+            const isUnavailable = pickupStatus === OrderItemStatus.Unavailable;
+
+            return (
+              <div key={farmerId} className={`rounded-md border p-2 ${
+                isPickedUp ? "border-green-200 bg-green-50" :
+                isUnavailable ? "border-red-200 bg-red-50 opacity-60" :
+                "border-amber-200 bg-amber-50"
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-700">{farmerName}</span>
+                  </div>
+                  <span className={`text-[10px] font-medium ${
+                    isPickedUp ? "text-green-700" :
+                    isUnavailable ? "text-red-700" :
+                    "text-amber-700"
+                  }`}>
+                    {isPickedUp ? t("tripDetail.pickedUpStatus") :
+                     isUnavailable ? t("tripDetail.unavailableStatus") :
+                     t("tripDetail.pendingPickup")}
+                  </span>
+                </div>
+                <p className="mt-1 truncate text-xs text-gray-500">
+                  {itemNames} &middot; {groupKg} kg
+                </p>
+                {isPending && (
+                  <div className="mt-2 flex gap-2">
+                    <Button
+                      variant="primary"
+                      className="h-8 flex-1 text-xs"
+                      onClick={() => onAction("pickup", farmerId)}
+                      disabled={disabled}
+                    >
+                      {t("tripDetail.confirmPickup")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 text-xs text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => onAction("unavailable", farmerId)}
+                      disabled={disabled}
+                    >
+                      {t("tripDetail.markUnavailable")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : order.status === "matched" ? (
+        /* Single-farmer: simple pickup button */
+        <div className="mt-3">
+          <p className="mb-2 truncate text-xs text-gray-500">
+            {order.items
+              .map((i) => (locale === "ne" ? i.listing?.name_ne : i.listing?.name_en))
+              .filter(Boolean)
+              .join(", ")}
+          </p>
           <Button
             variant="primary"
-            className="h-9 flex-1 text-xs"
-            onClick={() => onAction("pickup")}
+            className="h-9 w-full text-xs"
+            onClick={() => onAction("pickup", sortedGroups[0]?.[0])}
             disabled={disabled}
           >
             {t("tripDetail.confirmPickup")}
           </Button>
-        )}
-        {order.status === "picked_up" && (
+        </div>
+      ) : null}
+
+      {/* Start delivery button when all pickups complete */}
+      {order.status === "picked_up" && (
+        <div className="mt-3">
+          {isMultiFarmer && (
+            <p className="mb-2 text-xs text-green-600 font-medium">
+              {t("tripDetail.allPickupsComplete")}
+            </p>
+          )}
           <Button
             variant="primary"
-            className="h-9 flex-1 text-xs"
+            className="h-9 w-full text-xs"
             onClick={() => onAction("deliver")}
             disabled={disabled}
           >
             {t("tripDetail.startDelivery")}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -66,3 +66,15 @@ export enum DevicePlatform {
   Android = "android",
   Ios = "ios",
 }
+
+export enum OrderItemStatus {
+  PendingPickup = "pending_pickup",
+  PickedUp = "picked_up",
+  Unavailable = "unavailable",
+}
+
+export enum PayoutStatus {
+  Pending = "pending",
+  Settled = "settled",
+  Refunded = "refunded",
+}

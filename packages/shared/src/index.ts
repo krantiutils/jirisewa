@@ -20,5 +20,7 @@ export {
   RoleRated,
   NotificationCategory,
   DevicePlatform,
+  OrderItemStatus,
+  PayoutStatus,
 } from "./enums";
 export { normalizePhone, isValidNepalPhone, toE164 } from "./phone";

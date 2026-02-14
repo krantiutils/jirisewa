@@ -179,7 +179,9 @@
     "placeOrder": "Place Order",
     "placing": "Placing order...",
     "payWithEsewa": "Pay with eSewa",
-    "redirectingToEsewa": "Redirecting to eSewa..."
+    "redirectingToEsewa": "Redirecting to eSewa...",
+    "pickupFrom": "Pickup from {farmer}",
+    "multiFarmerNote": "This order includes items from {count} farmers. Each pickup is a separate stop."
   },
   "orders": {
     "title": "My Orders",
@@ -268,7 +270,17 @@
     "reorderUnavailable": "Unavailable",
     "reorderPartial": "{count, plural, one {# item is} other {# items are}} no longer available and will be skipped.",
     "reorderAddToCart": "Add {count, plural, one {# item} other {# items}} to cart",
-    "reorderNoneAvailable": "None of the items from this order are currently available."
+    "reorderNoneAvailable": "None of the items from this order are currently available.",
+    "pickupStatus": "Pickup Status",
+    "pickupStop": "Stop {num}",
+    "pickupStatusPending": "Pending Pickup",
+    "pickupStatusPickedUp": "Picked Up",
+    "pickupStatusUnavailable": "Unavailable",
+    "farmerPayouts": "Farmer Payouts",
+    "payoutPending": "Pending",
+    "payoutSettled": "Settled",
+    "payoutRefunded": "Refunded",
+    "multiFarmerOrder": "Multi-farmer order — items from {count} farms"
   },
   "ratings": {
     "title": "Ratings & Reviews",
@@ -435,7 +447,15 @@
       "completing": "Completing...",
       "cancel": "Cancel Trip",
       "confirmPickup": "Confirm Pickup",
-      "startDelivery": "Start Delivery"
+      "startDelivery": "Start Delivery",
+      "confirmFarmerPickup": "Confirm Pickup — {farmer}",
+      "markUnavailable": "Mark Unavailable",
+      "stopNumber": "Stop {num}",
+      "allPickupsComplete": "All pickups completed",
+      "itemsFromFarmer": "from {farmer}",
+      "pendingPickup": "Pending",
+      "pickedUpStatus": "Picked Up",
+      "unavailableStatus": "Unavailable"
     },
     "tripStatus": {
       "scheduled": "Scheduled",
