@@ -495,7 +495,17 @@
       "markDisputed": "विवादित चिन्ह लगाउनुहोस्",
       "marking": "चिन्ह लगाउँदै...",
       "cancelOrder": "अर्डर रद्द गर्नुहोस्",
-      "cancelling": "रद्द गर्दै..."
+      "cancelling": "रद्द गर्दै...",
+      "confirmCancel": "के तपाईं यो अर्डर रद्द गर्न निश्चित हुनुहुन्छ? यो पूर्ववत गर्न सकिँदैन।",
+      "statusLabels": {
+        "pending": "विचाराधीन",
+        "matched": "मिलाइयो",
+        "picked_up": "उठाइयो",
+        "in_transit": "बाटोमा",
+        "delivered": "डेलिभर भयो",
+        "cancelled": "रद्द भयो",
+        "disputed": "विवादित"
+      }
     },
     "disputes": {
       "title": "विवाद समाधान",

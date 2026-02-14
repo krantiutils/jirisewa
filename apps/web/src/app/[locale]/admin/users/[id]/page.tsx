@@ -16,6 +16,12 @@ export default async function AdminUserDetailPage({
   const { locale, id } = await params;
   setRequestLocale(locale);
 
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(id)) {
+    notFound();
+  }
+
   await requireAdmin(locale);
   const t = await getTranslations("admin");
   const supabase = await createSupabaseServerClient();

@@ -90,9 +90,10 @@ export function OrderActions({ locale, orderId, status }: OrderActionsProps) {
         {status !== "cancelled" && (
           <Button
             variant="outline"
-            onClick={() =>
-              handleAction(() => cancelOrder(locale, orderId), "cancel")
-            }
+            onClick={() => {
+              if (!window.confirm(t("confirmCancel"))) return;
+              handleAction(() => cancelOrder(locale, orderId), "cancel");
+            }}
             disabled={loading !== null}
             className="text-sm h-10 px-4 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
           >

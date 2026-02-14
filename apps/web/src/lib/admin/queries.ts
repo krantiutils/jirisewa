@@ -29,7 +29,7 @@ export async function getPlatformStats(
     consumersResult,
     ridersResult,
     ordersResult,
-    revenueResult,
+    deliveredRevenueResult,
     listingsResult,
     disputesResult,
     unverifiedResult,
@@ -48,7 +48,10 @@ export async function getPlatformStats(
       .select("id", { count: "exact", head: true })
       .eq("role", "rider"),
     supabase.from("orders").select("id", { count: "exact", head: true }),
-    supabase.from("orders").select("delivery_fee"),
+    supabase
+      .from("orders")
+      .select("delivery_fee")
+      .eq("status", "delivered" as const),
     supabase
       .from("produce_listings")
       .select("id", { count: "exact", head: true })
@@ -65,7 +68,7 @@ export async function getPlatformStats(
   ]);
 
   const totalRevenue =
-    revenueResult.data?.reduce(
+    deliveredRevenueResult.data?.reduce(
       (sum, o) => sum + (Number(o.delivery_fee) || 0),
       0,
     ) ?? 0;
@@ -135,8 +138,9 @@ export async function getUsers(
     .range(from, to);
 
   if (opts.search) {
+    const sanitized = opts.search.replace(/[%_\\]/g, "\\$&");
     query = query.or(
-      `name.ilike.%${opts.search}%,phone.ilike.%${opts.search}%`,
+      `name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`,
     );
   }
 
