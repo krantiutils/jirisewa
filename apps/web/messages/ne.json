@@ -115,7 +115,8 @@
     "kmAway": "{distance} किमी टाढा",
     "harvestedOn": "{date} मा काटेको",
     "available": "{qty} केजी उपलब्ध",
-    "farmerRating": "{rating} ({count} समीक्षा)"
+    "farmerRating": "{rating} ({count} समीक्षा)",
+    "verifiedFarmer": "प्रमाणित"
   },
   "produce": {
     "title": "उत्पादन बजार",
@@ -351,6 +352,32 @@
         "priceInvalid": "कृपया मान्य मूल्य प्रविष्ट गर्नुहोस्।",
         "qtyInvalid": "कृपया मान्य मात्रा प्रविष्ट गर्नुहोस्।"
       }
+    },
+    "verification": {
+      "title": "पहिचान प्रमाणीकरण",
+      "description": "प्रमाणित हुन आफ्ना कागजातहरू पेश गर्नुहोस्। प्रमाणित किसानहरूले ब्याज पाउँछन् र खोज परिणाममा माथि देखिन्छन्।",
+      "statusUnverified": "तपाईंको खाता अझै प्रमाणित भएको छैन।",
+      "statusPending": "तपाईंका कागजातहरू समीक्षामा छन्।",
+      "statusApproved": "तपाईंको खाता प्रमाणित छ!",
+      "statusRejected": "तपाईंको प्रमाणीकरण स्वीकृत भएन।",
+      "submitDocuments": "कागजातहरू पेश गर्नुहोस्",
+      "resubmit": "कागजातहरू पुन: पेश गर्नुहोस्",
+      "citizenshipPhoto": "नागरिकता / परिचयपत्र फोटो",
+      "citizenshipPhotoHint": "आफ्नो नागरिकता वा राष्ट्रिय परिचयपत्रको स्पष्ट फोटो अपलोड गर्नुहोस्।",
+      "farmPhoto": "फार्मको फोटो",
+      "farmPhotoHint": "तपाईंको उत्पादन देखाउने फार्मको फोटो अपलोड गर्नुहोस्।",
+      "municipalityLetter": "नगरपालिका पत्र (ऐच्छिक)",
+      "municipalityLetterHint": "उपलब्ध भएमा स्थानीय नगरपालिकाको पत्र अपलोड गर्नुहोस्।",
+      "uploading": "अपलोड गर्दै...",
+      "submitting": "पेश गर्दै...",
+      "submitted": "कागजातहरू समीक्षाको लागि पेश गरियो!",
+      "uploadError": "फाइल अपलोड गर्न असफल। कृपया पुन: प्रयास गर्नुहोस्।",
+      "submitError": "कागजातहरू पेश गर्न असफल। कृपया पुन: प्रयास गर्नुहोस्।",
+      "fileTooLarge": "फाइल धेरै ठूलो छ (अधिकतम ५MB)।",
+      "invalidFileType": "अमान्य फाइल प्रकार। JPEG, PNG, WebP, वा PDF प्रयोग गर्नुहोस्।",
+      "rejectionReason": "कारण",
+      "verifiedBadge": "प्रमाणित किसान",
+      "benefits": "प्रमाणित किसानहरूले विश्वास ब्याज, बजारमा बढी दृश्यता, र प्राथमिकता मिलान पाउँछन्।"
     }
   },
   "rider": {
@@ -614,13 +641,24 @@
       "pendingVerification": "प्रमाणीकरण पर्खिरहेको",
       "allVerified": "सबै किसानहरू प्रमाणित छन्। कुनै पेन्डिङ अनुरोध छैन।",
       "unverified": "अप्रमाणित",
+      "pending": "समीक्षामा",
+      "approved": "स्वीकृत",
+      "rejected": "अस्वीकृत",
       "farmName": "फार्म",
       "registered": "दर्ता भएको",
       "viewProfile": "प्रोफाइल हेर्नुहोस्",
+      "viewDocuments": "कागजातहरू हेर्नुहोस्",
+      "noDocuments": "कुनै कागजात पेश गरिएको छैन",
+      "citizenshipPhoto": "नागरिकता / परिचयपत्र",
+      "farmPhoto": "फार्मको फोटो",
+      "municipalityLetter": "नगरपालिका पत्र",
+      "submittedOn": "{date} मा पेश गरिएको",
       "approve": "स्वीकृत",
       "reject": "अस्वीकार",
       "verifying": "स्वीकृत गर्दै...",
-      "rejecting": "अस्वीकार गर्दै..."
+      "rejecting": "अस्वीकार गर्दै...",
+      "rejectionNotes": "अस्वीकारको कारण (ऐच्छिक)",
+      "rejectionNotesPlaceholder": "प्रमाणीकरण किन अस्वीकार भयो भनी व्याख्या गर्नुहोस्..."
     },
     "pagination": {
       "showing": "{from}-{to} मध्ये {total} देखाउँदै",

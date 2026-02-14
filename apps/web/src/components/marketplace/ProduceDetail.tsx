@@ -13,6 +13,7 @@ import {
   Plus,
   Minus,
   User,
+  ShieldCheck,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { useCart } from "@/lib/cart";
@@ -26,6 +27,7 @@ interface ProduceDetailProps {
 export function ProduceDetail({ listing }: ProduceDetailProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("produce");
+  const mt = useTranslations("marketplace");
   const { addItem } = useCart();
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -217,7 +219,15 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-lg font-bold text-foreground">{listing.farmer.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold text-foreground">{listing.farmer.name}</p>
+                    {listing.farmer_verified && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        {mt("verifiedFarmer")}
+                      </span>
+                    )}
+                  </div>
                   {listing.farmer.rating_avg > 0 && (
                     <div className="mt-0.5 flex items-center gap-1 text-sm text-gray-600">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />

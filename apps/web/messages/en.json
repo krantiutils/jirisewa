@@ -115,7 +115,8 @@
     "kmAway": "{distance} km away",
     "harvestedOn": "Harvested {date}",
     "available": "{qty} kg available",
-    "farmerRating": "{rating} ({count} reviews)"
+    "farmerRating": "{rating} ({count} reviews)",
+    "verifiedFarmer": "Verified"
   },
   "produce": {
     "title": "Produce Marketplace",
@@ -351,6 +352,32 @@
         "priceInvalid": "Please enter a valid price.",
         "qtyInvalid": "Please enter a valid quantity."
       }
+    },
+    "verification": {
+      "title": "Identity Verification",
+      "description": "Submit your documents to get verified. Verified farmers get a badge and appear higher in search results.",
+      "statusUnverified": "Your account is not yet verified.",
+      "statusPending": "Your documents are under review.",
+      "statusApproved": "Your account is verified!",
+      "statusRejected": "Your verification was not approved.",
+      "submitDocuments": "Submit Documents",
+      "resubmit": "Resubmit Documents",
+      "citizenshipPhoto": "Citizenship / ID Card Photo",
+      "citizenshipPhotoHint": "Upload a clear photo of your citizenship card or national ID.",
+      "farmPhoto": "Farm Photo",
+      "farmPhotoHint": "Upload a photo of your farm showing your produce.",
+      "municipalityLetter": "Municipality Letter (Optional)",
+      "municipalityLetterHint": "Upload a letter from your local municipality if available.",
+      "uploading": "Uploading...",
+      "submitting": "Submitting...",
+      "submitted": "Documents submitted for review!",
+      "uploadError": "Failed to upload file. Please try again.",
+      "submitError": "Failed to submit documents. Please try again.",
+      "fileTooLarge": "File is too large (max 5MB).",
+      "invalidFileType": "Invalid file type. Use JPEG, PNG, WebP, or PDF.",
+      "rejectionReason": "Reason",
+      "verifiedBadge": "Verified Farmer",
+      "benefits": "Verified farmers get a trust badge, higher visibility in marketplace, and priority matching."
     }
   },
   "rider": {
@@ -614,13 +641,24 @@
       "pendingVerification": "pending verification",
       "allVerified": "All farmers are verified. No pending requests.",
       "unverified": "Unverified",
+      "pending": "Pending Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
       "farmName": "Farm",
       "registered": "Registered",
       "viewProfile": "View Profile",
+      "viewDocuments": "View Documents",
+      "noDocuments": "No documents submitted",
+      "citizenshipPhoto": "Citizenship / ID",
+      "farmPhoto": "Farm Photo",
+      "municipalityLetter": "Municipality Letter",
+      "submittedOn": "Submitted on {date}",
       "approve": "Approve",
       "reject": "Reject",
       "verifying": "Approving...",
-      "rejecting": "Rejecting..."
+      "rejecting": "Rejecting...",
+      "rejectionNotes": "Rejection reason (optional)",
+      "rejectionNotesPlaceholder": "Explain why the verification was rejected..."
     },
     "pagination": {
       "showing": "Showing {from}-{to} of {total}",

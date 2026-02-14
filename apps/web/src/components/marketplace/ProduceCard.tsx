@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Star, MapPin } from "lucide-react";
+import { Star, MapPin, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui";
 import type { ProduceListingWithDetails } from "@/lib/supabase/types";
 import type { Locale } from "@/lib/i18n";
@@ -59,6 +59,12 @@ export function ProduceCard({ listing }: ProduceCardProps) {
         {/* Farmer info */}
         <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
           <span className="font-medium">{listing.farmer.name}</span>
+          {listing.farmer_verified && (
+            <span className="inline-flex items-center gap-0.5 text-emerald-600" title={t("verifiedFarmer")}>
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">{t("verifiedFarmer")}</span>
+            </span>
+          )}
           {listing.farmer.rating_avg > 0 && (
             <span className="flex items-center gap-0.5">
               <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
