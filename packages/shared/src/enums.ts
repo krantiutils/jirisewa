@@ -78,3 +78,10 @@ export enum PayoutStatus {
   Settled = "settled",
   Refunded = "refunded",
 }
+
+export enum PingStatus {
+  Pending = "pending",
+  Accepted = "accepted",
+  Declined = "declined",
+  Expired = "expired",
+}

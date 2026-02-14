@@ -1,8 +1,9 @@
 "use server";
 
-import { OrderStatus, OrderItemStatus, PaymentStatus, PayoutStatus } from "@jirisewa/shared";
+import { OrderStatus, OrderItemStatus, PaymentStatus, PayoutStatus, PingStatus } from "@jirisewa/shared";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { buildPaymentFormData, generateTransactionUuid } from "@/lib/esewa";
+import { findAndPingRiders } from "@/lib/actions/pings";
 import type { ActionResult } from "@/lib/types/action";
 import type {
   PlaceOrderInput,
@@ -298,6 +299,13 @@ export async function placeOrder(
         transactionUuid,
       });
 
+      // Trigger rider matching (non-fatal — order exists regardless)
+      try {
+        await findAndPingRiders(order.id);
+      } catch (pingErr) {
+        console.error("placeOrder: rider ping failed (non-fatal):", pingErr);
+      }
+
       return {
         data: {
           orderId: order.id,
@@ -308,6 +316,13 @@ export async function placeOrder(
           },
         },
       };
+    }
+
+    // Trigger rider matching for cash orders (non-fatal — order exists regardless)
+    try {
+      await findAndPingRiders(order.id);
+    } catch (pingErr) {
+      console.error("placeOrder: rider ping failed (non-fatal):", pingErr);
     }
 
     return { data: { orderId: order.id } };
@@ -767,6 +782,17 @@ export async function cancelOrder(
 
     if (payoutError) {
       console.error("cancelOrder: payout refund error:", payoutError);
+    }
+
+    // Expire all pending pings for this order
+    const { error: pingError } = await supabase
+      .from("order_pings")
+      .update({ status: PingStatus.Expired })
+      .eq("order_id", orderId)
+      .eq("status", PingStatus.Pending);
+
+    if (pingError) {
+      console.error("cancelOrder: failed to expire pings (non-fatal):", pingError);
     }
 
     return {};

@@ -918,6 +918,76 @@ export type Database = {
           },
         ];
       };
+      order_pings: {
+        Row: {
+          id: string;
+          order_id: string;
+          rider_id: string;
+          trip_id: string;
+          pickup_locations: Json;
+          delivery_location: Json;
+          total_weight_kg: number;
+          estimated_earnings: number;
+          detour_distance_m: number;
+          status: "pending" | "accepted" | "declined" | "expired";
+          expires_at: string;
+          responded_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          rider_id: string;
+          trip_id: string;
+          pickup_locations: Json;
+          delivery_location: Json;
+          total_weight_kg: number;
+          estimated_earnings: number;
+          detour_distance_m: number;
+          status?: "pending" | "accepted" | "declined" | "expired";
+          expires_at: string;
+          responded_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          rider_id?: string;
+          trip_id?: string;
+          pickup_locations?: Json;
+          delivery_location?: Json;
+          total_weight_kg?: number;
+          estimated_earnings?: number;
+          detour_distance_m?: number;
+          status?: "pending" | "accepted" | "declined" | "expired";
+          expires_at?: string;
+          responded_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "order_pings_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_pings_rider_id_fkey";
+            columns: ["rider_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_pings_trip_id_fkey";
+            columns: ["trip_id"];
+            isOneToOne: false;
+            referencedRelation: "rider_trips";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -985,6 +1055,7 @@ export type Database = {
       verification_status: "unverified" | "pending" | "approved" | "rejected";
       order_item_status: "pending_pickup" | "picked_up" | "unavailable";
       payout_status: "pending" | "settled" | "refunded";
+      ping_status: "pending" | "accepted" | "declined" | "expired";
     };
   };
 };

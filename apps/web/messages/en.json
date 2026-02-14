@@ -469,6 +469,23 @@
       "truck": "Truck",
       "bus": "Bus",
       "other": "Other"
+    },
+    "pings": {
+      "newOrders": "New Order Requests",
+      "newOrderBody": "A new delivery order is available near your route!",
+      "pickup": "Pickup",
+      "delivery": "Delivery",
+      "weight": "Weight",
+      "earnings": "Earnings",
+      "detour": "Detour",
+      "accept": "Accept",
+      "decline": "Decline",
+      "expired": "Expired",
+      "accepting": "Accepting...",
+      "declining": "Declining...",
+      "accepted": "Accepted",
+      "noRiders": "Looking for riders nearby...",
+      "expiresIn": "Expires in {time}"
     }
   },
   "languageSwitcher": {

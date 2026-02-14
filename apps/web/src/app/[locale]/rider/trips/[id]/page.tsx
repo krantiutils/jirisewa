@@ -8,6 +8,7 @@ import { TripStatus } from "@jirisewa/shared";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TripStatusBadge } from "@/components/rider/TripStatusBadge";
+import { PingNotificationPanel } from "@/components/rider/PingNotificationPanel";
 import {
   getTrip,
   startTrip,
@@ -21,6 +22,7 @@ import {
   markItemsUnavailable,
   startDelivery,
 } from "@/lib/actions/orders";
+import { usePingSubscription } from "@/lib/hooks/usePingSubscription";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { OrderItemStatus } from "@jirisewa/shared";
 import type { Trip } from "@/lib/types/trip";
@@ -43,6 +45,7 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const { pings, removePing } = usePingSubscription();
 
   const loadOrders = useCallback(async () => {
     const result = await listOrdersByTrip(tripId);
@@ -179,6 +182,20 @@ export default function TripDetailPage() {
             />
           </div>
         </Card>
+
+        {/* Ping notifications — shown when trip is in_transit */}
+        {trip.status === TripStatus.InTransit && pings.length > 0 && (
+          <PingNotificationPanel
+            pings={pings}
+            onPingRemoved={removePing}
+            onAccepted={async () => {
+              // Reload trip data and matched orders after accepting a ping
+              const tripResult = await getTrip(tripId);
+              if (tripResult.data) setTrip(tripResult.data);
+              await loadOrders();
+            }}
+          />
+        )}
 
         {/* Trip Info */}
         <Card className="mb-6">
