@@ -139,10 +139,11 @@ export async function calculateDeliveryFee(
     const distanceKm = maxDistanceMeters / 1000;
 
     // Apply rate formula
+    const regionMultiplier = Number(rate.region_multiplier ?? 1);
     const baseFee = Number(rate.base_fee_npr);
     const distanceFee = Math.round(distanceKm * Number(rate.per_km_rate_npr) * 100) / 100;
     const weightFee = Math.round(totalWeightKg * Number(rate.per_kg_rate_npr) * 100) / 100;
-    let totalFee = baseFee + distanceFee + weightFee;
+    let totalFee = (baseFee + distanceFee + weightFee) * regionMultiplier;
 
     // Apply min/max bounds
     const minFee = Number(rate.min_fee_npr);

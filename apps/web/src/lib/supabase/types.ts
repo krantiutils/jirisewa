@@ -145,6 +145,7 @@ export type Database = {
           location: unknown | null;
           photos: string[];
           is_active: boolean;
+          municipality_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -161,6 +162,7 @@ export type Database = {
           location?: unknown | null;
           photos?: string[];
           is_active?: boolean;
+          municipality_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -177,6 +179,7 @@ export type Database = {
           location?: unknown | null;
           photos?: string[];
           is_active?: boolean;
+          municipality_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -205,6 +208,8 @@ export type Database = {
           per_kg_rate_npr: number;
           min_fee_npr: number;
           max_fee_npr: number | null;
+          region_multiplier: number;
+          applies_to_province: number | null;
           is_active: boolean;
           effective_from: string;
           created_at: string;
@@ -216,6 +221,8 @@ export type Database = {
           per_kg_rate_npr: number;
           min_fee_npr?: number;
           max_fee_npr?: number | null;
+          region_multiplier?: number;
+          applies_to_province?: number | null;
           is_active?: boolean;
           effective_from?: string;
           created_at?: string;
@@ -227,6 +234,8 @@ export type Database = {
           per_kg_rate_npr?: number;
           min_fee_npr?: number;
           max_fee_npr?: number | null;
+          region_multiplier?: number;
+          applies_to_province?: number | null;
           is_active?: boolean;
           effective_from?: string;
           created_at?: string;
@@ -425,6 +434,8 @@ export type Database = {
           available_capacity_kg: number;
           remaining_capacity_kg: number;
           status: "scheduled" | "in_transit" | "completed" | "cancelled";
+          origin_municipality_id: string | null;
+          destination_municipality_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -440,6 +451,8 @@ export type Database = {
           available_capacity_kg: number;
           remaining_capacity_kg: number;
           status?: "scheduled" | "in_transit" | "completed" | "cancelled";
+          origin_municipality_id?: string | null;
+          destination_municipality_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -455,6 +468,8 @@ export type Database = {
           available_capacity_kg?: number;
           remaining_capacity_kg?: number;
           status?: "scheduled" | "in_transit" | "completed" | "cancelled";
+          origin_municipality_id?: string | null;
+          destination_municipality_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -988,9 +1003,137 @@ export type Database = {
           },
         ];
       };
+      municipalities: {
+        Row: {
+          id: string;
+          name_en: string;
+          name_ne: string;
+          district: string;
+          province: number;
+          center: unknown | null;
+          population: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name_en: string;
+          name_ne: string;
+          district: string;
+          province: number;
+          center?: unknown | null;
+          population?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name_en?: string;
+          name_ne?: string;
+          district?: string;
+          province?: number;
+          center?: unknown | null;
+          population?: number | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      service_areas: {
+        Row: {
+          id: string;
+          name: string;
+          name_ne: string;
+          center_point: unknown;
+          radius_km: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          name_ne: string;
+          center_point: unknown;
+          radius_km?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          name_ne?: string;
+          center_point?: unknown;
+          radius_km?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      popular_routes: {
+        Row: {
+          id: string;
+          origin_municipality_id: string;
+          destination_municipality_id: string;
+          display_order: number;
+          is_active: boolean;
+          trip_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          origin_municipality_id: string;
+          destination_municipality_id: string;
+          display_order?: number;
+          is_active?: boolean;
+          trip_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          origin_municipality_id?: string;
+          destination_municipality_id?: string;
+          display_order?: number;
+          is_active?: boolean;
+          trip_count?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "popular_routes_origin_municipality_id_fkey";
+            columns: ["origin_municipality_id"];
+            isOneToOne: false;
+            referencedRelation: "municipalities";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "popular_routes_destination_municipality_id_fkey";
+            columns: ["destination_municipality_id"];
+            isOneToOne: false;
+            referencedRelation: "municipalities";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      search_municipalities: {
+        Args: {
+          p_query?: string;
+          p_province?: number;
+          p_district?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          name_en: string;
+          name_ne: string;
+          district: string;
+          province: number;
+          center_lat: number | null;
+          center_lng: number | null;
+        }[];
+      };
       create_notification: {
         Args: {
           p_user_id: string;
@@ -1078,6 +1221,22 @@ export interface ProduceListingWithDetails extends ProduceListing {
   category: Pick<ProduceCategory, "id" | "name_en" | "name_ne" | "icon">;
   distance_km?: number;
   farmer_verified?: boolean;
+  municipality_name_en?: string;
+  municipality_name_ne?: string;
+}
+
+export type Municipality = Database["public"]["Tables"]["municipalities"]["Row"];
+export type ServiceArea = Database["public"]["Tables"]["service_areas"]["Row"];
+export type PopularRoute = Database["public"]["Tables"]["popular_routes"]["Row"];
+
+export interface MunicipalitySearchResult {
+  id: string;
+  name_en: string;
+  name_ne: string;
+  district: string;
+  province: number;
+  center_lat: number | null;
+  center_lng: number | null;
 }
 
 export type VerificationStatus = Database["public"]["Enums"]["verification_status"];

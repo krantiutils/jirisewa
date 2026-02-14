@@ -75,9 +75,19 @@
     "nameRequired": "नाम आवश्यक छ",
     "step": "चरण {current} / {total}"
   },
+  "municipality": {
+    "searchPlaceholder": "नगरपालिका खोज्नुहोस्...",
+    "allProvinces": "सबै",
+    "noResults": "कुनै नगरपालिका फेला परेन",
+    "typeToSearch": "नगरपालिका खोज्न टाइप गर्नुहोस्",
+    "clear": "हटाउनुहोस्",
+    "popularRoutes": "लोकप्रिय मार्गहरू",
+    "fromTo": "{from} देखि {to}"
+  },
   "marketplace": {
     "title": "बजार",
     "subtitle": "स्थानीय किसानहरूबाट सिधै ताजा उत्पादन",
+    "municipality": "नगरपालिका",
     "searchPlaceholder": "उत्पादन खोज्नुहोस्...",
     "filters": "फिल्टरहरू",
     "clearFilters": "फिल्टर हटाउनुहोस्",

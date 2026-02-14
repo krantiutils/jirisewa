@@ -48,7 +48,7 @@
     "addressLabel": "Address",
     "addressPlaceholder": "Your address or municipality",
     "municipalityLabel": "Municipality",
-    "municipalityPlaceholder": "e.g. Jiri, Kathmandu",
+    "municipalityPlaceholder": "e.g. Kathmandu, Pokhara, Biratnagar",
     "roleTitle": "I am a...",
     "roleSubtitle": "Select all that apply",
     "roleFarmer": "Farmer",
@@ -75,9 +75,19 @@
     "nameRequired": "Name is required",
     "step": "Step {current} of {total}"
   },
+  "municipality": {
+    "searchPlaceholder": "Search municipality...",
+    "allProvinces": "All",
+    "noResults": "No municipalities found",
+    "typeToSearch": "Type to search municipalities",
+    "clear": "Clear selection",
+    "popularRoutes": "Popular Routes",
+    "fromTo": "{from} to {to}"
+  },
   "marketplace": {
     "title": "Marketplace",
     "subtitle": "Fresh produce directly from local farmers",
+    "municipality": "Municipality",
     "searchPlaceholder": "Search produce...",
     "filters": "Filters",
     "clearFilters": "Clear filters",

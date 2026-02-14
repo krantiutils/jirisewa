@@ -19,6 +19,8 @@ export interface RiderTrip {
   available_capacity_kg: number;
   remaining_capacity_kg: number;
   status: TripStatus;
+  origin_municipality_id: string | null;
+  destination_municipality_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +38,8 @@ export interface Trip {
   availableCapacityKg: number;
   remainingCapacityKg: number;
   status: TripStatus;
+  originMunicipalityId: string | null;
+  destinationMunicipalityId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +53,8 @@ export interface CreateTripInput {
   routeGeoJson: [number, number][] | null; // [lng, lat] GeoJSON coordinate order
   departureAt: string; // ISO 8601
   availableCapacityKg: number;
+  originMunicipalityId?: string;
+  destinationMunicipalityId?: string;
 }
 
 /** Input for updating an existing trip. */
@@ -127,6 +133,8 @@ export function parseRiderTrip(row: RiderTrip): Trip {
     availableCapacityKg: Number(row.available_capacity_kg),
     remainingCapacityKg: Number(row.remaining_capacity_kg),
     status: row.status,
+    originMunicipalityId: row.origin_municipality_id ?? null,
+    destinationMunicipalityId: row.destination_municipality_id ?? null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

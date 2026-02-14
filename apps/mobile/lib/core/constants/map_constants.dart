@@ -13,11 +13,14 @@ const String nominatimBaseUrl = 'https://nominatim.openstreetmap.org';
 /// OSRM routing API base URL (public demo server)
 const String osrmBaseUrl = 'https://router.project-osrm.org';
 
-/// Jiri, Nepal — default map center for the launch area
-final LatLng mapDefaultCenter = LatLng(27.6306, 86.2305);
+/// Nepal geographic center — default map center when no user location
+final LatLng mapDefaultCenter = LatLng(28.3949, 84.1240);
 
-/// Default zoom level for map views
-const double mapDefaultZoom = 13.0;
+/// Jiri, Nepal — original launch area (Dolakha district)
+final LatLng jiriCenter = LatLng(27.6306, 86.2305);
+
+/// Default zoom level for map views (country-wide view)
+const double mapDefaultZoom = 8.0;
 
 /// Nepal bounding box corners for constraining map views
 final LatLng nepalSouthWest = LatLng(26.347, 80.058);

@@ -44,6 +44,9 @@ export async function GET(request: NextRequest) {
   const search = params.get("search");
   if (search) filters.search = search.slice(0, 200); // Cap search length
 
+  const municipalityId = params.get("municipality_id");
+  if (municipalityId) filters.municipality_id = municipalityId;
+
   const sortBy = params.get("sort_by");
   if (sortBy && VALID_SORT_VALUES.has(sortBy)) {
     filters.sort_by = sortBy as ProduceFilters["sort_by"];

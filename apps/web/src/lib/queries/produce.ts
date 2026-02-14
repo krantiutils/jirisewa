@@ -12,6 +12,7 @@ export interface ProduceFilters {
   sort_by?: "price_asc" | "price_desc" | "freshness" | "rating" | "distance";
   page?: number;
   per_page?: number;
+  municipality_id?: string;
 }
 
 export interface ProduceListResult {
@@ -49,6 +50,8 @@ interface RpcProduceRow {
   category_name_ne: string;
   category_icon: string | null;
   total_count: number;
+  municipality_name_en: string | null;
+  municipality_name_ne: string | null;
 }
 
 /** Row shape returned by the listings query with joined relations */
@@ -100,7 +103,7 @@ async function fetchWithLocation(
   page: number,
 ): Promise<ProduceListResult> {
   const supabase = await createClient();
-  const { lat, lng, radius_km, category_id, min_price, max_price, search, sort_by } =
+  const { lat, lng, radius_km, category_id, min_price, max_price, search, sort_by, municipality_id } =
     filters;
 
   const { data, error } = await supabase
@@ -115,6 +118,7 @@ async function fetchWithLocation(
       p_sort_by: sort_by ?? "distance",
       p_limit: perPage,
       p_offset: offset,
+      p_municipality_id: municipality_id ?? null,
     } as never) as { data: RpcProduceRow[] | null; error: { message: string } | null };
 
   if (error) {
@@ -219,6 +223,7 @@ async function fetchWithoutLocation(
     location: row.location,
     photos: row.photos ?? [],
     is_active: row.is_active,
+    municipality_id: null,
     created_at: row.created_at,
     updated_at: row.updated_at,
     farmer_verified: verifiedMap[row.farmer_id] ?? false,
@@ -281,6 +286,7 @@ export async function fetchProduceById(
     location: data.location,
     photos: data.photos ?? [],
     is_active: data.is_active,
+    municipality_id: null,
     created_at: data.created_at,
     updated_at: data.updated_at,
     farmer_verified: (roleData as { verified: boolean } | null)?.verified ?? false,
@@ -323,9 +329,12 @@ function mapRpcRow(row: RpcProduceRow): ProduceListingWithDetails {
     is_active: row.is_active,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    municipality_id: null,
     distance_km:
       row.distance_km != null ? Math.round(row.distance_km * 10) / 10 : undefined,
     farmer_verified: row.farmer_verified ?? false,
+    municipality_name_en: row.municipality_name_en ?? undefined,
+    municipality_name_ne: row.municipality_name_ne ?? undefined,
     farmer: {
       id: row.farmer_id,
       name: row.farmer_name,
