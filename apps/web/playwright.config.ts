@@ -7,13 +7,17 @@ import { defineConfig, devices } from "@playwright/test";
  *   pnpm test:e2e                    — run all tests (headless)
  *   pnpm test:e2e:headed             — run with browser visible
  *   pnpm test:e2e:update-snapshots   — regenerate screenshot baselines
+ *   pnpm test:e2e:ui                 — run with Playwright UI
  */
 export default defineConfig({
-  testDir: "./tests/e2e",
+  testDir: ".",
+  testMatch: ["tests/e2e/**/*.spec.ts", "e2e/**/*.spec.ts"],
 
   /* Global setup and teardown — seed/cleanup test data */
   globalSetup: require.resolve("./tests/global-setup"),
   globalTeardown: require.resolve("./tests/global-teardown"),
+
+  fullyParallel: true,
 
   /* Maximum time one test can run */
   timeout: 30_000,

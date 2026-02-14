@@ -30,7 +30,7 @@ import {
   checkReorderAvailability,
 } from "@/lib/actions/orders";
 import { retryEsewaPayment } from "@/lib/actions/payments";
-import type { ReorderItemAvailability } from "@/lib/actions/orders";
+import type { ReorderItemAvailability } from "@/lib/helpers/orders";
 import { useCart } from "@/lib/cart";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { Button } from "@/components/ui/Button";
