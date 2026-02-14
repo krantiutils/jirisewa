@@ -34,7 +34,7 @@ function pointToWkt(lng: number, lat: number): string {
  * Group order items by farmer, computing per-group totals and pickup state.
  * Groups are sorted by pickup_sequence ascending.
  */
-export function groupItemsByFarmer(
+function groupItemsByFarmer(
   items: OrderItemWithDetails[],
 ): FarmerItemGroup[] {
   const groups = new Map<string, FarmerItemGroup>();
