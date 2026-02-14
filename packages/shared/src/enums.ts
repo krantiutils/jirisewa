@@ -48,3 +48,21 @@ export enum RoleRated {
   Consumer = "consumer",
   Rider = "rider",
 }
+
+export enum NotificationCategory {
+  OrderMatched = "order_matched",
+  RiderPickedUp = "rider_picked_up",
+  RiderArriving = "rider_arriving",
+  OrderDelivered = "order_delivered",
+  NewOrderForFarmer = "new_order_for_farmer",
+  RiderArrivingForPickup = "rider_arriving_for_pickup",
+  NewOrderMatch = "new_order_match",
+  TripReminder = "trip_reminder",
+  DeliveryConfirmed = "delivery_confirmed",
+}
+
+export enum DevicePlatform {
+  Web = "web",
+  Android = "android",
+  Ios = "ios",
+}

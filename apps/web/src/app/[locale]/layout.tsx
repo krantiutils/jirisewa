@@ -13,6 +13,8 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/lib/cart";
 import { CartHeaderLink } from "@/components/cart/CartHeaderLink";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { PushNotificationManager } from "@/components/notifications/PushNotificationManager";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -100,9 +102,11 @@ export default async function LocaleLayout({
                   </nav>
                 </div>
                 <div className="flex items-center gap-3">
+                  <NotificationBell />
                   <CartHeaderLink locale={locale} />
                   <LanguageSwitcher />
                 </div>
+              <PushNotificationManager />
               </header>
               {children}
             </CartProvider>

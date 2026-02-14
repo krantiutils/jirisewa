@@ -10,6 +10,11 @@ import type {
   OrderItemWithDetails,
   EsewaPaymentFormData,
 } from "@/lib/types/order";
+import {
+  notifyFarmerNewOrder,
+  notifyRiderPickedUp,
+  notifyRiderDeliveryConfirmed,
+} from "@/lib/actions/notifications";
 
 // TODO: Replace hardcoded consumer ID with authenticated user once auth is implemented
 const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
@@ -149,6 +154,26 @@ export async function placeOrder(
         console.error("placeOrder: cleanup failed for order:", order.id, cleanupError);
       }
       return { error: itemsError.message };
+    }
+
+    // Notify each farmer about the new order (fire-and-forget)
+    const farmerNotifications = new Map<string, { name: string; qty: number }>();
+    for (const item of input.items) {
+      const listing = listingMap.get(item.listingId)!;
+      const existing = farmerNotifications.get(item.farmerId);
+      if (existing) {
+        existing.qty += item.quantityKg;
+      } else {
+        farmerNotifications.set(item.farmerId, {
+          name: "produce",
+          qty: item.quantityKg,
+        });
+      }
+    }
+    for (const [farmerId, info] of farmerNotifications) {
+      notifyFarmerNewOrder(farmerId, order.id, info.name, info.qty).catch(
+        (err) => console.error("Notification error (farmer new order):", err),
+      );
     }
 
     // For eSewa payments, create transaction record and return form data for redirect
@@ -378,7 +403,7 @@ export async function confirmDelivery(
 
     const { data: existing, error: fetchError } = await supabase
       .from("orders")
-      .select("status, consumer_id, payment_method, payment_status")
+      .select("status, consumer_id, rider_id, payment_method, payment_status")
       .eq("id", orderId)
       .single();
 
@@ -431,6 +456,13 @@ export async function confirmDelivery(
       return { error: error.message };
     }
 
+    // Notify rider that delivery was confirmed
+    if (existing.rider_id) {
+      notifyRiderDeliveryConfirmed(existing.rider_id, orderId).catch(
+        (err) => console.error("Notification error (delivery confirmed):", err),
+      );
+    }
+
     return {};
   } catch (err) {
     console.error("confirmDelivery unexpected error:", err);
@@ -473,6 +505,19 @@ export async function confirmPickup(
     if (error) {
       console.error("confirmPickup error:", error);
       return { error: error.message };
+    }
+
+    // Fetch consumer_id to notify them
+    const { data: orderData } = await supabase
+      .from("orders")
+      .select("consumer_id")
+      .eq("id", orderId)
+      .single();
+
+    if (orderData) {
+      notifyRiderPickedUp(orderData.consumer_id, orderId).catch(
+        (err) => console.error("Notification error (rider picked up):", err),
+      );
     }
 
     return {};
