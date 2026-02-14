@@ -392,6 +392,40 @@
       "rejectionReason": "Reason",
       "verifiedBadge": "Verified Farmer",
       "benefits": "Verified farmers get a trust badge, higher visibility in marketplace, and priority matching."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "loginRequired": "Please log in to view analytics.",
+      "totalRevenue": "Total Revenue",
+      "totalOrders": "Total Orders",
+      "avgRating": "Avg Rating",
+      "revenueTrend": "Revenue Trend",
+      "salesByCategory": "Sales by Category",
+      "topProducts": "Top Products",
+      "priceBenchmarks": "Price Comparison",
+      "ratingBreakdown": "Rating Breakdown",
+      "fulfillmentRate": "Fulfillment Rate",
+      "revenue": "Revenue",
+      "orders": "Orders",
+      "product": "Product",
+      "qtySold": "Qty Sold",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "total": "Total",
+      "rate": "Rate",
+      "myPrice": "Your Price",
+      "marketPrice": "Market Avg",
+      "priceInsight": "Your {category} is priced {percent}% {direction} market average.",
+      "above": "above",
+      "below": "below",
+      "avgLabel": "Average",
+      "reviews": "reviews",
+      "noData": "No data for this period.",
+      "period": {
+        "7days": "7 days",
+        "30days": "30 days",
+        "90days": "90 days"
+      }
     }
   },
   "rider": {

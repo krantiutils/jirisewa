@@ -1098,6 +1098,66 @@ export type Database = {
         Args: Record<string, never>;
         Returns: number;
       };
+      farmer_sales_by_category: {
+        Args: { p_farmer_id: string; p_days?: number };
+        Returns: {
+          category_id: string;
+          category_name_en: string;
+          category_name_ne: string;
+          category_icon: string | null;
+          total_qty_kg: number;
+          total_revenue: number;
+          order_count: number;
+        }[];
+      };
+      farmer_revenue_trend: {
+        Args: { p_farmer_id: string; p_days?: number };
+        Returns: {
+          day: string;
+          revenue: number;
+          order_count: number;
+        }[];
+      };
+      farmer_top_products: {
+        Args: { p_farmer_id: string; p_days?: number; p_limit?: number };
+        Returns: {
+          listing_id: string;
+          name_en: string;
+          name_ne: string;
+          category_name_en: string;
+          total_qty_kg: number;
+          total_revenue: number;
+          order_count: number;
+        }[];
+      };
+      farmer_price_benchmarks: {
+        Args: { p_farmer_id: string };
+        Returns: {
+          category_id: string;
+          category_name_en: string;
+          category_name_ne: string;
+          my_avg_price: number;
+          market_avg_price: number;
+          my_listing_count: number;
+          market_listing_count: number;
+        }[];
+      };
+      farmer_fulfillment_rate: {
+        Args: { p_farmer_id: string; p_days?: number };
+        Returns: {
+          total_orders: number;
+          delivered: number;
+          cancelled: number;
+          fulfillment_pct: number;
+        }[];
+      };
+      farmer_rating_distribution: {
+        Args: { p_farmer_id: string };
+        Returns: {
+          score: number;
+          count: number;
+        }[];
+      };
     };
     Enums: {
       app_language: "en" | "ne";
