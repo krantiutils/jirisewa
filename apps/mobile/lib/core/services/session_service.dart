@@ -30,6 +30,23 @@ class SessionService extends ChangeNotifier {
     _init();
   }
 
+  /// Test-only constructor that provides pre-set state without Supabase.
+  ///
+  /// Does not listen to auth state changes or fetch data from the network.
+  @visibleForTesting
+  SessionService.forTesting({
+    required SupabaseClient client,
+    Session? session,
+    UserProfile? profile,
+    List<UserRoleDetails> roles = const [],
+    String activeRole = 'consumer',
+  })  : _client = client,
+        _session = session,
+        _profile = profile,
+        _roles = roles,
+        _activeRole = activeRole,
+        _loading = false;
+
   // -- Public getters --
 
   bool get loading => _loading;
