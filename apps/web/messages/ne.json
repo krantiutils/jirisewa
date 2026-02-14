@@ -411,5 +411,114 @@
       "mapAttribution": "नक्सा डाटा © OpenStreetMap योगदानकर्ताहरू",
       "copyright": "जिरीसेवा। सर्वाधिकार सुरक्षित।"
     }
+  },
+  "admin": {
+    "nav": {
+      "title": "प्रशासन प्यानल",
+      "dashboard": "ड्यासबोर्ड",
+      "users": "प्रयोगकर्ताहरू",
+      "orders": "अर्डरहरू",
+      "disputes": "विवादहरू",
+      "farmers": "किसान प्रमाणीकरण"
+    },
+    "dashboard": {
+      "title": "प्लेटफर्म ड्यासबोर्ड",
+      "pendingDisputes": "विचाराधीन विवादहरू",
+      "disputesAction": "विवादहरू समीक्षा र समाधान गर्नुहोस्",
+      "unverifiedFarmers": "प्रमाणीकरण पर्खिरहेका किसानहरू",
+      "verifyAction": "प्रमाणीकरण अनुरोधहरू समीक्षा गर्नुहोस्"
+    },
+    "stats": {
+      "totalUsers": "कुल प्रयोगकर्ता",
+      "totalOrders": "कुल अर्डर",
+      "revenue": "राजस्व (डेलिभरी शुल्क)",
+      "activeListings": "सक्रिय सूचीहरू",
+      "farmers": "किसानहरू",
+      "consumers": "उपभोक्ताहरू",
+      "riders": "राइडरहरू"
+    },
+    "users": {
+      "title": "प्रयोगकर्ता व्यवस्थापन",
+      "totalUsers": "कुल प्रयोगकर्ता",
+      "name": "नाम",
+      "phone": "फोन",
+      "role": "प्राथमिक भूमिका",
+      "rating": "मूल्याङ्कन",
+      "joined": "सामेल भएको",
+      "actions": "कार्यहरू",
+      "view": "हेर्नुहोस्",
+      "searchPlaceholder": "नाम वा फोनले खोज्नुहोस्...",
+      "allRoles": "सबै भूमिकाहरू",
+      "roleFarmer": "किसान",
+      "roleConsumer": "उपभोक्ता",
+      "roleRider": "राइडर",
+      "noResults": "कुनै प्रयोगकर्ता भेटिएन।",
+      "backToUsers": "प्रयोगकर्ताहरूमा फर्कनुहोस्",
+      "language": "भाषा",
+      "roles": "भूमिकाहरू",
+      "noRoles": "कुनै भूमिका तोकिएको छैन।",
+      "verified": "प्रमाणित",
+      "unverified": "अप्रमाणित",
+      "farmName": "फार्म",
+      "vehicle": "सवारी साधन",
+      "recentOrders": "हालका अर्डरहरू",
+      "noOrders": "कुनै अर्डर भेटिएन।"
+    },
+    "orders": {
+      "title": "अर्डर व्यवस्थापन",
+      "totalOrders": "कुल अर्डर",
+      "id": "अर्डर आईडी",
+      "status": "स्थिति",
+      "consumer": "उपभोक्ता",
+      "rider": "राइडर",
+      "total": "जम्मा",
+      "payment": "भुक्तानी",
+      "date": "मिति",
+      "view": "हेर्नुहोस्",
+      "allStatuses": "सबै",
+      "noResults": "कुनै अर्डर भेटिएन।",
+      "backToOrders": "अर्डरहरूमा फर्कनुहोस्",
+      "orderDetail": "अर्डर विवरण",
+      "noRider": "कुनै राइडर तोकिएको छैन",
+      "deliveryAddress": "डेलिभरी ठेगाना",
+      "items": "वस्तुहरू",
+      "fromFarmer": "{farmer} बाट",
+      "pickedUp": "उठाइयो",
+      "delivered": "डेलिभर भयो",
+      "subtotal": "उपजम्मा",
+      "deliveryFee": "डेलिभरी शुल्क",
+      "paymentMethod": "भुक्तानी विधि",
+      "paymentStatus": "भुक्तानी स्थिति",
+      "adminActions": "प्रशासक कार्यहरू",
+      "forceResolve": "बलपूर्वक समाधान",
+      "resolving": "समाधान गर्दै...",
+      "markDisputed": "विवादित चिन्ह लगाउनुहोस्",
+      "marking": "चिन्ह लगाउँदै...",
+      "cancelOrder": "अर्डर रद्द गर्नुहोस्",
+      "cancelling": "रद्द गर्दै..."
+    },
+    "disputes": {
+      "title": "विवाद समाधान",
+      "activeDisputes": "सक्रिय विवादहरू",
+      "noDisputes": "कुनै सक्रिय विवाद छैन। सबै ठीक छ!"
+    },
+    "farmers": {
+      "title": "किसान प्रमाणीकरण",
+      "pendingVerification": "प्रमाणीकरण पर्खिरहेको",
+      "allVerified": "सबै किसानहरू प्रमाणित छन्। कुनै पेन्डिङ अनुरोध छैन।",
+      "unverified": "अप्रमाणित",
+      "farmName": "फार्म",
+      "registered": "दर्ता भएको",
+      "viewProfile": "प्रोफाइल हेर्नुहोस्",
+      "approve": "स्वीकृत",
+      "reject": "अस्वीकार",
+      "verifying": "स्वीकृत गर्दै...",
+      "rejecting": "अस्वीकार गर्दै..."
+    },
+    "pagination": {
+      "showing": "{from}-{to} मध्ये {total} देखाउँदै",
+      "prev": "अघिल्लो",
+      "next": "अर्को"
+    }
   }
 }

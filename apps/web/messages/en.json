@@ -411,5 +411,114 @@
       "mapAttribution": "Map data © OpenStreetMap contributors",
       "copyright": "JiriSewa. All rights reserved."
     }
+  },
+  "admin": {
+    "nav": {
+      "title": "Admin Panel",
+      "dashboard": "Dashboard",
+      "users": "Users",
+      "orders": "Orders",
+      "disputes": "Disputes",
+      "farmers": "Farmer Verification"
+    },
+    "dashboard": {
+      "title": "Platform Dashboard",
+      "pendingDisputes": "pending disputes",
+      "disputesAction": "Review and resolve disputes",
+      "unverifiedFarmers": "farmers awaiting verification",
+      "verifyAction": "Review verification requests"
+    },
+    "stats": {
+      "totalUsers": "Total Users",
+      "totalOrders": "Total Orders",
+      "revenue": "Revenue (Delivery Fees)",
+      "activeListings": "Active Listings",
+      "farmers": "Farmers",
+      "consumers": "Consumers",
+      "riders": "Riders"
+    },
+    "users": {
+      "title": "User Management",
+      "totalUsers": "total users",
+      "name": "Name",
+      "phone": "Phone",
+      "role": "Primary Role",
+      "rating": "Rating",
+      "joined": "Joined",
+      "actions": "Actions",
+      "view": "View",
+      "searchPlaceholder": "Search by name or phone...",
+      "allRoles": "All Roles",
+      "roleFarmer": "Farmer",
+      "roleConsumer": "Consumer",
+      "roleRider": "Rider",
+      "noResults": "No users found.",
+      "backToUsers": "Back to users",
+      "language": "Language",
+      "roles": "Roles",
+      "noRoles": "No roles assigned.",
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "farmName": "Farm",
+      "vehicle": "Vehicle",
+      "recentOrders": "Recent Orders",
+      "noOrders": "No orders found."
+    },
+    "orders": {
+      "title": "Order Management",
+      "totalOrders": "total orders",
+      "id": "Order ID",
+      "status": "Status",
+      "consumer": "Consumer",
+      "rider": "Rider",
+      "total": "Total",
+      "payment": "Payment",
+      "date": "Date",
+      "view": "View",
+      "allStatuses": "All",
+      "noResults": "No orders found.",
+      "backToOrders": "Back to orders",
+      "orderDetail": "Order Detail",
+      "noRider": "No rider assigned",
+      "deliveryAddress": "Delivery Address",
+      "items": "Items",
+      "fromFarmer": "from {farmer}",
+      "pickedUp": "Picked Up",
+      "delivered": "Delivered",
+      "subtotal": "Subtotal",
+      "deliveryFee": "Delivery Fee",
+      "paymentMethod": "Payment Method",
+      "paymentStatus": "Payment Status",
+      "adminActions": "Admin Actions",
+      "forceResolve": "Force Resolve",
+      "resolving": "Resolving...",
+      "markDisputed": "Mark as Disputed",
+      "marking": "Marking...",
+      "cancelOrder": "Cancel Order",
+      "cancelling": "Cancelling..."
+    },
+    "disputes": {
+      "title": "Dispute Resolution",
+      "activeDisputes": "active disputes",
+      "noDisputes": "No active disputes. All clear!"
+    },
+    "farmers": {
+      "title": "Farmer Verification",
+      "pendingVerification": "pending verification",
+      "allVerified": "All farmers are verified. No pending requests.",
+      "unverified": "Unverified",
+      "farmName": "Farm",
+      "registered": "Registered",
+      "viewProfile": "View Profile",
+      "approve": "Approve",
+      "reject": "Reject",
+      "verifying": "Approving...",
+      "rejecting": "Rejecting..."
+    },
+    "pagination": {
+      "showing": "Showing {from}-{to} of {total}",
+      "prev": "Previous",
+      "next": "Next"
+    }
   }
 }
