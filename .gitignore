@@ -42,3 +42,4 @@ apps/mobile/ios/Pods/
 .claude/
 .beads/
 .logs/
+supabase/.branches/
