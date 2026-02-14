@@ -22,6 +22,7 @@ export type Database = {
           lang: "en" | "ne";
           rating_avg: number;
           rating_count: number;
+          is_admin: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -37,6 +38,7 @@ export type Database = {
           lang?: "en" | "ne";
           rating_avg?: number;
           rating_count?: number;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -52,6 +54,7 @@ export type Database = {
           lang?: "en" | "ne";
           rating_avg?: number;
           rating_count?: number;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
