@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/core/services/push_notification_service.dart';
@@ -51,38 +54,63 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
+  StreamSubscription<RemoteMessage>? _foregroundMessageSub;
+  late final StreamSubscription<AuthState> _authSubscription;
+  Session? _currentSession;
+
   @override
   void initState() {
     super.initState();
-    _setupPushNotifications();
+    _currentSession = Supabase.instance.client.auth.currentSession;
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        if (!mounted) return;
+        setState(() {
+          _currentSession = data.session;
+        });
+        if (data.session != null) {
+          _setupPushNotifications();
+        }
+      },
+    );
+
+    if (_currentSession != null) {
+      _setupPushNotifications();
+    }
   }
 
   Future<void> _setupPushNotifications() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session != null) {
-      await PushNotificationService.instance.requestPermissionAndRegister();
+    await PushNotificationService.instance.requestPermissionAndRegister();
 
-      // Handle foreground messages
-      PushNotificationService.instance.onForegroundMessage((message) {
-        if (message.notification != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${message.notification!.title ?? ''}: ${message.notification!.body ?? ''}',
-              ),
-              duration: const Duration(seconds: 4),
+    // Avoid duplicate listeners
+    _foregroundMessageSub?.cancel();
+
+    _foregroundMessageSub =
+        PushNotificationService.instance.onForegroundMessage((message) {
+      if (!mounted) return;
+      if (message.notification != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${message.notification!.title ?? ''}: ${message.notification!.body ?? ''}',
             ),
-          );
-        }
-      });
-    }
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _foregroundMessageSub?.cancel();
+    _authSubscription.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
-
-    if (session != null) {
+    if (_currentSession != null) {
       return const Scaffold(
         body: Center(child: Text('JiriSewa')),
       );

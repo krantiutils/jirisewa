@@ -90,6 +90,10 @@ export async function listNotifications(
   offset = 0,
 ): Promise<ActionResult<NotificationRow[]>> {
   try {
+    // Clamp inputs to prevent abuse
+    const safeLimit = Math.max(1, Math.min(limit, 100));
+    const safeOffset = Math.max(0, offset);
+
     const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
@@ -97,7 +101,7 @@ export async function listNotifications(
       .select("id, category, title_en, title_ne, body_en, body_ne, data, read, created_at")
       .eq("user_id", DEMO_CONSUMER_ID)
       .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .range(safeOffset, safeOffset + safeLimit - 1);
 
     if (error) {
       console.error("listNotifications error:", error);

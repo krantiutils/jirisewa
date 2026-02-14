@@ -85,7 +85,7 @@ async function sendSmsFallback(
 
   try {
     const response = await fetch(
-      "http://api.sparrowsms.com/v2/sms/",
+      "https://api.sparrowsms.com/v2/sms/",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,14 +115,15 @@ serve(async (req: Request) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) {
-    return new Response("Missing authorization", { status: 401 });
-  }
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const fcmServerKey = Deno.env.get("FCM_SERVER_KEY");
+
+  // Verify the caller is using the service role key
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader || authHeader !== `Bearer ${supabaseServiceKey}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -136,7 +137,7 @@ serve(async (req: Request) => {
     );
   }
 
-  if (!payload.user_id || !payload.category || !payload.title_en || !payload.title_ne) {
+  if (!payload.user_id || !payload.category || !payload.title_en || !payload.title_ne || !payload.body_en || !payload.body_ne) {
     return new Response(
       JSON.stringify({ error: "Missing required fields: user_id, category, title_en, title_ne, body_en, body_ne" }),
       { status: 400, headers: { "Content-Type": "application/json" } },
