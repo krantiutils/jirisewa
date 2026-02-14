@@ -44,6 +44,7 @@ interface RpcProduceRow {
   farmer_avatar_url: string | null;
   farmer_rating_avg: number;
   farmer_rating_count: number;
+  farmer_verified: boolean;
   category_name_en: string;
   category_name_ne: string;
   category_icon: string | null;
@@ -187,7 +188,25 @@ async function fetchWithoutLocation(
     throw new Error(`Failed to fetch produce listings: ${error.message}`);
   }
 
-  const listings: ProduceListingWithDetails[] = (data ?? []).map((row) => ({
+  const rows = data ?? [];
+
+  // Fetch verified status for all farmers in this page
+  const farmerIds = [...new Set(rows.map((r) => r.farmer_id))];
+  const verifiedMap: Record<string, boolean> = {};
+  if (farmerIds.length > 0) {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("user_id, verified")
+      .in("user_id", farmerIds)
+      .eq("role", "farmer");
+    if (roles) {
+      for (const r of roles) {
+        verifiedMap[(r as { user_id: string }).user_id] = (r as { verified: boolean }).verified;
+      }
+    }
+  }
+
+  const listings: ProduceListingWithDetails[] = rows.map((row) => ({
     id: row.id,
     farmer_id: row.farmer_id,
     category_id: row.category_id,
@@ -202,6 +221,7 @@ async function fetchWithoutLocation(
     is_active: row.is_active,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    farmer_verified: verifiedMap[row.farmer_id] ?? false,
     farmer: Array.isArray(row.farmer) ? row.farmer[0] : row.farmer,
     category: Array.isArray(row.category) ? row.category[0] : row.category,
   }));
@@ -240,6 +260,14 @@ export async function fetchProduceById(
 
   if (!data) return null;
 
+  // Fetch verified status
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("verified")
+    .eq("user_id", data.farmer_id)
+    .eq("role", "farmer")
+    .single();
+
   return {
     id: data.id,
     farmer_id: data.farmer_id,
@@ -255,6 +283,7 @@ export async function fetchProduceById(
     is_active: data.is_active,
     created_at: data.created_at,
     updated_at: data.updated_at,
+    farmer_verified: (roleData as { verified: boolean } | null)?.verified ?? false,
     farmer: Array.isArray(data.farmer) ? data.farmer[0] : data.farmer,
     category: Array.isArray(data.category) ? data.category[0] : data.category,
   };
@@ -296,6 +325,7 @@ function mapRpcRow(row: RpcProduceRow): ProduceListingWithDetails {
     updated_at: row.updated_at,
     distance_km:
       row.distance_km != null ? Math.round(row.distance_km * 10) / 10 : undefined,
+    farmer_verified: row.farmer_verified ?? false,
     farmer: {
       id: row.farmer_id,
       name: row.farmer_name,

@@ -64,17 +64,42 @@ export async function verifyFarmer(
   locale: string,
   roleId: string,
 ): Promise<ActionResult> {
-  await requireAdmin(locale);
+  const adminId = await requireAdmin(locale);
   const supabase = await createSupabaseServerClient();
+
+  // Verify that documents have been submitted
+  const { data: docs } = await supabase
+    .from("verification_documents")
+    .select("id")
+    .eq("user_role_id", roleId)
+    .limit(1);
+
+  if (!docs || docs.length === 0) {
+    return { success: false, error: "Cannot approve: no documents submitted" };
+  }
 
   const { error } = await supabase
     .from("user_roles")
-    .update({ verified: true })
+    .update({
+      verified: true,
+      verification_status: "approved" as const,
+    })
     .eq("id", roleId);
 
   if (error) {
     return { success: false, error: error.message };
   }
+
+  // Mark the verification document as reviewed
+  await supabase
+    .from("verification_documents")
+    .update({
+      reviewed_by: adminId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("user_role_id", roleId)
+    .order("created_at", { ascending: false })
+    .limit(1);
 
   revalidatePath(`/${locale}/admin/farmers`);
   revalidatePath(`/${locale}/admin`);
@@ -84,15 +109,38 @@ export async function verifyFarmer(
 export async function rejectFarmerVerification(
   locale: string,
   roleId: string,
+  notes?: string,
 ): Promise<ActionResult> {
-  await requireAdmin(locale);
+  const adminId = await requireAdmin(locale);
   const supabase = await createSupabaseServerClient();
 
-  // For rejection we just leave verified=false. The farmer can re-apply.
-  // We could also delete the role, but that's more destructive.
-  // For now this is a no-op since they're already unverified,
-  // but we keep this action for UI completeness and future audit logging.
+  // Set verification_status to rejected
+  const { error } = await supabase
+    .from("user_roles")
+    .update({
+      verified: false,
+      verification_status: "rejected" as const,
+    })
+    .eq("id", roleId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  // Mark the verification document as reviewed with notes
+  await supabase
+    .from("verification_documents")
+    .update({
+      admin_notes: notes ?? null,
+      reviewed_by: adminId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("user_role_id", roleId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
   revalidatePath(`/${locale}/admin/farmers`);
+  revalidatePath(`/${locale}/admin`);
   return { success: true };
 }
 

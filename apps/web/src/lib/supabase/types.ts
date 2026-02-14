@@ -70,6 +70,7 @@ export type Database = {
           vehicle_capacity_kg: number | null;
           license_photo_url: string | null;
           verified: boolean;
+          verification_status: "unverified" | "pending" | "approved" | "rejected";
           created_at: string;
         };
         Insert: {
@@ -81,6 +82,7 @@ export type Database = {
           vehicle_capacity_kg?: number | null;
           license_photo_url?: string | null;
           verified?: boolean;
+          verification_status?: "unverified" | "pending" | "approved" | "rejected";
           created_at?: string;
         };
         Update: {
@@ -92,6 +94,7 @@ export type Database = {
           vehicle_capacity_kg?: number | null;
           license_photo_url?: string | null;
           verified?: boolean;
+          verification_status?: "unverified" | "pending" | "approved" | "rejected";
           created_at?: string;
         };
         Relationships: [
@@ -473,6 +476,60 @@ export type Database = {
           },
         ];
       };
+      verification_documents: {
+        Row: {
+          id: string;
+          user_role_id: string;
+          citizenship_photo_url: string;
+          farm_photo_url: string;
+          municipality_letter_url: string | null;
+          admin_notes: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_role_id: string;
+          citizenship_photo_url: string;
+          farm_photo_url: string;
+          municipality_letter_url?: string | null;
+          admin_notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_role_id?: string;
+          citizenship_photo_url?: string;
+          farm_photo_url?: string;
+          municipality_letter_url?: string | null;
+          admin_notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "verification_documents_user_role_id_fkey";
+            columns: ["user_role_id"];
+            isOneToOne: false;
+            referencedRelation: "user_roles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "verification_documents_reviewed_by_fkey";
+            columns: ["reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ratings: {
         Row: {
           id: string;
@@ -547,6 +604,7 @@ export type Database = {
       role_rated: "farmer" | "consumer" | "rider";
       trip_status: "scheduled" | "in_transit" | "completed" | "cancelled";
       vehicle_type: "bike" | "car" | "truck" | "bus" | "other";
+      verification_status: "unverified" | "pending" | "approved" | "rejected";
     };
   };
 };
@@ -568,4 +626,8 @@ export interface ProduceListingWithDetails extends ProduceListing {
   farmer: Pick<User, "id" | "name" | "avatar_url" | "rating_avg" | "rating_count">;
   category: Pick<ProduceCategory, "id" | "name_en" | "name_ne" | "icon">;
   distance_km?: number;
+  farmer_verified?: boolean;
 }
+
+export type VerificationStatus = Database["public"]["Enums"]["verification_status"];
+export type VerificationDocument = Database["public"]["Tables"]["verification_documents"]["Row"];

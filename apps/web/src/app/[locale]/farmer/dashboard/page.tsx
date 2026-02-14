@@ -4,7 +4,9 @@ import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui";
 import { Plus, Package, ShoppingCart, Wallet } from "lucide-react";
 import { getFarmerDashboardData } from "../actions";
+import { getVerificationStatus } from "../verification-actions";
 import { ListingCard } from "../_components/ListingCard";
+import { VerificationBanner } from "../_components/VerificationBanner";
 
 export default async function FarmerDashboardPage({
   params,
@@ -35,8 +37,21 @@ export default async function FarmerDashboardPage({
     totalEarnings,
   } = result.data;
 
+  const verificationResult = await getVerificationStatus();
+  const verificationStatus = verificationResult.success
+    ? verificationResult.data.verificationStatus
+    : "unverified";
+  const adminNotes = verificationResult.success
+    ? verificationResult.data.documents?.admin_notes
+    : null;
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      {/* Verification Banner */}
+      <div className="mb-6">
+        <VerificationBanner status={verificationStatus} adminNotes={adminNotes} />
+      </div>
+
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">

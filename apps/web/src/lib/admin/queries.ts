@@ -64,7 +64,7 @@ export async function getPlatformStats(
       .from("user_roles")
       .select("id", { count: "exact", head: true })
       .eq("role", "farmer")
-      .eq("verified", false),
+      .eq("verification_status", "pending" as const),
   ]);
 
   const totalRevenue =
@@ -318,8 +318,17 @@ export interface FarmerVerificationEntry {
   user_id: string;
   farm_name: string | null;
   verified: boolean;
+  verification_status: "unverified" | "pending" | "approved" | "rejected";
   created_at: string;
   user: { id: string; name: string; phone: string; address: string | null };
+  documents: {
+    id: string;
+    citizenship_photo_url: string;
+    farm_photo_url: string;
+    municipality_letter_url: string | null;
+    admin_notes: string | null;
+    created_at: string;
+  } | null;
 }
 
 export async function getUnverifiedFarmers(
@@ -327,6 +336,7 @@ export async function getUnverifiedFarmers(
   opts: {
     page?: number;
     limit?: number;
+    statusFilter?: "pending" | "unverified" | "rejected" | "all";
   } = {},
 ): Promise<{ farmers: FarmerVerificationEntry[]; total: number }> {
   await requireAdmin(locale);
@@ -336,24 +346,68 @@ export async function getUnverifiedFarmers(
   const limit = opts.limit ?? 20;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
+  const statusFilter = opts.statusFilter ?? "pending";
 
-  const { data, count, error } = await supabase
+  let query = supabase
     .from("user_roles")
     .select(
-      "id, user_id, farm_name, verified, created_at, user:users!user_roles_user_id_fkey(id, name, phone, address)",
+      "id, user_id, farm_name, verified, verification_status, created_at, user:users!user_roles_user_id_fkey(id, name, phone, address)",
       { count: "exact" },
     )
-    .eq("role", "farmer")
-    .eq("verified", false)
+    .eq("role", "farmer");
+
+  if (statusFilter === "pending") {
+    query = query.eq("verification_status", "pending" as const);
+  } else if (statusFilter === "unverified") {
+    query = query.eq("verification_status", "unverified" as const);
+  } else if (statusFilter === "rejected") {
+    query = query.eq("verification_status", "rejected" as const);
+  } else {
+    // "all" — show non-approved farmers
+    query = query.neq("verification_status", "approved" as const);
+  }
+
+  query = query
     .order("created_at", { ascending: true })
     .range(from, to);
+
+  const { data, count, error } = await query;
 
   if (error) {
     throw new Error(`Failed to fetch unverified farmers: ${error.message}`);
   }
 
+  const entries = (data ?? []) as unknown as Omit<FarmerVerificationEntry, "documents">[];
+
+  // Fetch latest verification documents for each farmer role
+  const roleIds = entries.map((e) => e.id);
+  const docsMap: Record<string, FarmerVerificationEntry["documents"]> = {};
+
+  if (roleIds.length > 0) {
+    const { data: allDocs } = await supabase
+      .from("verification_documents")
+      .select("id, user_role_id, citizenship_photo_url, farm_photo_url, municipality_letter_url, admin_notes, created_at")
+      .in("user_role_id", roleIds)
+      .order("created_at", { ascending: false });
+
+    if (allDocs) {
+      // Keep only the latest doc per role
+      for (const doc of allDocs) {
+        const roleId = (doc as unknown as { user_role_id: string }).user_role_id;
+        if (!docsMap[roleId]) {
+          docsMap[roleId] = doc as unknown as NonNullable<FarmerVerificationEntry["documents"]>;
+        }
+      }
+    }
+  }
+
+  const farmers: FarmerVerificationEntry[] = entries.map((e) => ({
+    ...e,
+    documents: docsMap[e.id] ?? null,
+  }));
+
   return {
-    farmers: (data as unknown as FarmerVerificationEntry[]) ?? [],
+    farmers,
     total: count ?? 0,
   };
 }
