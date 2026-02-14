@@ -10,6 +10,7 @@
     "orders": "Orders",
     "farmer": "Farmer Dashboard",
     "rider": "Rider Dashboard",
+    "business": "Business",
     "login": "Login",
     "register": "Register"
   },
@@ -750,6 +751,108 @@
           "description": "When the consumer confirms delivery"
         }
       }
+    }
+  },
+  "business": {
+    "register": {
+      "title": "Register Your Business",
+      "subtitle": "Set up your business profile for bulk ordering",
+      "businessName": "Business Name",
+      "businessNamePlaceholder": "e.g. Himalayan Kitchen",
+      "businessType": "Business Type",
+      "types": {
+        "restaurant": "Restaurant",
+        "hotel": "Hotel",
+        "canteen": "Canteen",
+        "other": "Other"
+      },
+      "registrationNumber": "Registration Number (Optional)",
+      "registrationNumberPlaceholder": "e.g. PAN/VAT number",
+      "address": "Business Address",
+      "addressPlaceholder": "e.g. Thamel, Kathmandu",
+      "phone": "Business Phone (Optional)",
+      "phonePlaceholder": "e.g. 01-4XXXXXX",
+      "contactPerson": "Contact Person (Optional)",
+      "contactPersonPlaceholder": "Primary contact name",
+      "submit": "Register Business",
+      "submitting": "Registering..."
+    },
+    "dashboard": {
+      "title": "Business Dashboard",
+      "verified": "Verified",
+      "newOrder": "New Bulk Order",
+      "activeOrders": "Active Orders",
+      "completedOrders": "Completed",
+      "totalSpent": "Total Spent",
+      "recentOrders": "Recent Orders",
+      "viewAll": "View All",
+      "noOrders": "No bulk orders yet",
+      "placeFirst": "Place Your First Order",
+      "orderSummary": "{items} items from {farmers} farmers · {kg} kg"
+    },
+    "orders": {
+      "title": "Bulk Orders",
+      "newOrder": "New Order",
+      "createNew": "Create Bulk Order",
+      "searchProduce": "Add Produce",
+      "searchPlaceholder": "Search for produce to add...",
+      "selectedItems": "Selected Items",
+      "deliveryAddress": "Delivery Address",
+      "deliveryAddressPlaceholder": "Where should the order be delivered?",
+      "deliveryFrequency": "Delivery Frequency",
+      "notes": "Special Instructions",
+      "notesPlaceholder": "Any special requirements or instructions...",
+      "estimatedTotal": "Estimated Total",
+      "quotingNote": "Final prices may differ after farmers provide bulk quotes.",
+      "submitOrder": "Submit Bulk Order",
+      "submitting": "Submitting...",
+      "noItems": "Please add at least one item to your order",
+      "noAddress": "Please enter a delivery address",
+      "noOrders": "No orders yet",
+      "items": "items",
+      "farmers": "farmers",
+      "backToOrders": "Back to orders",
+      "orderDetail": "Bulk Order Detail",
+      "notFound": "Order not found",
+      "unknownFarmer": "Unknown Farmer",
+      "total": "Total",
+      "acceptQuotes": "Accept All Quotes",
+      "cancelOrder": "Cancel Order"
+    },
+    "status": {
+      "draft": "Draft",
+      "submitted": "Submitted",
+      "quoted": "Quoted",
+      "accepted": "Accepted",
+      "in_progress": "In Progress",
+      "fulfilled": "Fulfilled",
+      "cancelled": "Cancelled"
+    },
+    "itemStatus": {
+      "pending": "Pending",
+      "quoted": "Quoted",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "fulfilled": "Fulfilled",
+      "cancelled": "Cancelled"
+    },
+    "frequency": {
+      "once": "One-time",
+      "weekly": "Weekly",
+      "biweekly": "Biweekly",
+      "monthly": "Monthly"
+    },
+    "farmerBulk": {
+      "title": "Bulk Order Requests",
+      "backToDashboard": "Back to Dashboard",
+      "noOrders": "No bulk order requests for your produce",
+      "itemsForYou": "items for you",
+      "unknownBusiness": "Unknown Business",
+      "requestedPrice": "Requested",
+      "yourPrice": "Your price",
+      "notesPlaceholder": "Optional notes for the buyer...",
+      "sendQuote": "Send Quote",
+      "decline": "Decline"
     }
   }
 }

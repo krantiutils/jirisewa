@@ -99,6 +99,12 @@ export default async function LocaleLayout({
                     >
                       {nav("rider")}
                     </Link>
+                    <Link
+                      href={`/${locale}/business/dashboard`}
+                      className="text-gray-600 hover:text-primary transition-colors"
+                    >
+                      {nav("business")}
+                    </Link>
                   </nav>
                 </div>
                 <div className="flex items-center gap-3">
