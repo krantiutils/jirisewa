@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
-  // connectIPS passes TXNID in the callback
+  // connectIPS passes TXNID and TXNAMT in the callback
   const txnId = searchParams.get("TXNID");
+  const txnAmtParam = searchParams.get("TXNAMT");
 
   if (!txnId) {
     console.error("connectIPS success callback: missing TXNID parameter");
@@ -45,6 +46,27 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Verify amount from callback matches expected amount
+  if (txnAmtParam) {
+    const receivedAmtPaisa = parseInt(txnAmtParam, 10);
+    if (!Number.isNaN(receivedAmtPaisa) && receivedAmtPaisa !== txn.amount_paisa) {
+      console.error(
+        "connectIPS success callback: amount mismatch. Expected:",
+        txn.amount_paisa,
+        "Received:",
+        receivedAmtPaisa,
+      );
+      await supabase
+        .from("connectips_transactions")
+        .update({ status: "FAILED", connectips_status: "AMOUNT_MISMATCH" })
+        .eq("id", txn.id)
+        .eq("status", "PENDING");
+      return NextResponse.redirect(
+        `${baseUrl}/en/orders/${txn.order_id}?payment=amount_mismatch`,
+      );
+    }
+  }
+
   // Server-to-server verification with connectIPS validate API
   const validateResult = await verifyTransaction(
     txn.reference_id,
@@ -62,27 +84,39 @@ export async function GET(request: NextRequest) {
       .update({
         connectips_status: validateResult?.status ?? "VERIFICATION_FAILED",
       })
-      .eq("id", txn.id);
+      .eq("id", txn.id)
+      .eq("status", "PENDING");
 
     return NextResponse.redirect(
       `${baseUrl}/en/orders/${txn.order_id}?payment=verification_failed`,
     );
   }
 
-  // Payment verified — update transaction and order
+  // Payment verified — atomically update transaction (only if still PENDING)
   const now = new Date().toISOString();
 
-  const { error: updateTxnError } = await supabase
+  const { error: updateTxnError, count: updatedCount } = await supabase
     .from("connectips_transactions")
     .update({
       status: "COMPLETE",
       connectips_status: validateResult.status,
       verified_at: now,
     })
-    .eq("id", txn.id);
+    .eq("id", txn.id)
+    .eq("status", "PENDING");
 
   if (updateTxnError) {
     console.error("connectIPS success callback: failed to update transaction:", updateTxnError);
+    return NextResponse.redirect(
+      `${baseUrl}/en/orders/${txn.order_id}?payment=verification_failed`,
+    );
+  }
+
+  // If no rows updated, another request already processed this
+  if (updatedCount === 0) {
+    return NextResponse.redirect(
+      `${baseUrl}/en/orders/${txn.order_id}?payment=success`,
+    );
   }
 
   // Mark order payment as escrowed
@@ -116,6 +150,8 @@ export async function POST(request: NextRequest) {
   // Reconstruct as a GET-style request by appending to URL
   const url = new URL(request.url);
   url.searchParams.set("TXNID", txnId);
+  const txnAmt = formData.get("TXNAMT") as string | null;
+  if (txnAmt) url.searchParams.set("TXNAMT", txnAmt);
   const modifiedRequest = new NextRequest(url, {
     method: "GET",
     headers: request.headers,

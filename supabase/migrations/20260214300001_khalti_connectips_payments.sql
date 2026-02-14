@@ -59,3 +59,4 @@ CREATE TRIGGER connectips_transactions_updated_at
 
 CREATE INDEX idx_connectips_transactions_order_id ON connectips_transactions(order_id);
 CREATE INDEX idx_connectips_transactions_status ON connectips_transactions(status);
+CREATE UNIQUE INDEX idx_connectips_transactions_reference_id ON connectips_transactions(reference_id);
