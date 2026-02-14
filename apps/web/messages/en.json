@@ -8,6 +8,7 @@
     "produce": "Produce",
     "marketplace": "Marketplace",
     "orders": "Orders",
+    "subscriptions": "Subscriptions",
     "farmer": "Farmer Dashboard",
     "rider": "Rider Dashboard",
     "messages": "Messages",
@@ -745,6 +746,82 @@
       "showing": "Showing {from}-{to} of {total}",
       "prev": "Previous",
       "next": "Next"
+    }
+  },
+  "subscriptions": {
+    "title": "Subscription Boxes",
+    "subtitle": "Fresh produce delivered to your door every week",
+    "loading": "Loading...",
+    "noPlans": "No subscription plans available yet.",
+    "noSubscriptions": "You have no active subscriptions.",
+    "browseButton": "Browse Plans",
+    "tabs": {
+      "browse": "Browse Plans",
+      "my": "My Subscriptions"
+    },
+    "frequency": {
+      "weekly": "Weekly",
+      "biweekly": "Biweekly",
+      "monthly": "Monthly"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "cancelled": "Cancelled"
+    },
+    "byFarmer": "by {name}",
+    "deliveryOn": "Delivery on {day}",
+    "spotsLeft": "{count} spots left",
+    "subscribe": "Subscribe",
+    "subscribing": "Subscribing...",
+    "subscribed": "Subscribed",
+    "full": "Full",
+    "nextDelivery": "Next delivery: {date}",
+    "pausedMessage": "Your subscription is paused. Resume anytime.",
+    "pause": "Pause",
+    "resume": "Resume",
+    "cancel": "Cancel"
+  },
+  "farmerSubscriptions": {
+    "title": "Subscription Plans",
+    "createPlan": "Create Plan",
+    "newPlan": "New Subscription Plan",
+    "loading": "Loading...",
+    "noPlans": "You have no subscription plans yet.",
+    "createFirstPlan": "Create Your First Plan",
+    "active": "Active",
+    "inactive": "Inactive",
+    "subscribers": "subscribers",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "nameEn": "Name (English)",
+    "nameEnPlaceholder": "e.g. Weekly Veggie Box",
+    "nameNe": "Name (Nepali)",
+    "nameNePlaceholder": "e.g. हप्ताको तरकारी बाकस",
+    "descriptionEn": "Description (English)",
+    "descriptionNe": "Description (Nepali)",
+    "descriptionPlaceholder": "What's included in this box...",
+    "price": "Price (NPR)",
+    "frequency": {
+      "weekly": "Weekly",
+      "biweekly": "Biweekly",
+      "monthly": "Monthly"
+    },
+    "frequencyWeekly": "Weekly",
+    "frequencyBiweekly": "Biweekly",
+    "frequencyMonthly": "Monthly",
+    "maxSubscribers": "Max Subscribers",
+    "deliveryDay": "Delivery Day",
+    "boxItems": "Box Contents",
+    "addItem": "Add Item",
+    "itemNameEn": "Item (English)",
+    "itemNameNe": "Item (Nepali)",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "createPlanButton": "Create Plan",
+    "errors": {
+      "nameRequired": "Plan name is required in both languages.",
+      "priceInvalid": "Please enter a valid price."
     }
   },
   "notifications": {
