@@ -18,6 +18,10 @@ RETURNS TABLE(
     order_count bigint
 ) LANGUAGE plpgsql STABLE SECURITY INVOKER AS $$
 BEGIN
+    IF p_days < 1 OR p_days > 365 THEN
+        RAISE EXCEPTION 'p_days must be between 1 and 365';
+    END IF;
+
     RETURN QUERY
     SELECT
         pc.id AS category_id,
@@ -33,13 +37,15 @@ BEGIN
     JOIN produce_categories pc ON pc.id = pl.category_id
     WHERE oi.farmer_id = p_farmer_id
       AND o.status = 'delivered'
-      AND o.created_at >= (now() - (p_days || ' days')::interval)
+      AND o.created_at >= (now() - make_interval(days => p_days))
     GROUP BY pc.id, pc.name_en, pc.name_ne, pc.icon
     ORDER BY total_revenue DESC;
 END;
 $$;
 
 -- 2. Revenue trend over time (daily buckets)
+-- Joins order_items first (filtered by farmer), then orders,
+-- ensuring we only count this farmer's orders per day.
 CREATE OR REPLACE FUNCTION farmer_revenue_trend(
     p_farmer_id uuid,
     p_days integer DEFAULT 30
@@ -50,22 +56,32 @@ RETURNS TABLE(
     order_count bigint
 ) LANGUAGE plpgsql STABLE SECURITY INVOKER AS $$
 BEGIN
+    IF p_days < 1 OR p_days > 365 THEN
+        RAISE EXCEPTION 'p_days must be between 1 and 365';
+    END IF;
+
     RETURN QUERY
     SELECT
         d.day,
-        COALESCE(SUM(oi.subtotal), 0) AS revenue,
-        COUNT(DISTINCT o.id) AS order_count
+        COALESCE(SUM(agg.daily_revenue), 0) AS revenue,
+        COALESCE(SUM(agg.daily_orders), 0)::bigint AS order_count
     FROM generate_series(
-        (now() - (p_days || ' days')::interval)::date,
+        (now() - make_interval(days => p_days))::date,
         now()::date,
         '1 day'::interval
     ) AS d(day)
-    LEFT JOIN orders o
-        ON o.created_at::date = d.day
-        AND o.status = 'delivered'
-    LEFT JOIN order_items oi
-        ON oi.order_id = o.id
-        AND oi.farmer_id = p_farmer_id
+    LEFT JOIN (
+        SELECT
+            o.created_at::date AS order_day,
+            SUM(oi.subtotal) AS daily_revenue,
+            COUNT(DISTINCT o.id) AS daily_orders
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        WHERE oi.farmer_id = p_farmer_id
+          AND o.status = 'delivered'
+          AND o.created_at >= (now() - make_interval(days => p_days))
+        GROUP BY o.created_at::date
+    ) agg ON agg.order_day = d.day
     GROUP BY d.day
     ORDER BY d.day;
 END;
@@ -87,6 +103,10 @@ RETURNS TABLE(
     order_count bigint
 ) LANGUAGE plpgsql STABLE SECURITY INVOKER AS $$
 BEGIN
+    IF p_days < 1 OR p_days > 365 THEN
+        RAISE EXCEPTION 'p_days must be between 1 and 365';
+    END IF;
+
     RETURN QUERY
     SELECT
         pl.id AS listing_id,
@@ -102,7 +122,7 @@ BEGIN
     JOIN produce_categories pc ON pc.id = pl.category_id
     WHERE oi.farmer_id = p_farmer_id
       AND o.status = 'delivered'
-      AND o.created_at >= (now() - (p_days || ' days')::interval)
+      AND o.created_at >= (now() - make_interval(days => p_days))
     GROUP BY pl.id, pl.name_en, pl.name_ne, pc.name_en
     ORDER BY total_revenue DESC
     LIMIT p_limit;
@@ -110,6 +130,7 @@ END;
 $$;
 
 -- 4. Price benchmarks: farmer's avg price vs market avg per category
+-- market_avg_price EXCLUDES the farmer's own listings for fair comparison.
 CREATE OR REPLACE FUNCTION farmer_price_benchmarks(
     p_farmer_id uuid
 )
@@ -132,9 +153,12 @@ BEGIN
             AVG(pl.price_per_kg) FILTER (WHERE pl.farmer_id = p_farmer_id),
             0
         ) AS my_avg_price,
-        COALESCE(AVG(pl.price_per_kg), 0) AS market_avg_price,
+        COALESCE(
+            AVG(pl.price_per_kg) FILTER (WHERE pl.farmer_id != p_farmer_id),
+            0
+        ) AS market_avg_price,
         COUNT(*) FILTER (WHERE pl.farmer_id = p_farmer_id) AS my_listing_count,
-        COUNT(*) AS market_listing_count
+        COUNT(*) FILTER (WHERE pl.farmer_id != p_farmer_id) AS market_listing_count
     FROM produce_listings pl
     JOIN produce_categories pc ON pc.id = pl.category_id
     WHERE pl.is_active = true
@@ -144,7 +168,7 @@ BEGIN
 END;
 $$;
 
--- 5. Fulfillment rate
+-- 5. Fulfillment rate (terminal orders only: delivered + cancelled)
 CREATE OR REPLACE FUNCTION farmer_fulfillment_rate(
     p_farmer_id uuid,
     p_days integer DEFAULT 30
@@ -156,6 +180,10 @@ RETURNS TABLE(
     fulfillment_pct numeric
 ) LANGUAGE plpgsql STABLE SECURITY INVOKER AS $$
 BEGIN
+    IF p_days < 1 OR p_days > 365 THEN
+        RAISE EXCEPTION 'p_days must be between 1 and 365';
+    END IF;
+
     RETURN QUERY
     SELECT
         COUNT(DISTINCT o.id) AS total_orders,
@@ -172,12 +200,12 @@ BEGIN
     FROM order_items oi
     JOIN orders o ON o.id = oi.order_id
     WHERE oi.farmer_id = p_farmer_id
-      AND o.created_at >= (now() - (p_days || ' days')::interval)
+      AND o.created_at >= (now() - make_interval(days => p_days))
       AND o.status IN ('delivered', 'cancelled');
 END;
 $$;
 
--- 6. Rating distribution and trend
+-- 6. Rating distribution
 CREATE OR REPLACE FUNCTION farmer_rating_distribution(
     p_farmer_id uuid
 )
@@ -199,3 +227,11 @@ BEGIN
     ORDER BY s.score;
 END;
 $$;
+
+-- Grant execute to authenticated users (required for Supabase PostgREST)
+GRANT EXECUTE ON FUNCTION farmer_sales_by_category(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION farmer_revenue_trend(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION farmer_top_products(uuid, integer, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION farmer_price_benchmarks(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION farmer_fulfillment_rate(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION farmer_rating_distribution(uuid) TO authenticated;

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -72,6 +73,7 @@ export default async function FarmerAnalyticsPage({
       <div className="mb-6 flex items-center gap-3">
         <Link
           href="/farmer/dashboard"
+          aria-label="Back to dashboard"
           className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
         >
           <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -81,14 +83,16 @@ export default async function FarmerAnalyticsPage({
 
       {/* Period Selector */}
       <div className="mb-6 flex justify-end">
-        <PeriodSelector
-          current={days}
-          labels={{
-            d7: t("period.7days"),
-            d30: t("period.30days"),
-            d90: t("period.90days"),
-          }}
-        />
+        <Suspense>
+          <PeriodSelector
+            current={days}
+            labels={{
+              d7: t("period.7days"),
+              d30: t("period.30days"),
+              d90: t("period.90days"),
+            }}
+          />
+        </Suspense>
       </div>
 
       {/* Summary Cards */}
