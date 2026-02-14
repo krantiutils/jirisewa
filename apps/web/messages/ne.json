@@ -390,6 +390,40 @@
       "rejectionReason": "कारण",
       "verifiedBadge": "प्रमाणित किसान",
       "benefits": "प्रमाणित किसानहरूले विश्वास ब्याज, बजारमा बढी दृश्यता, र प्राथमिकता मिलान पाउँछन्।"
+    },
+    "analytics": {
+      "title": "विश्लेषण",
+      "loginRequired": "विश्लेषण हेर्न कृपया लगइन गर्नुहोस्।",
+      "totalRevenue": "कुल आम्दानी",
+      "totalOrders": "कुल अर्डर",
+      "avgRating": "औसत रेटिङ",
+      "revenueTrend": "आम्दानी प्रवृत्ति",
+      "salesByCategory": "वर्ग अनुसार बिक्री",
+      "topProducts": "शीर्ष उत्पादनहरू",
+      "priceBenchmarks": "मूल्य तुलना",
+      "ratingBreakdown": "रेटिङ विवरण",
+      "fulfillmentRate": "पूर्ति दर",
+      "revenue": "आम्दानी",
+      "orders": "अर्डर",
+      "product": "उत्पादन",
+      "qtySold": "बिक्री मात्रा",
+      "delivered": "डेलिभर",
+      "cancelled": "रद्द",
+      "total": "कुल",
+      "rate": "दर",
+      "myPrice": "तपाईंको मूल्य",
+      "marketPrice": "बजार औसत",
+      "priceInsight": "तपाईंको {category} बजार औसत भन्दा {percent}% {direction} छ।",
+      "above": "माथि",
+      "below": "तल",
+      "avgLabel": "औसत",
+      "reviews": "समीक्षा",
+      "noData": "यो अवधिको लागि डाटा छैन।",
+      "period": {
+        "7days": "७ दिन",
+        "30days": "३० दिन",
+        "90days": "९० दिन"
+      }
     }
   },
   "rider": {

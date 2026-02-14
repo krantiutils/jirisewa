@@ -2,7 +2,7 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui";
-import { Plus, Package, ShoppingCart, Wallet } from "lucide-react";
+import { Plus, Package, ShoppingCart, Wallet, BarChart3 } from "lucide-react";
 import { getFarmerDashboardData } from "../actions";
 import { getVerificationStatus } from "../verification-actions";
 import { ListingCard } from "../_components/ListingCard";
@@ -57,13 +57,22 @@ export default async function FarmerDashboardPage({
         <h1 className="text-2xl font-bold text-foreground">
           {t("dashboard.title")}
         </h1>
-        <Link
-          href="/farmer/listings/new"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-6 h-14 font-semibold text-white transition-all duration-200 hover:bg-blue-600 hover:scale-105"
-        >
-          <Plus className="h-5 w-5" />
-          {t("dashboard.addListing")}
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/farmer/analytics"
+            className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 h-14 font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:scale-105"
+          >
+            <BarChart3 className="h-5 w-5" />
+            {t("analytics.title")}
+          </Link>
+          <Link
+            href="/farmer/listings/new"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-6 h-14 font-semibold text-white transition-all duration-200 hover:bg-blue-600 hover:scale-105"
+          >
+            <Plus className="h-5 w-5" />
+            {t("dashboard.addListing")}
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
