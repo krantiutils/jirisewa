@@ -7,7 +7,8 @@ ALTER TABLE users ADD COLUMN is_admin boolean NOT NULL DEFAULT false;
 CREATE INDEX idx_users_is_admin ON users (is_admin) WHERE is_admin = true;
 
 -- ==========================================================
--- Admin RLS policies: admins can read ALL data on all tables
+-- Admin RLS policies: admins can read/write ALL data
+-- UPDATE policies require WITH CHECK to override user-level WITH CHECK constraints
 -- ==========================================================
 
 -- Admin can read all orders (not just their own)
@@ -21,6 +22,9 @@ CREATE POLICY admin_orders_select ON orders
 CREATE POLICY admin_orders_update ON orders
     FOR UPDATE TO authenticated
     USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
+    )
+    WITH CHECK (
         EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
     );
 
@@ -36,6 +40,9 @@ CREATE POLICY admin_order_items_update ON order_items
     FOR UPDATE TO authenticated
     USING (
         EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
+    )
+    WITH CHECK (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
     );
 
 -- Admin can update any user (ban, suspend, verify)
@@ -43,12 +50,18 @@ CREATE POLICY admin_users_update ON users
     FOR UPDATE TO authenticated
     USING (
         EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
+    )
+    WITH CHECK (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
     );
 
 -- Admin can update any user_role (verify farmers/riders)
 CREATE POLICY admin_user_roles_update ON user_roles
     FOR UPDATE TO authenticated
     USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
+    )
+    WITH CHECK (
         EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
     );
 
@@ -63,6 +76,9 @@ CREATE POLICY admin_location_log_select ON rider_location_log
 CREATE POLICY admin_listings_update ON produce_listings
     FOR UPDATE TO authenticated
     USING (
+        EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
+    )
+    WITH CHECK (
         EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.is_admin = true)
     );
 

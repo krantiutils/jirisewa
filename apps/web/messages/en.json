@@ -592,7 +592,17 @@
       "markDisputed": "Mark as Disputed",
       "marking": "Marking...",
       "cancelOrder": "Cancel Order",
-      "cancelling": "Cancelling..."
+      "cancelling": "Cancelling...",
+      "confirmCancel": "Are you sure you want to cancel this order? This cannot be undone.",
+      "statusLabels": {
+        "pending": "Pending",
+        "matched": "Matched",
+        "picked_up": "Picked Up",
+        "in_transit": "In Transit",
+        "delivered": "Delivered",
+        "cancelled": "Cancelled",
+        "disputed": "Disputed"
+      }
     },
     "disputes": {
       "title": "Dispute Resolution",
