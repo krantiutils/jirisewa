@@ -125,3 +125,22 @@ export enum DeliveryFrequency {
   Biweekly = "biweekly",
   Monthly = "monthly",
 }
+
+export enum SubscriptionFrequency {
+  Weekly = "weekly",
+  Biweekly = "biweekly",
+  Monthly = "monthly",
+}
+
+export enum SubscriptionStatus {
+  Active = "active",
+  Paused = "paused",
+  Cancelled = "cancelled",
+}
+
+export enum SubscriptionDeliveryStatus {
+  Scheduled = "scheduled",
+  OrderCreated = "order_created",
+  Delivered = "delivered",
+  Skipped = "skipped",
+}
