@@ -91,3 +91,36 @@ export enum MessageType {
   Image = "image",
   Location = "location",
 }
+
+export enum BusinessType {
+  Restaurant = "restaurant",
+  Hotel = "hotel",
+  Canteen = "canteen",
+  Other = "other",
+}
+
+export enum BulkOrderStatus {
+  Draft = "draft",
+  Submitted = "submitted",
+  Quoted = "quoted",
+  Accepted = "accepted",
+  InProgress = "in_progress",
+  Fulfilled = "fulfilled",
+  Cancelled = "cancelled",
+}
+
+export enum BulkItemStatus {
+  Pending = "pending",
+  Quoted = "quoted",
+  Accepted = "accepted",
+  Rejected = "rejected",
+  Fulfilled = "fulfilled",
+  Cancelled = "cancelled",
+}
+
+export enum DeliveryFrequency {
+  Once = "once",
+  Weekly = "weekly",
+  Biweekly = "biweekly",
+  Monthly = "monthly",
+}

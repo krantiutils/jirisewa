@@ -11,6 +11,7 @@
     "farmer": "किसान ड्यासबोर्ड",
     "rider": "चालक ड्यासबोर्ड",
     "messages": "सन्देशहरू",
+    "business": "व्यापार",
     "login": "लगइन",
     "register": "दर्ता"
   },
@@ -776,5 +777,107 @@
     "backToMessages": "सन्देशहरूमा फर्कनुहोस्",
     "newMessage": "{name} बाट नयाँ सन्देश",
     "loadMore": "पुराना सन्देशहरू लोड गर्नुहोस्"
+  },
+  "business": {
+    "register": {
+      "title": "आफ्नो व्यापार दर्ता गर्नुहोस्",
+      "subtitle": "थोक अर्डरको लागि आफ्नो व्यापार प्रोफाइल सेटअप गर्नुहोस्",
+      "businessName": "व्यापारको नाम",
+      "businessNamePlaceholder": "जस्तै: हिमालयन किचन",
+      "businessType": "व्यापारको प्रकार",
+      "types": {
+        "restaurant": "रेस्टुरेन्ट",
+        "hotel": "होटल",
+        "canteen": "क्यान्टिन",
+        "other": "अन्य"
+      },
+      "registrationNumber": "दर्ता नम्बर (वैकल्पिक)",
+      "registrationNumberPlaceholder": "जस्तै: PAN/VAT नम्बर",
+      "address": "व्यापारको ठेगाना",
+      "addressPlaceholder": "जस्तै: थामेल, काठमाडौं",
+      "phone": "व्यापारको फोन (वैकल्पिक)",
+      "phonePlaceholder": "जस्तै: ०१-४XXXXXX",
+      "contactPerson": "सम्पर्क व्यक्ति (वैकल्पिक)",
+      "contactPersonPlaceholder": "प्राथमिक सम्पर्क नाम",
+      "submit": "व्यापार दर्ता गर्नुहोस्",
+      "submitting": "दर्ता गर्दै..."
+    },
+    "dashboard": {
+      "title": "व्यापार ड्यासबोर्ड",
+      "verified": "प्रमाणित",
+      "newOrder": "नयाँ थोक अर्डर",
+      "activeOrders": "सक्रिय अर्डरहरू",
+      "completedOrders": "पूरा भएका",
+      "totalSpent": "कुल खर्च",
+      "recentOrders": "हालैका अर्डरहरू",
+      "viewAll": "सबै हेर्नुहोस्",
+      "noOrders": "अहिलेसम्म कुनै थोक अर्डर छैन",
+      "placeFirst": "पहिलो अर्डर दिनुहोस्",
+      "orderSummary": "{farmers} किसानबाट {items} वस्तु · {kg} केजी"
+    },
+    "orders": {
+      "title": "थोक अर्डरहरू",
+      "newOrder": "नयाँ अर्डर",
+      "createNew": "थोक अर्डर सिर्जना गर्नुहोस्",
+      "searchProduce": "उत्पादन थप्नुहोस्",
+      "searchPlaceholder": "थप्न उत्पादन खोज्नुहोस्...",
+      "selectedItems": "चयन गरिएका वस्तुहरू",
+      "deliveryAddress": "डेलिभरी ठेगाना",
+      "deliveryAddressPlaceholder": "अर्डर कहाँ डेलिभर गर्ने?",
+      "deliveryFrequency": "डेलिभरी आवृत्ति",
+      "notes": "विशेष निर्देशनहरू",
+      "notesPlaceholder": "कुनै विशेष आवश्यकता वा निर्देशन...",
+      "estimatedTotal": "अनुमानित जम्मा",
+      "quotingNote": "किसानले थोक मूल्य दिएपछि अन्तिम मूल्य फरक हुन सक्छ।",
+      "submitOrder": "थोक अर्डर पेश गर्नुहोस्",
+      "submitting": "पेश गर्दै...",
+      "noItems": "कृपया कम्तिमा एक वस्तु थप्नुहोस्",
+      "noAddress": "कृपया डेलिभरी ठेगाना प्रविष्ट गर्नुहोस्",
+      "noOrders": "अहिलेसम्म कुनै अर्डर छैन",
+      "items": "वस्तुहरू",
+      "farmers": "किसानहरू",
+      "backToOrders": "अर्डरहरूमा फर्कनुहोस्",
+      "orderDetail": "थोक अर्डर विवरण",
+      "notFound": "अर्डर फेला परेन",
+      "unknownFarmer": "अज्ञात किसान",
+      "total": "जम्मा",
+      "acceptQuotes": "सबै उद्धरणहरू स्वीकार गर्नुहोस्",
+      "cancelOrder": "अर्डर रद्द गर्नुहोस्"
+    },
+    "status": {
+      "draft": "ड्राफ्ट",
+      "submitted": "पेश गरिएको",
+      "quoted": "उद्धरण दिइएको",
+      "accepted": "स्वीकृत",
+      "in_progress": "प्रगतिमा",
+      "fulfilled": "पूरा भयो",
+      "cancelled": "रद्द गरिएको"
+    },
+    "itemStatus": {
+      "pending": "पर्खिरहेको",
+      "quoted": "उद्धरण दिइएको",
+      "accepted": "स्वीकृत",
+      "rejected": "अस्वीकृत",
+      "fulfilled": "पूरा भयो",
+      "cancelled": "रद्द गरिएको"
+    },
+    "frequency": {
+      "once": "एक पटक",
+      "weekly": "हप्ताको",
+      "biweekly": "दुई हप्तामा",
+      "monthly": "महिनाको"
+    },
+    "farmerBulk": {
+      "title": "थोक अर्डर अनुरोधहरू",
+      "backToDashboard": "ड्यासबोर्डमा फर्कनुहोस्",
+      "noOrders": "तपाईंको उत्पादनको लागि कुनै थोक अर्डर अनुरोध छैन",
+      "itemsForYou": "तपाईंका लागि वस्तुहरू",
+      "unknownBusiness": "अज्ञात व्यापार",
+      "requestedPrice": "अनुरोध गरिएको",
+      "yourPrice": "तपाईंको मूल्य",
+      "notesPlaceholder": "क्रेताको लागि वैकल्पिक नोट...",
+      "sendQuote": "उद्धरण पठाउनुहोस्",
+      "decline": "अस्वीकार गर्नुहोस्"
+    }
   }
 }
