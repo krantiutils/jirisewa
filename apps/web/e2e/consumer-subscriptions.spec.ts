@@ -26,14 +26,6 @@ const demoSubscriptionPlan = {
   updated_at: "2026-02-14T00:00:00Z",
 };
 
-const demoFarmer = {
-  id: DEMO_FARMER_ID,
-  name: "Demo Farmer",
-  avatar_url: null,
-  rating_avg: 4.5,
-  rating_count: 12,
-};
-
 test.describe("Consumer Subscription Browse", () => {
   test.beforeEach(async ({ page }) => {
     // Mock subscription plans
