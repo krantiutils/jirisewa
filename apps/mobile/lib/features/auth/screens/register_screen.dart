@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:jirisewa_mobile/core/providers/auth_provider.dart';
 
 enum UserRole { farmer, consumer, rider }
 
@@ -123,6 +125,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _supabase.from('user_roles').upsert(roleInserts);
 
       if (!mounted) return;
+
+      // Reload auth profile so AuthGate navigates to AppShell
+      context.read<AuthProvider>().loadProfile();
 
       // Navigate to home
       Navigator.of(context).popUntil((route) => route.isFirst);

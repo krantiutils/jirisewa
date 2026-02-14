@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jirisewa_mobile/core/phone_validation.dart';
+import 'package:jirisewa_mobile/core/providers/auth_provider.dart';
 import 'package:jirisewa_mobile/features/auth/screens/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -111,6 +113,10 @@ class _LoginScreenState extends State<LoginScreen> {
             MaterialPageRoute(builder: (_) => const RegisterScreen()),
           );
         } else {
+          // Reload auth profile so AuthGate navigates to AppShell
+          if (mounted) {
+            context.read<AuthProvider>().loadProfile();
+          }
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } else {

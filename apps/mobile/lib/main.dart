@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:jirisewa_mobile/core/theme.dart';
+import 'package:jirisewa_mobile/core/providers/auth_provider.dart';
+import 'package:jirisewa_mobile/core/providers/cart_provider.dart';
 import 'package:jirisewa_mobile/features/auth/screens/login_screen.dart';
+import 'package:jirisewa_mobile/features/home/screens/app_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,11 +31,17 @@ class JiriSewaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'JiriSewa',
-      theme: buildAppTheme(),
-      home: const AuthGate(),
-      debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
+      child: MaterialApp(
+        title: 'JiriSewa',
+        theme: buildAppTheme(),
+        home: const AuthGate(),
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -40,12 +51,16 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
+    final auth = context.watch<AuthProvider>();
 
-    if (session != null) {
+    if (auth.loading) {
       return const Scaffold(
-        body: Center(child: Text('JiriSewa')),
+        body: Center(child: CircularProgressIndicator()),
       );
+    }
+
+    if (auth.isLoggedIn && auth.profile != null) {
+      return const AppShell();
     }
 
     return const LoginScreen();
