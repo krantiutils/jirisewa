@@ -29,13 +29,13 @@ import {
   confirmDelivery,
   checkReorderAvailability,
 } from "@/lib/actions/orders";
-import { retryEsewaPayment } from "@/lib/actions/payments";
+import { retryEsewaPayment, retryKhaltiPayment, retryConnectIPSPayment } from "@/lib/actions/payments";
 import type { ReorderItemAvailability } from "@/lib/helpers/orders";
 import { useCart } from "@/lib/cart";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { Button } from "@/components/ui/Button";
 import type { OrderWithDetails } from "@/lib/types/order";
-import type { EsewaPaymentFormData } from "@/lib/types/order";
+import type { EsewaPaymentFormData, ConnectIPSPaymentFormData } from "@/lib/types/order";
 import type { Locale } from "@/lib/i18n";
 import { parseGeoPoint } from "@/lib/types/trip";
 
@@ -75,6 +75,7 @@ export default function OrderDetailPage() {
   const searchParams = useSearchParams();
   const t = useTranslations("orders");
   const esewaFormRef = useRef<HTMLFormElement>(null);
+  const connectipsFormRef = useRef<HTMLFormElement>(null);
   const { addItem, clearCart } = useCart();
 
   const [order, setOrder] = useState<OrderWithDetails | null>(null);
@@ -82,6 +83,7 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [esewaForm, setEsewaForm] = useState<EsewaPaymentFormData | null>(null);
+  const [connectipsForm, setConnectipsForm] = useState<ConnectIPSPaymentFormData | null>(null);
 
   // Derive payment status message from URL params (after eSewa redirect)
   const paymentMessage = useMemo(() => {
@@ -92,12 +94,18 @@ export default function OrderDetailPage() {
     return null;
   }, [searchParams, t]);
 
-  // Auto-submit eSewa form when set
+  // Auto-submit payment forms when set
   useEffect(() => {
     if (esewaForm && esewaFormRef.current) {
       esewaFormRef.current.submit();
     }
   }, [esewaForm]);
+
+  useEffect(() => {
+    if (connectipsForm && connectipsFormRef.current) {
+      connectipsFormRef.current.submit();
+    }
+  }, [connectipsForm]);
 
   // Reorder state
   const [reorderLoading, setReorderLoading] = useState(false);
@@ -152,6 +160,30 @@ export default function OrderDetailPage() {
       setError(result.error);
     } else if (result.data) {
       setEsewaForm(result.data);
+    }
+    setActionLoading(false);
+  };
+
+  const handleRetryKhaltiPayment = async () => {
+    setActionLoading(true);
+    setError(null);
+    const result = await retryKhaltiPayment(orderId);
+    if (result.error) {
+      setError(result.error);
+    } else if (result.data) {
+      window.location.href = result.data.paymentUrl;
+    }
+    setActionLoading(false);
+  };
+
+  const handleRetryConnectIPSPayment = async () => {
+    setActionLoading(true);
+    setError(null);
+    const result = await retryConnectIPSPayment(orderId);
+    if (result.error) {
+      setError(result.error);
+    } else if (result.data) {
+      setConnectipsForm(result.data);
     }
     setActionLoading(false);
   };
@@ -570,8 +602,8 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {/* eSewa escrow status */}
-        {order.payment_method === "esewa" && order.payment_status === "escrowed" && (
+        {/* Digital payment escrow status */}
+        {["esewa", "khalti", "connectips"].includes(order.payment_method) && order.payment_status === "escrowed" && (
           <section className="mt-6 rounded-lg bg-blue-50 p-4">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-blue-600 shrink-0" />
@@ -626,7 +658,10 @@ export default function OrderDetailPage() {
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">{t("paymentMethod")}</span>
               <span className="capitalize">
-                {order.payment_method === "esewa" ? "eSewa" : order.payment_method}
+                {order.payment_method === "esewa" ? "eSewa"
+                  : order.payment_method === "khalti" ? "Khalti"
+                  : order.payment_method === "connectips" ? "connectIPS"
+                  : order.payment_method}
               </span>
             </div>
             <div className="flex justify-between text-sm">
@@ -712,7 +747,7 @@ export default function OrderDetailPage() {
 
         {/* Actions */}
         <section className="mt-6 space-y-3">
-          {/* Retry eSewa payment for unpaid eSewa orders */}
+          {/* Retry payment for unpaid digital payment orders */}
           {order.payment_method === "esewa" &&
             order.payment_status === "pending" &&
             order.status !== OrderStatus.Cancelled && (
@@ -728,6 +763,42 @@ export default function OrderDetailPage() {
                 <span className="mr-2 text-lg font-bold">e</span>
               )}
               {t("retryEsewaPayment")}
+            </Button>
+          )}
+
+          {order.payment_method === "khalti" &&
+            order.payment_status === "pending" &&
+            order.status !== OrderStatus.Cancelled && (
+            <Button
+              variant="primary"
+              className="w-full h-14 text-base"
+              onClick={handleRetryKhaltiPayment}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <span className="mr-2 text-lg font-bold text-purple-600">K</span>
+              )}
+              {t("retryKhaltiPayment")}
+            </Button>
+          )}
+
+          {order.payment_method === "connectips" &&
+            order.payment_status === "pending" &&
+            order.status !== OrderStatus.Cancelled && (
+            <Button
+              variant="primary"
+              className="w-full h-14 text-base"
+              onClick={handleRetryConnectIPSPayment}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <span className="mr-2 text-sm font-bold text-blue-600">IPS</span>
+              )}
+              {t("retryConnectIPSPayment")}
             </Button>
           )}
 
@@ -768,7 +839,7 @@ export default function OrderDetailPage() {
               <p className="mt-2 font-semibold text-green-700">
                 {t("deliveryConfirmed")}
               </p>
-              {order.payment_method === "esewa" && order.payment_status === "settled" && (
+              {["esewa", "khalti", "connectips"].includes(order.payment_method) && order.payment_status === "settled" && (
                 <p className="mt-1 text-sm text-green-600">{t("paymentSettled")}</p>
               )}
             </div>
@@ -906,6 +977,20 @@ export default function OrderDetailPage() {
           className="hidden"
         >
           {Object.entries(esewaForm.fields).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+        </form>
+      )}
+
+      {/* Hidden form for connectIPS redirect */}
+      {connectipsForm && (
+        <form
+          ref={connectipsFormRef}
+          method="POST"
+          action={connectipsForm.url}
+          className="hidden"
+        >
+          {Object.entries(connectipsForm.fields).map(([key, value]) => (
             <input key={key} type="hidden" name={key} value={value} />
           ))}
         </form>

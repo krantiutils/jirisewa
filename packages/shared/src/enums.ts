@@ -25,6 +25,7 @@ export enum PaymentMethod {
   Cash = "cash",
   ESewa = "esewa",
   Khalti = "khalti",
+  ConnectIPS = "connectips",
 }
 
 export enum PaymentStatus {
