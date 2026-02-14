@@ -40,3 +40,9 @@ export enum VehicleType {
   Bus = "bus",
   Other = "other",
 }
+
+export enum RoleRated {
+  Farmer = "farmer",
+  Consumer = "consumer",
+  Rider = "rider",
+}
