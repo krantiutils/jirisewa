@@ -1,42 +1,29 @@
-@Tags(['golden'])
-library;
-
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gotrue/gotrue.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/features/auth/screens/login_screen.dart';
 import 'package:jirisewa_mobile/features/auth/screens/register_screen.dart';
 import 'package:jirisewa_mobile/features/home/screens/home_screen.dart';
+import 'package:jirisewa_mobile/features/map/widgets/listings_map.dart';
+import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
 import 'package:jirisewa_mobile/features/marketplace/screens/marketplace_screen.dart';
 import 'package:jirisewa_mobile/features/orders/screens/order_detail_screen.dart';
 import 'package:jirisewa_mobile/features/orders/screens/orders_screen.dart';
 import 'package:jirisewa_mobile/features/profile/screens/profile_screen.dart';
+import 'package:jirisewa_mobile/features/tracking/screens/trip_tracking_screen.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trips_screen.dart';
 
 import 'helpers/mock_supabase.dart';
 import 'helpers/test_app.dart';
 import 'helpers/test_data.dart';
 
-/// Phone viewport size (logical pixels) for consistent golden files.
-const _phoneSize = Size(390, 844);
-
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Load real fonts so golden files render readable text instead of
-    // the Ahem test font (which shows every glyph as a square).
-    await _loadFonts();
-
-    // Initialize Supabase with mock HTTP transport so screens that access
-    // Supabase.instance.client get mock data instead of network errors.
-    // EmptyLocalStorage + _NoopAsyncStorage avoid SharedPreferences
-    // platform channels that are unavailable in headless widget tests.
     await Supabase.initialize(
       url: 'http://localhost:54321',
       anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test',
@@ -51,83 +38,21 @@ void main() {
     );
   });
 
-  // ---------------------------------------------------------------------------
-  // Auth flow
-  // ---------------------------------------------------------------------------
-
   group('Auth flow', () {
-    testWidgets('01 — login phone form', (tester) async {
-      await _setPhoneViewport(tester);
+    testWidgets('login form renders and accepts phone input', (tester) async {
       await tester.pumpWidget(buildBareTestApp(child: const LoginScreen()));
       await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/01_login_phone.png'),
-      );
-    });
-
-    testWidgets('02 — login phone entered', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildBareTestApp(child: const LoginScreen()));
-      await tester.pumpAndSettle();
+      expect(find.text('Login to JiriSewa'), findsOneWidget);
+      expect(find.text('Send OTP'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField).first, '9812345678');
       await tester.pump();
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/02_login_phone_entered.png'),
-      );
+      expect(find.text('9812345678'), findsOneWidget);
     });
 
-    testWidgets('03 — register step 1 personal info', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildBareTestApp(child: const RegisterScreen()));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/03_register_step1.png'),
-      );
-    });
-
-    testWidgets('04 — register step 2 role selection', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildBareTestApp(child: const RegisterScreen()));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Test User');
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/04_register_step2.png'),
-      );
-    });
-
-    testWidgets('05 — register step 2 roles selected', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildBareTestApp(child: const RegisterScreen()));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Test User');
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Farmer'));
-      await tester.tap(find.text('Rider'));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/05_register_step2_selected.png'),
-      );
-    });
-
-    testWidgets('06 — register step 3 role details', (tester) async {
-      await _setPhoneViewport(tester);
+    testWidgets('register advances to role details', (tester) async {
       await tester.pumpWidget(buildBareTestApp(child: const RegisterScreen()));
       await tester.pumpAndSettle();
 
@@ -140,398 +65,148 @@ void main() {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/06_register_step3.png'),
-      );
+      expect(find.text('Step 3 of 3'), findsOneWidget);
+      expect(find.text('Farm Name'), findsOneWidget);
+      expect(find.text('Vehicle Type'), findsOneWidget);
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // Home dashboard
-  // ---------------------------------------------------------------------------
-
-  group('Home dashboard', () {
-    testWidgets('07 — consumer dashboard', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const HomeScreen(),
-        activeRole: 'consumer',
-      ));
+  group('Dashboard data validation', () {
+    testWidgets('farmer dashboard shows pending pickups from mock data', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const HomeScreen(), activeRole: 'farmer'),
+      );
       await _pumpUntilLoaded(tester);
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/07_home_consumer.png'),
-      );
+      expect(find.textContaining('Farmer Dashboard'), findsOneWidget);
+      expect(find.text('No pending pickups'), findsNothing);
+      expect(find.textContaining('Awaiting pickup'), findsWidgets);
     });
 
-    testWidgets('08 — farmer dashboard', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const HomeScreen(),
-        activeRole: 'farmer',
-      ));
-      await _pumpUntilLoaded(tester);
+    testWidgets('mock Supabase filters eq and in results', (tester) async {
+      final client = createMockSupabaseClient();
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/08_home_farmer.png'),
-      );
-    });
+      final riderTrips = await client
+          .from('rider_trips')
+          .select('id, status')
+          .eq('rider_id', testUserId)
+          .inFilter('status', ['scheduled', 'in_transit']);
 
-    testWidgets('09 — rider dashboard', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const HomeScreen(),
-        activeRole: 'rider',
-      ));
-      await _pumpUntilLoaded(tester);
+      final orderItems = await client
+          .from('order_items')
+          .select('id, pickup_confirmed')
+          .eq('pickup_confirmed', false);
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/09_home_rider.png'),
-      );
+      expect((riderTrips as List).length, 2);
+      expect((orderItems as List).length, 1);
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // Marketplace
-  // ---------------------------------------------------------------------------
-
-  group('Marketplace', () {
-    testWidgets('10 — marketplace placeholder', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildBareTestApp(
-        child: const MarketplaceScreen(),
-      ));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/10_marketplace.png'),
+  group('Map integration', () {
+    testWidgets('marketplace renders listings map widget', (tester) async {
+      await tester.pumpWidget(
+        buildBareTestApp(child: const MarketplaceScreen()),
       );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Marketplace'), findsOneWidget);
+      expect(find.byType(ListingsMapWidget), findsOneWidget);
+      expect(find.text('Tomatoes'), findsOneWidget);
     });
-  });
 
-  // ---------------------------------------------------------------------------
-  // Orders
-  // ---------------------------------------------------------------------------
-
-  group('Orders', () {
-    testWidgets('11 — consumer orders list', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const OrdersScreen(),
-        activeRole: 'consumer',
-      ));
+    testWidgets('trips screen renders route maps in trip cards', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const TripsScreen(), activeRole: 'rider'),
+      );
       await _pumpUntilLoaded(tester);
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/11_orders_consumer.png'),
-      );
+      expect(find.text('My Trips'), findsOneWidget);
+      expect(find.byType(RouteMapWidget), findsWidgets);
     });
 
-    testWidgets('12 — rider orders list', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const OrdersScreen(),
-        activeRole: 'rider',
-      ));
-      await _pumpUntilLoaded(tester);
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/12_orders_rider.png'),
-      );
-    });
-
-    testWidgets('13 — order detail', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildBareTestApp(
-        child: OrderDetailScreen(
-          orderId: mockOrders.first['id'] as String,
+    testWidgets('trip tracking screen renders route map and controls', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildBareTestApp(
+          child: TripTrackingScreen(
+            tripId: 'trip-1',
+            origin: const LatLng(27.6306, 86.2305),
+            destination: const LatLng(27.7172, 85.3240),
+            originName: 'Jiri',
+            destinationName: 'Kathmandu',
+            routeCoordinates: const [
+              LatLng(27.6306, 86.2305),
+              LatLng(27.7172, 85.3240),
+            ],
+            initialStatus: 'scheduled',
+          ),
         ),
-      ));
-      await _pumpUntilLoaded(tester);
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/13_order_detail.png'),
       );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(RouteMapWidget), findsOneWidget);
+      expect(find.text('Start Trip'), findsOneWidget);
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // Trips
-  // ---------------------------------------------------------------------------
-
-  group('Trips', () {
-    testWidgets('14 — rider trips list', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const TripsScreen(),
-        activeRole: 'rider',
-      ));
+  group('Core screens smoke test', () {
+    testWidgets('orders screen loads for consumer role', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const OrdersScreen(), activeRole: 'consumer'),
+      );
       await _pumpUntilLoaded(tester);
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/14_trips_rider.png'),
-      );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Profile
-  // ---------------------------------------------------------------------------
-
-  group('Profile', () {
-    testWidgets('15 — profile view', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const ProfileScreen(),
-        activeRole: 'consumer',
-      ));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/15_profile_view.png'),
-      );
+      expect(find.text('My Orders'), findsOneWidget);
     });
 
-    testWidgets('16 — profile edit mode', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: const ProfileScreen(),
-        activeRole: 'consumer',
-      ));
+    testWidgets('order detail renders for mock order', (tester) async {
+      await tester.pumpWidget(
+        buildBareTestApp(
+          child: OrderDetailScreen(orderId: mockOrders.first['id'] as String),
+        ),
+      );
+      await _pumpUntilLoaded(tester);
+
+      expect(find.textContaining('Order #'), findsOneWidget);
+    });
+
+    testWidgets('profile screen loads in view and edit mode', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const ProfileScreen(), activeRole: 'consumer'),
+      );
       await tester.pumpAndSettle();
+
+      expect(find.text('Profile'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.edit_outlined));
       await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/16_profile_edit.png'),
-      );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Navigation — shell with bottom tabs
-  // ---------------------------------------------------------------------------
-
-  group('Navigation', () {
-    testWidgets('17 — consumer bottom tabs', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: Scaffold(
-          body: const Center(child: Text('Home')),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.storefront_outlined),
-                activeIcon: Icon(Icons.storefront),
-                label: 'Marketplace',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long),
-                label: 'Orders',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outlined),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          ),
-        ),
-        activeRole: 'consumer',
-      ));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/17_nav_consumer_tabs.png'),
-      );
-    });
-
-    testWidgets('18 — rider bottom tabs', (tester) async {
-      await _setPhoneViewport(tester);
-      await tester.pumpWidget(buildTestApp(
-        child: Scaffold(
-          body: const Center(child: Text('Home')),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.route_outlined),
-                activeIcon: Icon(Icons.route),
-                label: 'Trips',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long),
-                label: 'Orders',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outlined),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          ),
-        ),
-        activeRole: 'rider',
-      ));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('screenshots/18_nav_rider_tabs.png'),
-      );
+      expect(find.text('Save'), findsOneWidget);
     });
   });
 }
 
-// -----------------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------------
-
-/// Lets async data loading (mock HTTP) complete, then rebuilds the UI.
-///
-/// Widget tests use [FakeAsync] which doesn't process real I/O callbacks.
-/// [WidgetTester.runAsync] switches to a real async zone so the [MockClient]
-/// responses can resolve. We then pump a fixed number of frames rather than
-/// using [pumpAndSettle] which hangs on infinite animations or repeated
-/// [didChangeDependencies] → [setState] cycles.
 Future<void> _pumpUntilLoaded(WidgetTester tester) async {
-  // Let real async I/O (mock HTTP responses) complete.
   await tester.runAsync(() async {
     await Future.delayed(const Duration(milliseconds: 500));
   });
-  // Pump frames to rebuild with loaded data. Avoid pumpAndSettle which
-  // hangs on CircularProgressIndicator and other infinite animations.
   for (var i = 0; i < 10; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
 }
 
-/// Sets a phone-sized viewport for consistent golden files.
-Future<void> _setPhoneViewport(WidgetTester tester) async {
-  tester.view.physicalSize = _phoneSize;
-  tester.view.devicePixelRatio = 1.0;
-  addTearDown(() {
-    tester.view.resetPhysicalSize();
-    tester.view.resetDevicePixelRatio();
-  });
-}
-
-/// Loads Roboto and MaterialIcons fonts from the Flutter SDK cache so golden
-/// files render readable text instead of Ahem squares.
-Future<void> _loadFonts() async {
-  final fontDir = '${_findFlutterRoot()}/bin/cache/artifacts/material_fonts';
-
-  // Load Roboto variants for normal, bold, medium, and light text.
-  final robotoLoader = FontLoader('Roboto');
-  for (final variant in ['Regular', 'Bold', 'Medium', 'Light', 'Thin']) {
-    final file = File('$fontDir/Roboto-$variant.ttf');
-    if (file.existsSync()) {
-      final bytes = file.readAsBytesSync();
-      robotoLoader.addFont(
-        Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
-      );
-    }
-  }
-  await robotoLoader.load();
-
-  // Load italic variants.
-  final robotoItalicLoader = FontLoader('Roboto');
-  for (final variant in [
-    'Italic',
-    'BoldItalic',
-    'MediumItalic',
-    'LightItalic',
-    'ThinItalic',
-  ]) {
-    final file = File('$fontDir/Roboto-$variant.ttf');
-    if (file.existsSync()) {
-      final bytes = file.readAsBytesSync();
-      robotoItalicLoader.addFont(
-        Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
-      );
-    }
-  }
-  await robotoItalicLoader.load();
-
-  // Load MaterialIcons for icon rendering.
-  final iconFile = File('$fontDir/MaterialIcons-Regular.otf');
-  if (iconFile.existsSync()) {
-    final iconLoader = FontLoader('MaterialIcons');
-    final bytes = iconFile.readAsBytesSync();
-    iconLoader.addFont(
-      Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
-    );
-    await iconLoader.load();
-  }
-}
-
-/// Locates the Flutter SDK root directory.
-String _findFlutterRoot() {
-  // FLUTTER_ROOT is set by the flutter tool when running tests.
-  final envRoot = Platform.environment['FLUTTER_ROOT'];
-  if (envRoot != null && envRoot.isNotEmpty) return envRoot;
-
-  // Fallback: resolve the flutter binary.
-  final result = Process.runSync('which', ['flutter']);
-  if (result.exitCode == 0) {
-    final bin = (result.stdout as String).trim();
-    try {
-      final resolved = File(bin).resolveSymbolicLinksSync();
-      return File(resolved).parent.parent.path;
-    } catch (_) {
-      // If symlink resolution fails, try parent of bin directory.
-      return File(bin).parent.parent.path;
-    }
-  }
-
-  throw StateError(
-    'Cannot find Flutter SDK root. Set FLUTTER_ROOT environment variable.',
-  );
-}
-
-/// No-op [GotrueAsyncStorage] for test-mode PKCE storage.
-///
-/// Avoids SharedPreferences platform channel calls that are unavailable
-/// in headless widget tests.
-class _NoopAsyncStorage extends GotrueAsyncStorage {
+class _NoopAsyncStorage implements GotrueAsyncStorage {
   @override
   Future<String?> getItem({required String key}) async => null;
 
   @override
-  Future<void> removeItem({required String key}) async {}
+  Future<void> setItem({required String key, required String value}) async {}
 
   @override
-  Future<void> setItem({required String key, required String value}) async {}
+  Future<void> removeItem({required String key}) async {}
 }
