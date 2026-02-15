@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../core/constants/map_constants.dart';
 import '../../../core/theme.dart';
+import '../../map/widgets/route_map.dart';
 import '../services/location_tracking_service.dart';
 
 /// Screen shown to riders during an active trip.
@@ -40,7 +39,6 @@ class TripTrackingScreen extends StatefulWidget {
 class _TripTrackingScreenState extends State<TripTrackingScreen>
     with WidgetsBindingObserver {
   final LocationTrackingService _tracker = LocationTrackingService();
-  final MapController _mapController = MapController();
 
   late String _tripStatus;
   LatLng? _currentPosition;
@@ -79,7 +77,6 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _tracker.dispose();
-    _mapController.dispose();
     super.dispose();
   }
 
@@ -87,8 +84,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Battery optimization: reduce frequency when backgrounded
     _tracker.setBackgrounded(
-      state == AppLifecycleState.paused ||
-          state == AppLifecycleState.inactive,
+      state == AppLifecycleState.paused || state == AppLifecycleState.inactive,
     );
   }
 
@@ -212,8 +208,6 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bounds =
-        LatLngBounds.fromPoints([widget.origin, widget.destination]);
     final isActive = _tripStatus == 'in_transit';
 
     return Scaffold(
@@ -266,105 +260,14 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
           Expanded(
             child: Stack(
               children: [
-                FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCameraFit: CameraFit.bounds(
-                      bounds: bounds,
-                      padding: const EdgeInsets.all(48),
-                    ),
-                    minZoom: mapMinZoom,
-                    maxZoom: mapMaxZoom,
-                    cameraConstraint: CameraConstraint.contain(
-                      bounds:
-                          LatLngBounds(nepalSouthWest, nepalNorthEast),
-                    ),
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: mapTileUrl,
-                      userAgentPackageName: 'com.jirisewa.mobile',
-                    ),
-                    // Route polyline
-                    if (widget.routeCoordinates != null &&
-                        widget.routeCoordinates!.isNotEmpty)
-                      PolylineLayer(
-                        polylines: [
-                          Polyline(
-                            points: widget.routeCoordinates!,
-                            color: isActive
-                                ? AppColors.primary
-                                : AppColors.accent,
-                            strokeWidth: isActive ? 5 : 4,
-                            pattern: isActive
-                                ? const StrokePattern.solid()
-                                : StrokePattern.dashed(
-                                    segments: const [10, 10],
-                                  ),
-                          ),
-                        ],
-                      ),
-                    MarkerLayer(
-                      markers: [
-                        // Origin marker
-                        Marker(
-                          point: widget.origin,
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.trip_origin,
-                            color: AppColors.secondary,
-                            size: 32,
-                          ),
-                        ),
-                        // Destination marker
-                        Marker(
-                          point: widget.destination,
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.location_pin,
-                            color: AppColors.error,
-                            size: 40,
-                          ),
-                        ),
-                        // Rider position
-                        if (_currentPosition != null)
-                          Marker(
-                            point: _currentPosition!,
-                            width: 36,
-                            height: 36,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withAlpha(76),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.two_wheeler,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    RichAttributionWidget(
-                      attributions: [
-                        TextSourceAttribution(mapAttribution),
-                      ],
-                    ),
-                  ],
+                RouteMapWidget(
+                  origin: widget.origin,
+                  destination: widget.destination,
+                  originName: widget.originName,
+                  destinationName: widget.destinationName,
+                  routeCoordinates: widget.routeCoordinates,
+                  currentPosition: _currentPosition,
+                  isActive: isActive,
                 ),
                 // Broadcast count indicator
                 if (isActive)
@@ -408,10 +311,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
               color: const Color(0xFFFEE2E2),
               child: Text(
                 _error!,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFFDC2626),
-                ),
+                style: const TextStyle(fontSize: 13, color: Color(0xFFDC2626)),
               ),
             ),
 
@@ -491,9 +391,7 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
                     ElevatedButton(
                       onPressed: _actionLoading ? null : _completeTrip,
                       child: Text(
-                        _actionLoading
-                            ? 'Completing...'
-                            : 'Complete Trip',
+                        _actionLoading ? 'Completing...' : 'Complete Trip',
                       ),
                     ),
                     const SizedBox(height: 8),

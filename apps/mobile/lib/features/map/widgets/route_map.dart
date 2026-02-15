@@ -12,13 +12,15 @@ class RouteMapWidget extends StatefulWidget {
   final LatLng destination;
   final String? originName;
   final String? destinationName;
+  final LatLng? currentPosition;
+  final bool isActive;
 
   /// Pre-computed route coordinates. If null, fetches via OSRM.
   final List<LatLng>? routeCoordinates;
 
   /// Called when route is loaded with distance (meters) and duration (seconds).
   final void Function(double distanceMeters, double durationSeconds)?
-      onRouteLoaded;
+  onRouteLoaded;
 
   const RouteMapWidget({
     super.key,
@@ -28,6 +30,8 @@ class RouteMapWidget extends StatefulWidget {
     this.destinationName,
     this.routeCoordinates,
     this.onRouteLoaded,
+    this.currentPosition,
+    this.isActive = false,
   });
 
   @override
@@ -56,7 +60,8 @@ class _RouteMapWidgetState extends State<RouteMapWidget> {
   void didUpdateWidget(RouteMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.origin != widget.origin ||
-        oldWidget.destination != widget.destination) {
+        oldWidget.destination != widget.destination ||
+        oldWidget.routeCoordinates != widget.routeCoordinates) {
       _loadRoute();
     }
   }
@@ -122,8 +127,10 @@ class _RouteMapWidgetState extends State<RouteMapWidget> {
                 polylines: [
                   Polyline(
                     points: _routePoints,
-                    color: const Color(0xFF3B82F6),
-                    strokeWidth: 4,
+                    color: widget.isActive
+                        ? const Color(0xFF059669)
+                        : const Color(0xFF3B82F6),
+                    strokeWidth: widget.isActive ? 5 : 4,
                   ),
                 ],
               ),
@@ -149,12 +156,35 @@ class _RouteMapWidgetState extends State<RouteMapWidget> {
                     size: 40,
                   ),
                 ),
+                if (widget.currentPosition != null)
+                  Marker(
+                    point: widget.currentPosition!,
+                    width: 36,
+                    height: 36,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(76),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.two_wheeler,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
               ],
             ),
             RichAttributionWidget(
-              attributions: [
-                TextSourceAttribution(mapAttribution),
-              ],
+              attributions: [TextSourceAttribution(mapAttribution)],
             ),
           ],
         ),

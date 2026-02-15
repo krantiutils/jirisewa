@@ -40,9 +40,7 @@ SupabaseClient createMockSupabaseClient() {
     'http://localhost:54321',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test',
     httpClient: createMockHttpClient(),
-    authOptions: const AuthClientOptions(
-      autoRefreshToken: false,
-    ),
+    authOptions: const AuthClientOptions(autoRefreshToken: false),
   );
 }
 
@@ -86,77 +84,116 @@ Response _restResponse(
   }
   final table = segments[tableIdx + 1];
 
-  final isSingle =
-      query.containsKey('id') && query['id']?.startsWith('eq.') == true;
+  final isSingle = _isSingleRequest(query);
 
+  List<Map<String, dynamic>> rows;
   switch (table) {
     case 'users':
-      if (isSingle) {
-        return Response(
-          jsonEncode(mockUserRow),
-          200,
-          headers: _jsonHeaders,
-          request: request,
-        );
-      }
-      return Response(
-        jsonEncode([mockUserRow]),
-        200,
-        headers: _jsonHeaders,
-        request: request,
-      );
+      rows = [mockUserRow];
+      break;
 
     case 'user_roles':
-      return Response(
-        jsonEncode(mockUserRolesRows),
-        200,
-        headers: _jsonHeaders,
-        request: request,
-      );
+      rows = mockUserRolesRows;
+      break;
 
     case 'orders':
-      if (isSingle) {
-        return Response(
-          jsonEncode(mockOrders.first),
-          200,
-          headers: _jsonHeaders,
-          request: request,
-        );
-      }
-      return Response(
-        jsonEncode(mockOrders),
-        200,
-        headers: _jsonHeaders,
-        request: request,
-      );
+      rows = mockOrders;
+      break;
 
     case 'order_items':
-      return Response(
-        jsonEncode(mockOrderItems),
-        200,
-        headers: _jsonHeaders,
-        request: request,
-      );
+      rows = mockOrderItems;
+      break;
 
     case 'produce_listings':
-      return Response(
-        jsonEncode(mockProduceListings),
-        200,
-        headers: _jsonHeaders,
-        request: request,
-      );
+      rows = mockProduceListings;
+      break;
 
     case 'rider_trips':
-      return Response(
-        jsonEncode(mockRiderTrips),
-        200,
-        headers: _jsonHeaders,
-        request: request,
-      );
+      rows = mockRiderTrips;
+      break;
 
     default:
       return Response('[]', 200, headers: _jsonHeaders, request: request);
   }
+
+  final filteredRows = _applyQueryFilters(rows, query);
+  final responseBody = isSingle
+      ? jsonEncode(filteredRows.isNotEmpty ? filteredRows.first : null)
+      : jsonEncode(filteredRows);
+
+  return Response(responseBody, 200, headers: _jsonHeaders, request: request);
 }
 
 const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
+
+const _reservedQueryKeys = {
+  'select',
+  'order',
+  'limit',
+  'offset',
+  'on_conflict',
+  'columns',
+};
+
+bool _isSingleRequest(Map<String, String> query) {
+  return query.containsKey('id') && query['id']?.startsWith('eq.') == true;
+}
+
+List<Map<String, dynamic>> _applyQueryFilters(
+  List<Map<String, dynamic>> rows,
+  Map<String, String> query,
+) {
+  var filtered = rows.where((row) {
+    for (final entry in query.entries) {
+      final key = entry.key;
+      if (_reservedQueryKeys.contains(key)) continue;
+
+      final value = entry.value;
+      final rowValue = row[key];
+
+      if (value.startsWith('eq.')) {
+        if (!_matchesEq(rowValue, value.substring(3))) return false;
+      } else if (value.startsWith('in.(') && value.endsWith(')')) {
+        final allowedValues = _parseInValues(value);
+        if (allowedValues.isEmpty) return false;
+        if (!allowedValues.any((allowed) => _matchesEq(rowValue, allowed))) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }).toList();
+
+  final limit = int.tryParse(query['limit'] ?? '');
+  if (limit != null && limit >= 0 && filtered.length > limit) {
+    filtered = filtered.sublist(0, limit);
+  }
+
+  return filtered;
+}
+
+List<String> _parseInValues(String expression) {
+  final values = expression.substring(4, expression.length - 1);
+  if (values.trim().isEmpty) return const [];
+  return values
+      .split(',')
+      .map((value) => value.trim().replaceAll('"', '').replaceAll("'", ''))
+      .toList();
+}
+
+bool _matchesEq(dynamic rowValue, String expectedRaw) {
+  if (expectedRaw == 'null') {
+    return rowValue == null;
+  }
+
+  if (rowValue is bool) {
+    return expectedRaw == rowValue.toString();
+  }
+
+  if (rowValue is num) {
+    final expectedNum = num.tryParse(expectedRaw);
+    return expectedNum != null && rowValue == expectedNum;
+  }
+
+  return rowValue?.toString() == expectedRaw;
+}

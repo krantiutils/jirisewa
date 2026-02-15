@@ -98,7 +98,7 @@ final mockOrderItems = [
     'quantity_kg': 10,
     'price_per_kg': 65,
     'subtotal': 650,
-    'pickup_confirmed': true,
+    'pickup_confirmed': false,
     'delivery_confirmed': false,
     'produce_listings': {'name_en': 'Potatoes', 'name_ne': 'आलु'},
   },
