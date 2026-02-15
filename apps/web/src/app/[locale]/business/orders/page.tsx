@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -44,7 +44,7 @@ type NewOrderItem = {
   quantityKg: number;
 };
 
-export default function BusinessOrdersPage() {
+function BusinessOrdersPageInner() {
   const params = useParams();
   const locale = params.locale as Locale;
   const router = useRouter();
@@ -487,5 +487,19 @@ export default function BusinessOrdersPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function BusinessOrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-muted flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+      }
+    >
+      <BusinessOrdersPageInner />
+    </Suspense>
   );
 }
