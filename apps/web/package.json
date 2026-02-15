@@ -11,6 +11,7 @@
     "clean": "rm -rf .next out",
     "test:e2e": "playwright test tests/e2e/smoke.spec.ts",
     "test:e2e:all": "FULL_E2E=1 playwright test",
+    "test:e2e:legacy": "FULL_E2E=1 playwright test e2e",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:update-snapshots": "playwright test --update-snapshots",
     "test:e2e:ui": "playwright test --ui"

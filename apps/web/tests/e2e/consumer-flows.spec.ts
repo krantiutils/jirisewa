@@ -448,7 +448,7 @@ test.describe("4. Cart and checkout", () => {
     // Delivery location section
     const deliverySection = page.locator(
       "text=/delivery location|डेलिभरी/i",
-    );
+    ).first();
     await expect(deliverySection).toBeVisible();
 
     // Payment method section

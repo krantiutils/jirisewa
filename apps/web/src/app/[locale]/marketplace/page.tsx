@@ -3,6 +3,10 @@ import { getTranslations } from "next-intl/server";
 import { use } from "react";
 import { fetchProduceListings, fetchCategories } from "@/lib/queries/produce";
 import { MarketplaceContent } from "@/components/marketplace";
+import type {
+  ProduceCategory,
+  ProduceListingWithDetails,
+} from "@/lib/supabase/types";
 
 export async function generateMetadata({
   params,
@@ -30,9 +34,9 @@ export default function MarketplacePage({
 }
 
 async function MarketplaceLoader() {
-  let listings = [];
+  let listings: ProduceListingWithDetails[] = [];
   let total = 0;
-  let categories = [];
+  let categories: ProduceCategory[] = [];
 
   try {
     const [listingResult, categoryResult] = await Promise.all([

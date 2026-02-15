@@ -8,8 +8,14 @@ const SUPABASE_SERVICE_ROLE_KEY =
 
 const TEST_PHONES = ["+9779800000001", "+9779800000002"];
 
+function isJwtLike(token: string): boolean {
+  return token.split(".").length === 3;
+}
+
 teardown("clean up test data", async () => {
-  if (!SUPABASE_SERVICE_ROLE_KEY) return;
+  if (!SUPABASE_SERVICE_ROLE_KEY || !isJwtLike(SUPABASE_SERVICE_ROLE_KEY)) {
+    return;
+  }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },

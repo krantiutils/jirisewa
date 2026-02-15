@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const FULL_E2E = process.env.FULL_E2E === "1";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const HAS_REAL_SUPABASE_KEY = SERVICE_ROLE_KEY.split(".").length === 3;
+const INCLUDE_LEGACY_E2E = FULL_E2E && HAS_REAL_SUPABASE_KEY;
+
 /**
  * Playwright E2E test configuration for JiriSewa web app.
  *
@@ -12,11 +17,10 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: ".",
   // Default CI/local runs focus on deterministic browser-flows in tests/e2e.
-  // Broader role-specific specs under e2e/ can be enabled explicitly.
-  testMatch:
-    process.env.FULL_E2E === "1"
-      ? ["tests/e2e/**/*.spec.ts", "e2e/**/*.spec.ts"]
-      : ["tests/e2e/**/*.spec.ts"],
+  // Broader role-specific specs under e2e/ require a real Supabase JWT key.
+  testMatch: INCLUDE_LEGACY_E2E
+    ? ["tests/e2e/**/*.spec.ts", "e2e/**/*.spec.ts"]
+    : ["tests/e2e/**/*.spec.ts"],
 
   timeout: 30_000,
   fullyParallel: true,
@@ -43,7 +47,7 @@ export default defineConfig({
   },
 
   projects:
-    process.env.FULL_E2E === "1"
+    INCLUDE_LEGACY_E2E
       ? [
           {
             name: "setup",

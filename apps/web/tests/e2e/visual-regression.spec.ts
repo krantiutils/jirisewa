@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { HomePage } from "../pages/home.page";
 import { MarketplacePage } from "../pages/marketplace.page";
 import { LoginPage, RegisterPage } from "../pages/auth.page";
@@ -19,11 +19,15 @@ import { CartPage } from "../pages/cart.page";
 
 test.describe("Visual Regression — Public Pages", () => {
   test.describe.configure({ mode: "parallel" });
+  const settlePage = async (page: Page) => {
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(300);
+  };
 
   test("home page — full page", async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("home-full.png", {
       fullPage: true,
@@ -34,7 +38,7 @@ test.describe("Visual Regression — Public Pages", () => {
   test("home page — hero section", async ({ page }) => {
     const homePage = new HomePage(page);
     await homePage.goto();
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     // Capture just the hero/above-the-fold area
     await expect(page).toHaveScreenshot("home-hero.png", {
@@ -56,7 +60,7 @@ test.describe("Visual Regression — Public Pages", () => {
   test("login page", async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("login.png", {
       fullPage: true,
@@ -66,7 +70,7 @@ test.describe("Visual Regression — Public Pages", () => {
   test("registration page", async ({ page }) => {
     const registerPage = new RegisterPage(page);
     await registerPage.goto();
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("register.png", {
       fullPage: true,
@@ -76,7 +80,7 @@ test.describe("Visual Regression — Public Pages", () => {
   test("cart page — empty state", async ({ page }) => {
     const cartPage = new CartPage(page);
     await cartPage.goto();
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("cart-empty.png", {
       fullPage: true,
@@ -85,7 +89,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("farmer dashboard page", async ({ page }) => {
     await page.goto("/en/farmer/dashboard");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("farmer-dashboard.png", {
       fullPage: true,
@@ -95,7 +99,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("farmer verification page", async ({ page }) => {
     await page.goto("/en/farmer/verification");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("farmer-verification.png", {
       fullPage: true,
@@ -104,7 +108,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("rider dashboard page", async ({ page }) => {
     await page.goto("/en/rider/dashboard");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("rider-dashboard.png", {
       fullPage: true,
@@ -114,7 +118,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("orders page", async ({ page }) => {
     await page.goto("/en/orders");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("orders.png", {
       fullPage: true,
@@ -124,7 +128,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("checkout page", async ({ page }) => {
     await page.goto("/en/checkout");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("checkout.png", {
       fullPage: true,
@@ -133,7 +137,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("notifications page", async ({ page }) => {
     await page.goto("/en/notifications");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("notifications.png", {
       fullPage: true,
@@ -143,7 +147,7 @@ test.describe("Visual Regression — Public Pages", () => {
 
   test("admin dashboard page", async ({ page }) => {
     await page.goto("/en/admin");
-    await page.waitForLoadState("networkidle");
+    await settlePage(page);
 
     await expect(page).toHaveScreenshot("admin-dashboard.png", {
       fullPage: true,
