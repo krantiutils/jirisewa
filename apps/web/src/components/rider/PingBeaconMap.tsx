@@ -72,9 +72,13 @@ export default function PingBeaconMap({ pings }: PingBeaconMapProps) {
   if (pickupPoints.length === 0 && deliveryPoints.length === 0) return null;
 
   return (
-    <div className="mb-4 overflow-hidden rounded-lg border-2 border-emerald-200">
+    <div
+      data-testid="ping-beacon-map"
+      className="mb-4 overflow-hidden rounded-lg border-2 border-emerald-200"
+    >
       <div className="h-52">
         <MapContainer
+          data-testid="ping-beacon-map-canvas"
           bounds={fitBounds}
           center={fitBounds ? undefined : [27.7172, 85.324]}
           zoom={fitBounds ? undefined : 10}

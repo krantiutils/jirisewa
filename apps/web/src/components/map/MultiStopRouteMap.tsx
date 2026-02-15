@@ -49,8 +49,9 @@ export default function MultiStopRouteMap({
   }, [origin, destination, stops]);
 
   return (
-    <div className={className}>
+    <div data-testid="multi-stop-route-map" className={className}>
       <MapContainer
+        data-testid="multi-stop-route-map-canvas"
         bounds={fitBounds}
         maxBounds={nepalBounds}
         maxBoundsViscosity={1.0}

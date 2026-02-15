@@ -112,8 +112,9 @@ export default function OrderTrackingMap({
   );
 
   return (
-    <div className={className}>
+    <div data-testid="order-tracking-map" className={className}>
       <MapContainer
+        data-testid="order-tracking-map-canvas"
         bounds={fitBounds}
         maxBounds={bounds}
         maxBoundsViscosity={1.0}

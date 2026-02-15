@@ -95,8 +95,9 @@ export default function TripRouteMap({
   }, [origin, destination, precomputedRoute, onRouteLoaded]);
 
   return (
-    <div className={className}>
+    <div data-testid="trip-route-map" className={className}>
       <MapContainer
+        data-testid="trip-route-map-canvas"
         bounds={fitBounds}
         maxBounds={bounds}
         maxBoundsViscosity={1.0}

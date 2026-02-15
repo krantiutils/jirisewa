@@ -81,8 +81,9 @@ export default function LocationPicker({
   );
 
   return (
-    <div className={className}>
+    <div data-testid="location-picker-map" className={className}>
       <MapContainer
+        data-testid="location-picker-map-canvas"
         center={[center.lat, center.lng]}
         zoom={MAP_DEFAULT_ZOOM}
         maxBounds={bounds}
