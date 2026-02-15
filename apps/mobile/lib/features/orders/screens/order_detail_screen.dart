@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:jirisewa_mobile/core/constants/map_constants.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
+import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
 
-/// Order detail screen — accessed via deep link /orders/:id.
-/// Shows order status, items, delivery info, and tracking.
+/// Order detail screen with fulfillment flow:
+/// Farmer pickup -> Rider transit -> Customer delivery.
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
 
@@ -69,6 +72,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final pickup = _pickupPoint();
+    final delivery = _deliveryPoint();
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${widget.orderId.substring(0, 8)}'),
@@ -79,113 +85,164 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                      const SizedBox(height: 12),
-                      Text(_error!),
-                      const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _loadOrder, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                  const SizedBox(height: 12),
+                  Text(_error!),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadOrder,
+                    child: const Text('Retry'),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadOrder,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Status badge
-                        _statusBadge(_order!['status'] as String? ?? 'pending'),
-                        const SizedBox(height: 24),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadOrder,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _statusBadge(_order!['status'] as String? ?? 'pending'),
+                    const SizedBox(height: 16),
 
-                        // Delivery info
-                        _sectionTitle('Delivery'),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.muted,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.location_on, size: 18, color: AppColors.primary),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _order!['delivery_address'] as String? ?? 'No address',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.payments_outlined, size: 18, color: AppColors.secondary),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    (_order!['payment_method'] as String? ?? 'cash').toUpperCase(),
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    _formatPaymentStatus(_order!['payment_status'] as String? ?? 'pending'),
-                                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                    _sectionTitle('Fulfillment Map'),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        height: 200,
+                        child: RouteMapWidget(
+                          origin: pickup,
+                          destination: delivery,
+                          originName: 'Farmer pickup',
+                          destinationName: 'Customer delivery',
+                          routeCoordinates: [pickup, delivery],
+                          isActive:
+                              (_order!['status'] as String? ?? '') ==
+                              'in_transit',
                         ),
-                        const SizedBox(height: 24),
-
-                        // Items
-                        _sectionTitle('Items'),
-                        const SizedBox(height: 8),
-                        if (_items.isEmpty)
-                          const Text('No items', style: TextStyle(color: Colors.grey))
-                        else
-                          ..._items.map(_itemTile),
-
-                        const SizedBox(height: 16),
-
-                        // Totals
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.muted,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: [
-                              _totalRow('Produce', 'Rs ${_order!['total_price'] ?? 0}'),
-                              const SizedBox(height: 4),
-                              _totalRow('Delivery', 'Rs ${_order!['delivery_fee'] ?? 0}'),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 6),
-                                child: Container(height: 2, color: AppColors.border),
-                              ),
-                              _totalRow(
-                                'Total',
-                                'Rs ${(((_order!['total_price'] as num?)?.toDouble() ?? 0) + ((_order!['delivery_fee'] as num?)?.toDouble() ?? 0)).toStringAsFixed(0)}',
-                                bold: true,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    _flowChips(),
+                    const SizedBox(height: 24),
+
+                    _sectionTitle('Delivery'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.muted,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _order!['delivery_address'] as String? ??
+                                      'No address',
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.payments_outlined,
+                                size: 18,
+                                color: AppColors.secondary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                (_order!['payment_method'] as String? ?? 'cash')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                _formatPaymentStatus(
+                                  _order!['payment_status'] as String? ??
+                                      'pending',
+                                ),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    _sectionTitle('Items'),
+                    const SizedBox(height: 8),
+                    if (_items.isEmpty)
+                      const Text(
+                        'No items',
+                        style: TextStyle(color: Colors.grey),
+                      )
+                    else
+                      ..._items.map(_itemTile),
+
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.muted,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          _totalRow(
+                            'Produce',
+                            'Rs ${_order!['total_price'] ?? 0}',
+                          ),
+                          const SizedBox(height: 4),
+                          _totalRow(
+                            'Delivery',
+                            'Rs ${_order!['delivery_fee'] ?? 0}',
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Container(
+                              height: 2,
+                              color: AppColors.border,
+                            ),
+                          ),
+                          _totalRow(
+                            'Total',
+                            'Rs ${(((_order!['total_price'] as num?)?.toDouble() ?? 0) + ((_order!['delivery_fee'] as num?)?.toDouble() ?? 0)).toStringAsFixed(0)}',
+                            bold: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
@@ -216,6 +273,42 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Widget _flowChips() {
+    final anyPicked = _items.any((item) => item['pickup_confirmed'] == true);
+    final allDelivered =
+        _items.isNotEmpty &&
+        _items.every((item) => item['delivery_confirmed'] == true);
+    final inTransit = (_order?['status'] as String? ?? '') == 'in_transit';
+
+    final steps = [
+      ('Farmer ready', anyPicked, AppColors.secondary),
+      ('Rider in transit', inTransit, AppColors.accent),
+      ('Customer delivered', allDelivered, AppColors.primary),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: steps.map((step) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: step.$2 ? step.$3.withAlpha(35) : Colors.grey.withAlpha(30),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            step.$1,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: step.$2 ? step.$3 : Colors.grey[700],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _itemTile(Map<String, dynamic> item) {
     final listing = item['produce_listings'] as Map<String, dynamic>?;
     final name = listing?['name_en'] as String? ?? 'Unknown';
@@ -238,7 +331,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '${qty}kg × Rs $price',
@@ -252,8 +351,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     else
                       _badge('Awaiting pickup', Colors.grey),
                     const SizedBox(width: 6),
-                    if (delivered)
-                      _badge('Delivered', AppColors.secondary),
+                    if (delivered) _badge('Delivered', AppColors.secondary),
                   ],
                 ),
               ],
@@ -277,7 +375,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: color),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: color,
+        ),
       ),
     );
   }
@@ -286,16 +388,32 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, fontWeight: bold ? FontWeight.bold : null)),
-        Text(value, style: TextStyle(fontSize: 14, fontWeight: bold ? FontWeight.bold : null)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: bold ? FontWeight.bold : null,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: bold ? FontWeight.bold : null,
+          ),
+        ),
       ],
     );
   }
 
   String _formatStatus(String status) {
-    return status.replaceAll('_', ' ').split(' ').map((w) =>
-      w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : ''
-    ).join(' ');
+    return status
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map(
+          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+        )
+        .join(' ');
   }
 
   String _formatPaymentStatus(String status) {
@@ -315,5 +433,37 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       default:
         return AppColors.primary;
     }
+  }
+
+  LatLng _pickupPoint() {
+    if (_items.isNotEmpty) {
+      final first = _items.first;
+      final pickupLocation = first['pickup_location'];
+      final fromPickup = _tryParsePoint(pickupLocation);
+      if (fromPickup != null) return fromPickup;
+    }
+    return const LatLng(27.6306, 86.2305);
+  }
+
+  LatLng _deliveryPoint() {
+    return _addressToLatLng(_order?['delivery_address'] as String?);
+  }
+
+  LatLng _addressToLatLng(String? address) {
+    final lower = (address ?? '').toLowerCase();
+    if (lower.contains('kathmandu')) return const LatLng(27.7172, 85.3240);
+    if (lower.contains('banepa')) return const LatLng(27.6298, 85.5215);
+    if (lower.contains('charikot')) return const LatLng(27.6681, 86.0290);
+    if (lower.contains('jiri')) return const LatLng(27.6306, 86.2305);
+    return jiriCenter;
+  }
+
+  LatLng? _tryParsePoint(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      final lat = (value['lat'] as num?)?.toDouble();
+      final lng = (value['lng'] as num?)?.toDouble();
+      if (lat != null && lng != null) return LatLng(lat, lng);
+    }
+    return null;
   }
 }

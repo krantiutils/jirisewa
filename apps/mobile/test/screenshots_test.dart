@@ -111,7 +111,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Marketplace'), findsOneWidget);
+      expect(find.text('Marketplace Flow'), findsOneWidget);
       expect(find.byType(ListingsMapWidget), findsOneWidget);
       expect(find.text('Tomatoes'), findsOneWidget);
     });
@@ -124,7 +124,7 @@ void main() {
       );
       await _pumpUntilLoaded(tester);
 
-      expect(find.text('My Trips'), findsOneWidget);
+      expect(find.text('Rider Connection Flow'), findsOneWidget);
       expect(find.byType(RouteMapWidget), findsWidgets);
     });
 

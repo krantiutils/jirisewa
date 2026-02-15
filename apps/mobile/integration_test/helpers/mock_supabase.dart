@@ -6,32 +6,33 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'test_data.dart';
 
-/// Creates a [SupabaseClient] backed by mock HTTP responses.
-///
-/// This client does not need `Supabase.initialize()` or platform channels.
-/// It can be used in both widget tests (`flutter test`) and integration tests.
-SupabaseClient createMockSupabaseClient() {
-  final mockHttpClient = MockClient((request) async {
+/// Creates a mock [Client] that returns test data for Supabase REST API calls.
+Client createMockHttpClient() {
+  return MockClient((request) async {
     final path = request.url.path;
     final query = request.url.queryParameters;
 
-    // Auth endpoints — return minimal valid responses.
     if (path.contains('/auth/')) {
       return _authResponse(request);
     }
 
-    // PostgREST endpoints: /rest/v1/{table_name}
     if (path.contains('/rest/v1/')) {
       return _restResponse(path, query);
     }
 
     return Response('{"error": "not found"}', 404, headers: _jsonHeaders);
   });
+}
 
+/// Creates a [SupabaseClient] backed by mock HTTP responses.
+///
+/// This client does not need `Supabase.initialize()` or platform channels.
+/// It can be used in both widget tests (`flutter test`) and integration tests.
+SupabaseClient createMockSupabaseClient() {
   return SupabaseClient(
     'http://localhost:54321',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test',
-    httpClient: mockHttpClient,
+    httpClient: createMockHttpClient(),
     authOptions: const AuthClientOptions(autoRefreshToken: false),
   );
 }

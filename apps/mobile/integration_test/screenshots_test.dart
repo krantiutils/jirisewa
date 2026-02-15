@@ -26,7 +26,7 @@ void main() {
     await Supabase.initialize(
       url: 'http://localhost:54321',
       anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test',
-      httpClient: createMockSupabaseClient(),
+      httpClient: createMockHttpClient(),
     );
   });
 
@@ -128,10 +128,9 @@ void main() {
 
   group('Home dashboard', () {
     testWidgets('consumer dashboard', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const HomeScreen(),
-        activeRole: 'consumer',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const HomeScreen(), activeRole: 'consumer'),
+      );
       // Pump a few frames to allow async data load from mock client.
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
@@ -142,10 +141,9 @@ void main() {
     });
 
     testWidgets('farmer dashboard', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const HomeScreen(),
-        activeRole: 'farmer',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const HomeScreen(), activeRole: 'farmer'),
+      );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
@@ -155,10 +153,9 @@ void main() {
     });
 
     testWidgets('rider dashboard', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const HomeScreen(),
-        activeRole: 'rider',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const HomeScreen(), activeRole: 'rider'),
+      );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
@@ -173,14 +170,13 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('Marketplace', () {
-    testWidgets('marketplace placeholder', (tester) async {
-      await tester.pumpWidget(buildBareTestApp(
-        child: const MarketplaceScreen(),
-      ));
+    testWidgets('marketplace flow screen', (tester) async {
+      await tester.pumpWidget(
+        buildBareTestApp(child: const MarketplaceScreen()),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.text('Marketplace'), findsOneWidget);
-      expect(find.textContaining('Coming soon'), findsOneWidget);
+      expect(find.text('Marketplace Flow'), findsOneWidget);
 
       await takeAndSaveScreenshot(binding, '10_marketplace');
     });
@@ -192,10 +188,9 @@ void main() {
 
   group('Orders', () {
     testWidgets('consumer orders list', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const OrdersScreen(),
-        activeRole: 'consumer',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const OrdersScreen(), activeRole: 'consumer'),
+      );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
@@ -205,10 +200,9 @@ void main() {
     });
 
     testWidgets('rider orders list', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const OrdersScreen(),
-        activeRole: 'rider',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const OrdersScreen(), activeRole: 'rider'),
+      );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
@@ -218,11 +212,11 @@ void main() {
     });
 
     testWidgets('order detail', (tester) async {
-      await tester.pumpWidget(buildBareTestApp(
-        child: OrderDetailScreen(
-          orderId: mockOrders.first['id'] as String,
+      await tester.pumpWidget(
+        buildBareTestApp(
+          child: OrderDetailScreen(orderId: mockOrders.first['id'] as String),
         ),
-      ));
+      );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
@@ -238,14 +232,13 @@ void main() {
 
   group('Trips', () {
     testWidgets('rider trips list', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const TripsScreen(),
-        activeRole: 'rider',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const TripsScreen(), activeRole: 'rider'),
+      );
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
-      expect(find.text('My Trips'), findsOneWidget);
+      expect(find.text('Rider Connection Flow'), findsOneWidget);
 
       await takeAndSaveScreenshot(binding, '14_trips_rider');
     });
@@ -257,10 +250,9 @@ void main() {
 
   group('Profile', () {
     testWidgets('profile view', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const ProfileScreen(),
-        activeRole: 'consumer',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const ProfileScreen(), activeRole: 'consumer'),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Profile'), findsOneWidget);
@@ -271,10 +263,9 @@ void main() {
     });
 
     testWidgets('profile edit mode', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const ProfileScreen(),
-        activeRole: 'consumer',
-      ));
+      await tester.pumpWidget(
+        buildTestApp(child: const ProfileScreen(), activeRole: 'consumer'),
+      );
       await tester.pumpAndSettle();
 
       // Tap edit button.
@@ -296,40 +287,42 @@ void main() {
     testWidgets('consumer bottom tabs', (tester) async {
       // Render the profile screen inside a Scaffold with fake bottom nav
       // to demonstrate the tab layout without needing full GoRouter.
-      await tester.pumpWidget(buildTestApp(
-        child: Scaffold(
-          body: const Center(child: Text('Home')),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.storefront_outlined),
-                activeIcon: Icon(Icons.storefront),
-                label: 'Marketplace',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long),
-                label: 'Orders',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outlined),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
+      await tester.pumpWidget(
+        buildTestApp(
+          child: Scaffold(
+            body: const Center(child: Text('Home')),
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: 0,
+              type: BottomNavigationBarType.fixed,
+              selectedFontSize: 12,
+              unselectedFontSize: 12,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.storefront_outlined),
+                  activeIcon: Icon(Icons.storefront),
+                  label: 'Marketplace',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.receipt_long_outlined),
+                  activeIcon: Icon(Icons.receipt_long),
+                  label: 'Orders',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outlined),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
+            ),
           ),
+          activeRole: 'consumer',
         ),
-        activeRole: 'consumer',
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Marketplace'), findsOneWidget);
@@ -338,40 +331,42 @@ void main() {
     });
 
     testWidgets('rider bottom tabs', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: Scaffold(
-          body: const Center(child: Text('Home')),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: 0,
-            type: BottomNavigationBarType.fixed,
-            selectedFontSize: 12,
-            unselectedFontSize: 12,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.route_outlined),
-                activeIcon: Icon(Icons.route),
-                label: 'Trips',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_long_outlined),
-                activeIcon: Icon(Icons.receipt_long),
-                label: 'Orders',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outlined),
-                activeIcon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
+      await tester.pumpWidget(
+        buildTestApp(
+          child: Scaffold(
+            body: const Center(child: Text('Home')),
+            bottomNavigationBar: BottomNavigationBar(
+              currentIndex: 0,
+              type: BottomNavigationBarType.fixed,
+              selectedFontSize: 12,
+              unselectedFontSize: 12,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.route_outlined),
+                  activeIcon: Icon(Icons.route),
+                  label: 'Trips',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.receipt_long_outlined),
+                  activeIcon: Icon(Icons.receipt_long),
+                  label: 'Orders',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outlined),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
+            ),
           ),
+          activeRole: 'rider',
         ),
-        activeRole: 'rider',
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Trips'), findsOneWidget);
