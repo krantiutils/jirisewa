@@ -8,7 +8,22 @@ import type { Page } from "@playwright/test";
  * calling mockSupabaseRoutes — Playwright matches later routes first.
  */
 
-const SUPABASE_URL = "http://localhost:54321";
+const configuredSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const SUPABASE_URLS = Array.from(
+  new Set(
+    [
+      configuredSupabaseUrl,
+      "http://localhost:54321",
+      "http://127.0.0.1:54321",
+    ].filter((value): value is string => Boolean(value)),
+  ),
+);
+
+function cookieNameFromSupabaseUrl(url: string): string {
+  const hostname = new URL(url).hostname;
+  const ref = hostname.split(".")[0];
+  return `sb-${ref}-auth-token`;
+}
 
 // ── Demo IDs (match server actions) ──────────────────────────────────────
 export const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
@@ -156,119 +171,121 @@ export const demoPlatformStats = {
 // ── Route handler ────────────────────────────────────────────────────────
 
 export async function mockSupabaseRoutes(page: Page) {
-  // Mock Auth: getSession / getUser
-  await page.route(`${SUPABASE_URL}/auth/v1/token*`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(demoSession),
-    });
-  });
-
-  await page.route(`${SUPABASE_URL}/auth/v1/user`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(demoSession.user),
-    });
-  });
-
-  await page.route(`${SUPABASE_URL}/auth/v1/otp`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({}),
-    });
-  });
-
-  // Mock Realtime
-  await page.route(`${SUPABASE_URL}/realtime/**`, async (route) => {
-    await route.abort();
-  });
-
-  // Mock REST: catch-all for Supabase PostgREST
-  await page.route(`${SUPABASE_URL}/rest/v1/**`, async (route) => {
-    const url = route.request().url();
-
-    if (url.includes("rider_trips")) {
+  for (const supabaseUrl of SUPABASE_URLS) {
+    // Mock Auth: getSession / getUser
+    await page.route(`${supabaseUrl}/auth/v1/token*`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([demoTrip]),
+        body: JSON.stringify(demoSession),
       });
-      return;
-    }
+    });
 
-    if (url.includes("orders")) {
+    await page.route(`${supabaseUrl}/auth/v1/user`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([demoOrder]),
+        body: JSON.stringify(demoSession.user),
       });
-      return;
-    }
+    });
 
-    if (url.includes("users")) {
+    await page.route(`${supabaseUrl}/auth/v1/otp`, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify([demoUser]),
+        body: JSON.stringify({}),
       });
-      return;
-    }
+    });
 
-    if (url.includes("order_pings")) {
+    // Mock Realtime
+    await page.route(`${supabaseUrl}/realtime/**`, async (route) => {
+      await route.abort();
+    });
+
+    // Mock REST: catch-all for Supabase PostgREST
+    await page.route(`${supabaseUrl}/rest/v1/**`, async (route) => {
+      const url = route.request().url();
+
+      if (url.includes("rider_trips")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([demoTrip]),
+        });
+        return;
+      }
+
+      if (url.includes("orders")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([demoOrder]),
+        });
+        return;
+      }
+
+      if (url.includes("users")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([demoUser]),
+        });
+        return;
+      }
+
+      if (url.includes("order_pings")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      if (url.includes("produce_listings")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      if (url.includes("produce_categories")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      if (url.includes("notifications")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+        return;
+      }
+
+      // Default: empty array
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify([]),
       });
-      return;
-    }
-
-    if (url.includes("produce_listings")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      });
-      return;
-    }
-
-    if (url.includes("produce_categories")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      });
-      return;
-    }
-
-    if (url.includes("notifications")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      });
-      return;
-    }
-
-    // Default: empty array
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify([]),
     });
-  });
 
-  // Mock RPC calls
-  await page.route(`${SUPABASE_URL}/rest/v1/rpc/**`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify([]),
+    // Mock RPC calls
+    await page.route(`${supabaseUrl}/rest/v1/rpc/**`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
     });
-  });
+  }
 }
 
 /**
@@ -276,21 +293,37 @@ export async function mockSupabaseRoutes(page: Page) {
  * treats the visitor as logged in.
  */
 export async function injectAuthCookies(page: Page) {
-  await page.context().addCookies([
-    {
-      name: "sb-localhost-auth-token",
-      value: JSON.stringify({
-        access_token: demoSession.access_token,
-        refresh_token: demoSession.refresh_token,
-        expires_at: demoSession.expires_at,
-        expires_in: demoSession.expires_in,
-        token_type: "bearer",
-        user: demoSession.user,
-      }),
-      domain: "localhost",
+  // Clear any persisted auth cookies from storageState to avoid mixing
+  // multiple Supabase cookie formats across test files.
+  await page.context().clearCookies();
+
+  const baseUrl = process.env.BASE_URL ?? "http://localhost:3000";
+  const cookieDomain = new URL(baseUrl).hostname;
+  const sessionCookieValue = JSON.stringify({
+    access_token: demoSession.access_token,
+    refresh_token: demoSession.refresh_token,
+    expires_at: demoSession.expires_at,
+    expires_in: demoSession.expires_in,
+    token_type: "bearer",
+    user: demoSession.user,
+  });
+
+  const cookieTargets = Array.from(
+    new Set([
+      cookieNameFromSupabaseUrl(SUPABASE_URLS[0] ?? "http://localhost:54321"),
+      "sb-localhost-auth-token",
+      "sb-127-auth-token",
+    ]),
+  );
+
+  await page.context().addCookies(
+    cookieTargets.map((name) => ({
+      name,
+      value: sessionCookieValue,
+      domain: cookieDomain,
       path: "/",
-    },
-  ]);
+    })),
+  );
 }
 
 /**

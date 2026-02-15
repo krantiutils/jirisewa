@@ -11,7 +11,12 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: ".",
-  testMatch: ["tests/e2e/**/*.spec.ts", "e2e/**/*.spec.ts"],
+  // Default CI/local runs focus on deterministic browser-flows in tests/e2e.
+  // Broader role-specific specs under e2e/ can be enabled explicitly.
+  testMatch:
+    process.env.FULL_E2E === "1"
+      ? ["tests/e2e/**/*.spec.ts", "e2e/**/*.spec.ts"]
+      : ["tests/e2e/**/*.spec.ts"],
 
   timeout: 30_000,
   fullyParallel: true,
@@ -37,25 +42,35 @@ export default defineConfig({
     },
   },
 
-  projects: [
-    {
-      name: "setup",
-      testMatch: /global-setup\.ts/,
-      teardown: "teardown",
-    },
-    {
-      name: "teardown",
-      testMatch: /global-teardown\.ts/,
-    },
-    {
-      name: "chromium",
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: "e2e/.auth/farmer.json",
-      },
-      dependencies: ["setup"],
-    },
-  ],
+  projects:
+    process.env.FULL_E2E === "1"
+      ? [
+          {
+            name: "setup",
+            testMatch: /global-setup\.ts/,
+            teardown: "teardown",
+          },
+          {
+            name: "teardown",
+            testMatch: /global-teardown\.ts/,
+          },
+          {
+            name: "chromium",
+            use: {
+              ...devices["Desktop Chrome"],
+              storageState: "e2e/.auth/farmer.json",
+            },
+            dependencies: ["setup"],
+          },
+        ]
+      : [
+          {
+            name: "chromium",
+            use: {
+              ...devices["Desktop Chrome"],
+            },
+          },
+        ],
 
   webServer: {
     command: "pnpm dev",

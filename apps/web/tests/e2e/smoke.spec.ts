@@ -42,7 +42,6 @@ test.describe("Smoke Tests", () => {
 
     // Navigate to marketplace via nav link
     await homePage.navigateToMarketplace();
-    await page.waitForLoadState("networkidle");
     await expect(page).toHaveURL(/\/en\/marketplace/);
   });
 
@@ -51,7 +50,7 @@ test.describe("Smoke Tests", () => {
     await page.waitForLoadState("networkidle");
 
     // Cart page should render (either items or empty state)
-    await expect(page.locator("h1").or(page.locator("main"))).toBeVisible();
+    await expect(page.locator("h1").or(page.locator("main")).first()).toBeVisible();
   });
 
   test("farmer dashboard page loads", async ({ page }) => {

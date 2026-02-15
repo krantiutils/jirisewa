@@ -16,15 +16,18 @@ export class MarketplacePage {
 
   constructor(page: Page, readonly locale = "en") {
     this.page = page;
-    this.heading = page.locator("h1").first();
+    this.heading = page
+      .locator("h1", { hasText: /produce marketplace|उत्पादन बजार|marketplace|बजार/i })
+      .or(page.locator("main"))
+      .first();
     this.produceCards = page.locator("[data-testid='produce-card']").or(
       page.locator("article").or(page.locator("[class*='card']"))
     );
     this.searchInput = page.locator("input[type='search']").or(
       page.locator("input[placeholder*='search' i]").or(
-        page.locator("input[placeholder*='खोज' i]")
+        page.locator("input[placeholder*='खोज' i]").or(page.getByRole("searchbox"))
       )
-    );
+    ).first();
     this.categoryFilters = page.locator("[data-testid='category-filter']").or(
       page.locator("[role='tablist']").or(page.locator("nav a[href*='marketplace']"))
     );

@@ -30,10 +30,21 @@ export default function MarketplacePage({
 }
 
 async function MarketplaceLoader() {
-  const [{ listings, total }, categories] = await Promise.all([
-    fetchProduceListings({ sort_by: "price_asc" }),
-    fetchCategories(),
-  ]);
+  let listings = [];
+  let total = 0;
+  let categories = [];
+
+  try {
+    const [listingResult, categoryResult] = await Promise.all([
+      fetchProduceListings({ sort_by: "price_asc" }),
+      fetchCategories(),
+    ]);
+    listings = listingResult.listings;
+    total = listingResult.total;
+    categories = categoryResult;
+  } catch (error) {
+    console.error("MarketplaceLoader fallback due to fetch error:", error);
+  }
 
   return (
     <main className="bg-muted min-h-screen">

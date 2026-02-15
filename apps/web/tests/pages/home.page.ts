@@ -26,10 +26,12 @@ export class HomePage {
     this.navOrders = page.locator("nav a", { hasText: /orders|अर्डर/i });
     this.navRider = page.locator("nav a", { hasText: /rider|सवारी/i });
     this.languageSwitcher = page.locator("[data-testid='language-switcher']").or(
-      page.locator("button", { hasText: /EN|NE|ne|en/i })
+      page.locator("button", { hasText: /EN|NE|English|नेपाली/i })
     );
     this.howItWorksSection = page.locator("h2", { hasText: /how it works|कसरी/i });
-    this.statsSection = page.locator("h2", { hasText: /numbers|तथ्यांक/i });
+    this.statsSection = page.locator("h2", {
+      hasText: /growing every day|हरेक दिन बढ्दै|numbers|तथ्यांक/i,
+    });
     this.footer = page.locator("footer").or(page.locator("text=JiriSewa").last());
   }
 

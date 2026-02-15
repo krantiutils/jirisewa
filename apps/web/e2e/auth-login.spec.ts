@@ -10,7 +10,7 @@ test.describe("Login page", () => {
     await page.goto("/en/auth/login");
     await page.waitForSelector("#phone");
 
-    await expect(page.locator("h1")).toContainText("Log in");
+    await expect(page.locator("h1")).toContainText("Login");
     await expect(page.locator("#phone")).toBeVisible();
     await expect(page.getByText("+977")).toBeVisible();
 
@@ -22,7 +22,8 @@ test.describe("Login page", () => {
     await page.waitForSelector("#phone");
 
     await page.fill("#phone", "123");
-    await page.getByRole("button", { name: /send otp/i }).click();
+    await expect(page.getByRole("button", { name: /send otp/i })).toBeDisabled();
+    await page.locator("#phone").press("Enter");
 
     await expect(page.locator(".text-red-600")).toBeVisible();
     await expect(page).toHaveScreenshot("login-invalid-phone.png");
@@ -41,7 +42,7 @@ test.describe("Login page", () => {
     // Wait for OTP step
     await page.waitForSelector('input[maxlength="6"]');
 
-    await expect(page.locator("h1")).toContainText("Enter OTP");
+    await expect(page.locator("h1")).toContainText("Verify OTP");
     await expect(page.getByText("+9779800000001")).toBeVisible();
     await expect(page.getByText(/change phone/i)).toBeVisible();
     await expect(page.getByText(/resend/i)).toBeVisible();
