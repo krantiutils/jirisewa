@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -666,6 +669,7 @@ class _TripsScreenState extends State<TripsScreen> {
       final ok = row?['success'] == true;
       final message =
           row?['message'] as String? ?? (ok ? 'Ping accepted' : 'Failed');
+      final tripId = row?['trip_id'] as String? ?? ping['trip_id'] as String?;
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -674,6 +678,19 @@ class _TripsScreenState extends State<TripsScreen> {
           backgroundColor: ok ? const Color(0xFF059669) : AppColors.error,
         ),
       );
+
+      if (ok && tripId != null) {
+        final routeUpdated = await _recalculateTripRouteFromStops(tripId);
+        if (mounted && !routeUpdated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Order accepted. Route optimization skipped; using existing path.',
+              ),
+            ),
+          );
+        }
+      }
       await _loadTrips();
     } catch (e) {
       if (!mounted) return;
@@ -740,6 +757,156 @@ class _TripsScreenState extends State<TripsScreen> {
       return Map<String, dynamic>.from(result.first as Map);
     }
     if (result is Map<String, dynamic>) return result;
+    return null;
+  }
+
+  Future<bool> _recalculateTripRouteFromStops(String tripId) async {
+    try {
+      final tripRow = await _supabase
+          .from('rider_trips')
+          .select('id, destination, rider_id')
+          .eq('id', tripId)
+          .maybeSingle();
+      if (tripRow == null) return false;
+
+      final destination = _parsePoint(tripRow['destination']);
+      if (destination == null) return false;
+
+      final stopsData = await _supabase
+          .from('trip_stops')
+          .select('id, location, sequence_order, completed')
+          .eq('trip_id', tripId)
+          .order('sequence_order', ascending: true);
+
+      final activeStops = List<Map<String, dynamic>>.from(stopsData).where((s) {
+        return s['completed'] != true;
+      }).toList();
+      if (activeStops.isEmpty) return false;
+
+      final latestLoc = await _supabase
+          .from('rider_location_log')
+          .select('location')
+          .eq('trip_id', tripId)
+          .order('recorded_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      LatLng? start = _parsePoint(latestLoc?['location']);
+      start ??= _parsePoint(activeStops.first['location']);
+      if (start == null) return false;
+
+      final stopPoints = <LatLng>[];
+      for (final stop in activeStops) {
+        final point = _parsePoint(stop['location']);
+        if (point != null) stopPoints.add(point);
+      }
+      if (stopPoints.isEmpty) return false;
+
+      final allPoints = <LatLng>[start, ...stopPoints, destination];
+      if (allPoints.length < 2) return false;
+
+      final coords = allPoints
+          .map((p) => '${p.longitude},${p.latitude}')
+          .join(';');
+      final uri = Uri.parse(
+        '$osrmBaseUrl/route/v1/driving/$coords?overview=full&geometries=geojson',
+      );
+      final response = await http.get(uri);
+      if (response.statusCode != 200) return false;
+
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      if (data['code'] != 'Ok') return false;
+      final routes = data['routes'] as List<dynamic>?;
+      if (routes == null || routes.isEmpty) return false;
+      final route = routes.first as Map<String, dynamic>;
+
+      final geometry = route['geometry'] as Map<String, dynamic>;
+      final coordsRaw = geometry['coordinates'] as List<dynamic>;
+      if (coordsRaw.length < 2) return false;
+
+      final lineString = coordsRaw
+          .map((coord) {
+            final pair = coord as List<dynamic>;
+            return '${(pair[0] as num).toDouble()} ${(pair[1] as num).toDouble()}';
+          })
+          .join(',');
+
+      final routeWkt = 'LINESTRING($lineString)';
+      final totalDistanceKm =
+          ((route['distance'] as num?)?.toDouble() ?? 0) / 1000;
+      final durationMinutes =
+          (((route['duration'] as num?)?.toDouble() ?? 0) / 60).round();
+
+      await _supabase
+          .from('rider_trips')
+          .update({
+            'route': routeWkt,
+            'total_distance_km': totalDistanceKm,
+            'estimated_duration_minutes': durationMinutes,
+            'total_stops': activeStops.length,
+          })
+          .eq('id', tripId);
+
+      final legs = (route['legs'] as List<dynamic>? ?? const []);
+      var cumulativeSeconds = 0.0;
+      for (var i = 0; i < activeStops.length; i++) {
+        if (i >= legs.length) break;
+        final leg = legs[i] as Map<String, dynamic>;
+        cumulativeSeconds += (leg['duration'] as num?)?.toDouble() ?? 0;
+        final eta = DateTime.now().add(
+          Duration(seconds: cumulativeSeconds.round()),
+        );
+        await _supabase
+            .from('trip_stops')
+            .update({
+              'sequence_order': i,
+              'estimated_arrival': eta.toIso8601String(),
+            })
+            .eq('id', activeStops[i]['id'] as String);
+      }
+
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  LatLng? _parsePoint(dynamic value) {
+    if (value == null) return null;
+
+    if (value is String) {
+      final trimmed = value.trim();
+      final pointMatch = RegExp(
+        r'^POINT\(([-\d.]+)\s+([-\d.]+)\)$',
+      ).firstMatch(trimmed);
+      if (pointMatch != null) {
+        final lng = double.tryParse(pointMatch.group(1)!);
+        final lat = double.tryParse(pointMatch.group(2)!);
+        if (lat != null && lng != null) return LatLng(lat, lng);
+      }
+      if (trimmed.startsWith('{')) {
+        try {
+          final decoded = json.decode(trimmed);
+          return _parsePoint(decoded);
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+
+    if (value is Map) {
+      if (value['coordinates'] is List) {
+        final coords = value['coordinates'] as List;
+        if (coords.length >= 2) {
+          final lng = (coords[0] as num?)?.toDouble();
+          final lat = (coords[1] as num?)?.toDouble();
+          if (lat != null && lng != null) return LatLng(lat, lng);
+        }
+      }
+      final lat = (value['lat'] as num?)?.toDouble();
+      final lng = (value['lng'] as num?)?.toDouble();
+      if (lat != null && lng != null) return LatLng(lat, lng);
+    }
     return null;
   }
 
