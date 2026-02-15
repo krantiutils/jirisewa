@@ -141,13 +141,14 @@ export default function RiderDashboard() {
           </div>
         )}
 
-        {/* Ping notifications — shown on active tab */}
-        {activeTab === "active" && pings.length > 0 && (
+        {/* Farmer beacon opportunities — shown after route selection and while active */}
+        {(activeTab === "upcoming" || activeTab === "active") &&
+          pings.length > 0 && (
           <PingNotificationPanel
             pings={pings}
             onPingRemoved={removePing}
           />
-        )}
+          )}
 
         {/* Trip List */}
         {loading ? (

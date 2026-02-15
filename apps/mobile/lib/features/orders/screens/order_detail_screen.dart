@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,6 +24,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String? _error;
   Map<String, dynamic>? _order;
   List<Map<String, dynamic>> _items = [];
+  LatLng? _riderLocation;
+  DateTime? _lastRiderUpdateAt;
+  RealtimeChannel? _trackingChannel;
+  Timer? _staleTimer;
 
   SupabaseClient get _supabase => Supabase.instance.client;
 
@@ -29,6 +35,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   void initState() {
     super.initState();
     _loadOrder();
+  }
+
+  @override
+  void dispose() {
+    _stopTrackingSubscription();
+    super.dispose();
   }
 
   Future<void> _loadOrder() async {
@@ -57,11 +69,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           .select('*, produce_listings(name_en, name_ne)')
           .eq('order_id', widget.orderId);
 
+      final castOrder = Map<String, dynamic>.from(order);
+      final castItems = List<Map<String, dynamic>>.from(items);
+
       setState(() {
-        _order = order;
-        _items = List<Map<String, dynamic>>.from(items);
+        _order = castOrder;
+        _items = castItems;
         _loading = false;
       });
+
+      await _setupTracking(castOrder);
     } catch (e) {
       setState(() {
         _error = 'Failed to load order: $e';
@@ -74,6 +91,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final pickup = _pickupPoint();
     final delivery = _deliveryPoint();
+    final status = _order?['status'] as String? ?? 'pending';
+    final isTrackingActive = status == 'picked_up' || status == 'in_transit';
+    final isSignalStale =
+        _lastRiderUpdateAt != null &&
+        DateTime.now().difference(_lastRiderUpdateAt!).inSeconds > 30;
 
     return Scaffold(
       appBar: AppBar(
@@ -122,7 +144,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           destination: delivery,
                           originName: 'Farmer pickup',
                           destinationName: 'Customer delivery',
-                          routeCoordinates: [pickup, delivery],
+                          currentPosition: _riderLocation,
                           isActive:
                               (_order!['status'] as String? ?? '') ==
                               'in_transit',
@@ -130,6 +152,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    if (isTrackingActive)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSignalStale
+                              ? Colors.amber.withAlpha(28)
+                              : AppColors.primary.withAlpha(20),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSignalStale ? Icons.wifi_off : Icons.navigation,
+                              size: 16,
+                              color: isSignalStale
+                                  ? Colors.amber[800]
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _riderLocation == null
+                                    ? 'Waiting for rider GPS signal...'
+                                    : isSignalStale
+                                    ? 'Rider signal is stale (>30s).'
+                                    : 'Live rider location active.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSignalStale
+                                      ? Colors.amber[900]
+                                      : AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     _flowChips(),
                     const SizedBox(height: 24),
 
@@ -446,6 +510,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   LatLng _deliveryPoint() {
+    final fromDeliveryGeo = _tryParsePoint(_order?['delivery_location']);
+    if (fromDeliveryGeo != null) return fromDeliveryGeo;
     return _addressToLatLng(_order?['delivery_address'] as String?);
   }
 
@@ -459,11 +525,124 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   LatLng? _tryParsePoint(dynamic value) {
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return null;
+
+      // PostGIS WKT: POINT(lng lat)
+      final pointMatch = RegExp(
+        r'^POINT\(([-\d.]+)\s+([-\d.]+)\)$',
+      ).firstMatch(trimmed);
+      if (pointMatch != null) {
+        final lng = double.tryParse(pointMatch.group(1)!);
+        final lat = double.tryParse(pointMatch.group(2)!);
+        if (lat != null && lng != null) return LatLng(lat, lng);
+      }
+
+      // GeoJSON-like payload: {"type":"Point","coordinates":[lng,lat]}
+      if (trimmed.startsWith('{') && trimmed.contains('coordinates')) {
+        final coordsMatch = RegExp(
+          r'"coordinates"\s*:\s*\[\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\]',
+        ).firstMatch(trimmed);
+        if (coordsMatch != null) {
+          final lng = double.tryParse(coordsMatch.group(1)!);
+          final lat = double.tryParse(coordsMatch.group(2)!);
+          if (lat != null && lng != null) return LatLng(lat, lng);
+        }
+      }
+    }
+
     if (value is Map<String, dynamic>) {
       final lat = (value['lat'] as num?)?.toDouble();
       final lng = (value['lng'] as num?)?.toDouble();
       if (lat != null && lng != null) return LatLng(lat, lng);
     }
     return null;
+  }
+
+  Future<void> _setupTracking(Map<String, dynamic> order) async {
+    _stopTrackingSubscription();
+
+    final tripId = order['rider_trip_id'] as String?;
+    final status = order['status'] as String? ?? 'pending';
+    final shouldTrack =
+        tripId != null && (status == 'picked_up' || status == 'in_transit');
+
+    if (!shouldTrack) {
+      if (mounted) {
+        setState(() {
+          _riderLocation = null;
+          _lastRiderUpdateAt = null;
+        });
+      }
+      return;
+    }
+
+    try {
+      // Seed UI with latest known rider point before subscribing.
+      final latest = await _supabase
+          .from('rider_location_log')
+          .select('location, recorded_at')
+          .eq('trip_id', tripId)
+          .order('recorded_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (latest != null) {
+        final point = _tryParsePoint(latest['location']);
+        if (mounted && point != null) {
+          setState(() {
+            _riderLocation = point;
+            _lastRiderUpdateAt = DateTime.tryParse(
+              (latest['recorded_at'] as String?) ?? '',
+            );
+          });
+        }
+      }
+    } catch (_) {
+      // Best effort - live updates will still work even if seed lookup fails.
+    }
+
+    _trackingChannel = _supabase
+        .channel('order_tracking_${widget.orderId}_$tripId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'rider_location_log',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'trip_id',
+            value: tripId,
+          ),
+          callback: (payload) {
+            final row = payload.newRecord;
+            final point = _tryParsePoint(row['location']);
+            if (!mounted || point == null) return;
+            setState(() {
+              _riderLocation = point;
+              _lastRiderUpdateAt =
+                  DateTime.tryParse(row['recorded_at']?.toString() ?? '') ??
+                  DateTime.now();
+            });
+          },
+        )
+        .subscribe();
+
+    _staleTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || _lastRiderUpdateAt == null) return;
+      // Tick UI so stale signal label updates without waiting for new events.
+      setState(() {});
+    });
+  }
+
+  void _stopTrackingSubscription() {
+    _staleTimer?.cancel();
+    _staleTimer = null;
+
+    final channel = _trackingChannel;
+    _trackingChannel = null;
+    if (channel != null) {
+      _supabase.removeChannel(channel);
+    }
   }
 }

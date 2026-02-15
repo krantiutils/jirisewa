@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { PingNotification } from "@/components/rider/PingNotification";
 import type { OrderPing } from "@/lib/types/ping";
 
@@ -11,6 +12,11 @@ interface PingNotificationPanelProps {
   /** Called when a ping is accepted so parent can refresh data */
   onAccepted?: () => void;
 }
+
+const PingBeaconMap = dynamic(
+  () => import("@/components/rider/PingBeaconMap"),
+  { ssr: false },
+);
 
 export function PingNotificationPanel({
   pings,
@@ -76,6 +82,7 @@ export function PingNotificationPanel({
       <h2 className="text-lg font-semibold text-foreground">
         {t("newOrders")} ({pings.length})
       </h2>
+      <PingBeaconMap pings={pings} />
       {pings.map((ping) => (
         <PingNotification
           key={ping.id}
