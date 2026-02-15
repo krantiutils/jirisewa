@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gotrue/gotrue.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -191,16 +190,7 @@ void main() {
   });
 }
 
-Future<void> _pumpUntilLoaded(WidgetTester tester) async {
-  await tester.runAsync(() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-  });
-  for (var i = 0; i < 10; i++) {
-    await tester.pump(const Duration(milliseconds: 50));
-  }
-}
-
-class _NoopAsyncStorage implements GotrueAsyncStorage {
+class _NoopAsyncStorage extends GotrueAsyncStorage {
   @override
   Future<String?> getItem({required String key}) async => null;
 
@@ -209,4 +199,13 @@ class _NoopAsyncStorage implements GotrueAsyncStorage {
 
   @override
   Future<void> removeItem({required String key}) async {}
+}
+
+Future<void> _pumpUntilLoaded(WidgetTester tester) async {
+  await tester.runAsync(() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+  });
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
