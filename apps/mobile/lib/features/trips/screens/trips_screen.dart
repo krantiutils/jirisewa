@@ -26,6 +26,7 @@ class _TripsScreenState extends State<TripsScreen> {
   List<Map<String, dynamic>> _trips = [];
   Map<String, List<Map<String, dynamic>>> _ordersByTripId = {};
   Map<String, List<Map<String, dynamic>>> _pingsByTripId = {};
+  Set<String> _respondingPingIds = {};
   List<Map<String, dynamic>> _unassignedOrders = [];
   RealtimeChannel? _pingChannel;
   String? _subscribedRiderId;
@@ -535,6 +536,8 @@ class _TripsScreenState extends State<TripsScreen> {
                       itemCount: opportunities.length,
                       itemBuilder: (context, i) {
                         final opp = opportunities[i];
+                        final pingId = opp['id'] as String? ?? '';
+                        final isBusy = _respondingPingIds.contains(pingId);
                         final earning =
                             (opp['estimated_earnings'] as num?)?.toDouble() ??
                             0;
@@ -543,29 +546,83 @@ class _TripsScreenState extends State<TripsScreen> {
                                 0) /
                             1000;
                         final pickups = _pickupNames(opp['pickup_locations']);
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          dense: true,
-                          leading: const Icon(
-                            Icons.agriculture_outlined,
-                            color: Color(0xFF059669),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFD1FAE5)),
                           ),
-                          title: Text(
-                            pickups.isEmpty
-                                ? 'Farmer pickup'
-                                : pickups.join(', '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            'Detour ~${detourKm.toStringAsFixed(1)} km',
-                          ),
-                          trailing: Text(
-                            'NPR ${earning.toStringAsFixed(0)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF065F46),
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.agriculture_outlined,
+                                    color: Color(0xFF059669),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      pickups.isEmpty
+                                          ? 'Farmer pickup'
+                                          : pickups.join(', '),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    'NPR ${earning.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF065F46),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Detour ~${detourKm.toStringAsFixed(1)} km',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: isBusy
+                                          ? null
+                                          : () => _declinePing(opp),
+                                      child: const Text('Decline'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: FilledButton(
+                                      onPressed: isBusy
+                                          ? null
+                                          : () => _acceptPing(opp),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFF059669,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        isBusy ? 'Working...' : 'Accept',
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -590,6 +647,100 @@ class _TripsScreenState extends State<TripsScreen> {
         )
         .whereType<String>()
         .toList();
+  }
+
+  Future<void> _acceptPing(Map<String, dynamic> ping) async {
+    final pingId = ping['id'] as String?;
+    if (pingId == null) return;
+
+    setState(() {
+      _respondingPingIds = {..._respondingPingIds, pingId};
+    });
+
+    try {
+      final result = await _supabase.rpc(
+        'accept_order_ping',
+        params: {'p_ping_id': pingId},
+      );
+      final row = _firstRpcRow(result);
+      final ok = row?['success'] == true;
+      final message =
+          row?['message'] as String? ?? (ok ? 'Ping accepted' : 'Failed');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: ok ? const Color(0xFF059669) : AppColors.error,
+        ),
+      );
+      await _loadTrips();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to accept ping: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _respondingPingIds = {..._respondingPingIds}..remove(pingId);
+        });
+      }
+    }
+  }
+
+  Future<void> _declinePing(Map<String, dynamic> ping) async {
+    final pingId = ping['id'] as String?;
+    if (pingId == null) return;
+
+    setState(() {
+      _respondingPingIds = {..._respondingPingIds, pingId};
+    });
+
+    try {
+      final result = await _supabase.rpc(
+        'decline_order_ping',
+        params: {'p_ping_id': pingId},
+      );
+      final row = _firstRpcRow(result);
+      final ok = row?['success'] == true;
+      final message =
+          row?['message'] as String? ?? (ok ? 'Ping declined' : 'Failed');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: ok ? AppColors.primary : AppColors.error,
+        ),
+      );
+      await _loadTrips();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to decline ping: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _respondingPingIds = {..._respondingPingIds}..remove(pingId);
+        });
+      }
+    }
+  }
+
+  Map<String, dynamic>? _firstRpcRow(dynamic result) {
+    if (result is List && result.isNotEmpty && result.first is Map) {
+      return Map<String, dynamic>.from(result.first as Map);
+    }
+    if (result is Map<String, dynamic>) return result;
+    return null;
   }
 
   void _openTripTracking(
