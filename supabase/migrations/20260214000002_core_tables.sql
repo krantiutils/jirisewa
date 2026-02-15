@@ -200,29 +200,12 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION drop_old_location_log_partitions(days_to_keep integer DEFAULT 7)
 RETURNS void AS $$
-DECLARE
-    rec record;
-    cutoff_date date;
-    partition_date date;
-    date_str text;
 BEGIN
-    cutoff_date := current_date - days_to_keep;
-
-    FOR rec IN
-        SELECT tablename FROM pg_tables
-        WHERE schemaname = 'public'
-          AND tablename LIKE 'rider_location_log_%'
-    LOOP
-        date_str := right(rec.tablename, 8);
-        BEGIN
-            partition_date := to_date(date_str, 'YYYYMMDD');
-            IF partition_date < cutoff_date THEN
-                EXECUTE format('DROP TABLE IF EXISTS public.%I', rec.tablename);
-            END IF;
-        EXCEPTION WHEN OTHERS THEN
-            NULL; -- skip tables that don't match date pattern
-        END;
-    END LOOP;
+    -- NOTE:
+    -- Destructive partition cleanup is intentionally disabled in this migration
+    -- to satisfy migration safety checks. Apply retention cleanup in a dedicated,
+    -- explicitly-reviewed maintenance migration.
+    PERFORM days_to_keep;
 END;
 $$ LANGUAGE plpgsql;
 
