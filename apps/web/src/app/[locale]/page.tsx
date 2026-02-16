@@ -121,13 +121,13 @@ export default function HomePage({
             {hero("subheading")}
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
-            <Link href={`/${locale}/marketplace`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-primary hover:bg-gray-100 hover:text-blue-700 transition-all">
+            <Link href="/marketplace" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-primary hover:bg-gray-100 hover:text-blue-700 transition-all">
               {hero("ctaBrowse")}
             </Link>
-            <Link href={`/${locale}/farmer/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
+            <Link href="/farmer/dashboard" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
               Start Selling
             </Link>
-            <Link href={`/${locale}/rider/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
+            <Link href="/rider/dashboard" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
               {hero("ctaRider")}
             </Link>
           </div>
@@ -253,7 +253,7 @@ export default function HomePage({
               ))}
             </ul>
             <div className="mt-10">
-              <Link href={`/${locale}/farmer/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-emerald-700 hover:bg-gray-100 transition-all">
+              <Link href="/farmer/dashboard" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-emerald-700 hover:bg-gray-100 transition-all">
                 {farmers("cta")}
               </Link>
             </div>
@@ -313,7 +313,7 @@ export default function HomePage({
               ))}
             </ul>
             <div className="mt-10">
-              <Link href={`/${locale}/rider/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-foreground text-white hover:bg-gray-800 transition-all">
+              <Link href="/rider/dashboard" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-foreground text-white hover:bg-gray-800 transition-all">
                 {riders("cta")}
               </Link>
             </div>
@@ -335,10 +335,10 @@ export default function HomePage({
             {cta("subtitle")}
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Link href={`/${locale}/auth/login`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-primary hover:bg-gray-100 hover:text-blue-700 transition-all">
+            <Link href="/auth/login" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-primary hover:bg-gray-100 hover:text-blue-700 transition-all">
               {cta("ctaPrimary")}
             </Link>
-            <Link href={`/${locale}/marketplace`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
+            <Link href="/marketplace" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
               {cta("ctaSecondary")}
             </Link>
           </div>
