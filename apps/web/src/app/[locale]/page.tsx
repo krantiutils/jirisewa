@@ -125,7 +125,7 @@ export default function HomePage({
               {hero("ctaBrowse")}
             </Link>
             <Link href="/farmer/dashboard" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
-              Start Selling
+              {hero("ctaFarmer")}
             </Link>
             <Link href="/rider/dashboard" className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
               {hero("ctaRider")}
