@@ -70,6 +70,73 @@ export async function getOrCreateConversation(
 }
 
 /**
+ * Add a rider to an existing conversation (3-way chat).
+ * Called when a rider accepts an order ping.
+ */
+export async function addRiderToConversation(
+  orderId: string,
+  riderId: string,
+): Promise<ActionResult<{ conversationId: string }>> {
+  try {
+    const supabase = createServiceRoleClient();
+
+    // Find the existing conversation for this order
+    const { data: existing, error: findError } = await supabase
+      .from("chat_conversations")
+      .select("id, participant_ids")
+      .eq("order_id", orderId)
+      .single();
+
+    if (findError || !existing) {
+      // No conversation exists yet - this is fine, it might be created later
+      return { error: "No conversation found for this order" };
+    }
+
+    // Check if rider is already in the conversation
+    if (existing.participant_ids.includes(riderId)) {
+      return { data: { conversationId: existing.id } };
+    }
+
+    // Add rider to participants
+    const { error: updateError } = await supabase
+      .from("chat_conversations")
+      .update({
+        participant_ids: [...existing.participant_ids, riderId],
+      })
+      .eq("id", existing.id);
+
+    if (updateError) {
+      console.error("addRiderToConversation error:", updateError);
+      return { error: updateError.message };
+    }
+
+    // Send a system message announcing the rider joined
+    const { data: rider } = await supabase
+      .from("users")
+      .select("name, role")
+      .eq("id", riderId)
+      .single();
+
+    if (rider) {
+      await supabase
+        .from("chat_messages")
+        .insert({
+          conversation_id: existing.id,
+          sender_id: "system", // Special ID for system messages
+          content: `${rider.name} (${rider.role}) joined the conversation`,
+          message_type: "text",
+          read_at: new Date().toISOString(), // Auto-mark as read
+        });
+    }
+
+    return { data: { conversationId: existing.id } };
+  } catch (err) {
+    console.error("addRiderToConversation unexpected error:", err);
+    return { error: "Failed to add rider to conversation" };
+  }
+}
+
+/**
  * Send a message in a conversation.
  */
 export async function sendMessage(
@@ -162,6 +229,26 @@ export async function listConversations(): Promise<ActionResult<ChatConversation
     // For each conversation, get last message and unread count
     const result: ChatConversation[] = [];
     for (const conv of conversations) {
+      // Get all other participants (for 3-way chat)
+      const participantUsers: Array<{
+        id: string;
+        name: string;
+        avatar_url: string | null;
+        role: "farmer" | "consumer" | "rider";
+      }> = [];
+      for (const pid of conv.participant_ids) {
+        if (pid !== currentUserId) {
+          const user = userMap.get(pid);
+          if (user) participantUsers.push(user as {
+            id: string;
+            name: string;
+            avatar_url: string | null;
+            role: "farmer" | "consumer" | "rider";
+          });
+        }
+      }
+
+      // For backwards compatibility, set other_user to first participant
       const otherUserId = conv.participant_ids.find(
         (id: string) => id !== currentUserId,
       );
@@ -187,6 +274,7 @@ export async function listConversations(): Promise<ActionResult<ChatConversation
         order_id: conv.order_id,
         participant_ids: conv.participant_ids,
         created_at: conv.created_at,
+        participants: participantUsers,
         other_user: otherUserId ? userMap.get(otherUserId) ?? undefined : undefined,
         last_message: lastMessages?.[0] ?? undefined,
         unread_count: unreadCount ?? 0,
@@ -407,14 +495,29 @@ export async function getConversationDetails(
       (id: string) => id !== currentUserId,
     );
 
+    // Get all other participants (for 3-way chat)
+    const otherParticipantIds = conv.participant_ids.filter(
+      (id: string) => id !== currentUserId,
+    );
+
+    let participants: Array<{ id: string; name: string; avatar_url: string | null; role: "farmer" | "consumer" | "rider" }> = [];
     let otherUser;
-    if (otherUserId) {
-      const { data: user } = await supabase
+
+    if (otherParticipantIds.length > 0) {
+      const { data: users } = await supabase
         .from("users")
         .select("id, name, avatar_url, role")
-        .eq("id", otherUserId)
-        .single();
-      otherUser = user ?? undefined;
+        .in("id", otherParticipantIds);
+
+      participants = (users ?? []).map((u) => ({
+        id: u.id,
+        name: u.name,
+        avatar_url: u.avatar_url,
+        role: u.role as "farmer" | "consumer" | "rider",
+      }));
+
+      // For backwards compatibility, set other_user to first participant
+      otherUser = participants[0];
     }
 
     return {
@@ -424,6 +527,7 @@ export async function getConversationDetails(
           order_id: conv.order_id,
           participant_ids: conv.participant_ids,
           created_at: conv.created_at,
+          participants,
           other_user: otherUser,
           unread_count: 0,
         },

@@ -307,6 +307,15 @@ export async function acceptPing(
       console.error("acceptPing: route recalculation failed:", routeErr);
     }
 
+    // 8. Add rider to the order's chat conversation (3-way chat)
+    try {
+      const { addRiderToConversation } = await import("@/lib/actions/chat");
+      await addRiderToConversation(ping.order_id, ping.rider_id);
+    } catch (chatErr) {
+      // Non-fatal - chat is optional
+      console.error("acceptPing: failed to add rider to chat:", chatErr);
+    }
+
     return {
       data: {
         orderId: ping.order_id,

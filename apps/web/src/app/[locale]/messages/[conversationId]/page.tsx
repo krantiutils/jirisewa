@@ -237,6 +237,9 @@ export default function ConversationPage() {
     ? ROLE_COLORS[otherUser.role] ?? "bg-gray-500"
     : "bg-gray-500";
 
+  // Check if this is a 3-way chat
+  const isGroupChat = conversation?.participants && conversation.participants.length > 1;
+
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col">
       {/* Header */}
@@ -248,7 +251,31 @@ export default function ConversationPage() {
           <ArrowLeft size={20} />
         </Link>
         <div className="flex items-center gap-3">
-          {otherUser?.avatar_url ? (
+          {/* Avatar(s) - show stacked for 3-way chat */}
+          {isGroupChat ? (
+            <div className="flex -space-x-2">
+              {conversation.participants!.slice(0, 3).map((participant) => (
+                participant.avatar_url ? (
+                  <Image
+                    key={participant.id}
+                    src={participant.avatar_url}
+                    alt={participant.name}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-full object-cover border-2 border-white"
+                    unoptimized
+                  />
+                ) : (
+                  <div
+                    key={participant.id}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 border-2 border-white"
+                  >
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                )
+              ))}
+            </div>
+          ) : otherUser?.avatar_url ? (
             <Image
               src={otherUser.avatar_url}
               alt={otherUser.name}
@@ -264,13 +291,28 @@ export default function ConversationPage() {
           )}
           <div>
             <p className="text-sm font-semibold text-gray-900">
-              {otherUser?.name ?? "Unknown"}
+              {isGroupChat
+                ? conversation.participants!.map((p) => p.name).join(", ")
+                : (otherUser?.name ?? "Unknown")}
             </p>
-            {otherUser?.role && (
-              <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white ${roleColor}`}>
-                {otherUser.role}
-              </span>
-            )}
+            <div className="flex items-center gap-1">
+              {isGroupChat
+                ? conversation.participants!.slice(0, 3).map((participant) => (
+                    <span
+                      key={participant.id}
+                      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white ${
+                        ROLE_COLORS[participant.role] ?? "bg-gray-500"
+                      }`}
+                    >
+                      {participant.role}
+                    </span>
+                  ))
+                : otherUser?.role && (
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white ${roleColor}`}>
+                      {otherUser.role}
+                    </span>
+                  )}
+            </div>
           </div>
         </div>
         {conversation && (

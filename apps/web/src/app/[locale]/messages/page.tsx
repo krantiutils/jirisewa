@@ -123,9 +123,33 @@ export default function MessagesPage() {
               href={`/${locale}/messages/${conv.id}`}
               className="flex items-center gap-3 px-3 py-4 transition-colors hover:bg-gray-50 rounded-lg"
             >
-              {/* Avatar */}
+              {/* Avatar(s) - show stacked for 3-way chat */}
               <div className="relative flex-shrink-0">
-                {conv.other_user?.avatar_url ? (
+                {/* Check for 3-way chat */}
+                {conv.participants && conv.participants.length > 1 ? (
+                  <div className="flex -space-x-2">
+                    {conv.participants.slice(0, 3).map((participant, idx) => (
+                      participant.avatar_url ? (
+                        <Image
+                          key={participant.id}
+                          src={participant.avatar_url}
+                          alt={participant.name}
+                          width={48}
+                          height={48}
+                          className="h-12 w-12 rounded-full object-cover border-2 border-white"
+                          unoptimized
+                        />
+                      ) : (
+                        <div
+                          key={participant.id}
+                          className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 border-2 border-white"
+                        >
+                          <User className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )
+                    ))}
+                  </div>
+                ) : conv.other_user?.avatar_url ? (
                   <Image
                     src={conv.other_user.avatar_url}
                     alt={conv.other_user.name}
@@ -151,13 +175,25 @@ export default function MessagesPage() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`truncate text-sm font-semibold ${conv.unread_count > 0 ? "text-gray-900" : "text-gray-700"}`}>
-                      {conv.other_user?.name ?? "Unknown"}
+                      {conv.participants && conv.participants.length > 1
+                        ? conv.participants.map((p) => p.name).join(", ")
+                        : (conv.other_user?.name ?? "Unknown")}
                     </span>
-                    {conv.other_user?.role && (
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${ROLE_COLORS[conv.other_user.role] ?? "bg-gray-100 text-gray-600"}`}>
-                        {conv.other_user.role}
-                      </span>
-                    )}
+                    {/* Show role badges for multi-participant chats */}
+                    {conv.participants && conv.participants.length > 1
+                      ? conv.participants.slice(0, 2).map((participant) => (
+                          <span
+                            key={participant.id}
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${ROLE_COLORS[participant.role] ?? "bg-gray-100 text-gray-600"}`}
+                          >
+                            {participant.role}
+                          </span>
+                        ))
+                      : conv.other_user?.role && (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${ROLE_COLORS[conv.other_user.role] ?? "bg-gray-100 text-gray-600"}`}>
+                            {conv.other_user.role}
+                          </span>
+                        )}
                   </div>
                   <span className="flex-shrink-0 text-xs text-gray-400">
                     {conv.last_message

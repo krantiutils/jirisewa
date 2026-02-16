@@ -3,7 +3,14 @@ export interface ChatConversation {
   order_id: string;
   participant_ids: string[];
   created_at: string;
-  /** Joined from users table — the other participant */
+  /** All other participants in the conversation (for 3-way chat) */
+  participants?: {
+    id: string;
+    name: string;
+    avatar_url: string | null;
+    role: "farmer" | "consumer" | "rider";
+  }[];
+  /** @deprecated Use participants instead */
   other_user?: {
     id: string;
     name: string;

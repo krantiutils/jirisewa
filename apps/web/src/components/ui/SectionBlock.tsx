@@ -35,7 +35,7 @@ const colorStyles: Record<SectionColor, { bg: string; text: string; deco: string
   },
   accent: {
     bg: "bg-accent",
-    text: "text-foreground",
+    text: "text-white",
     deco: "bg-white/10",
   },
 };
