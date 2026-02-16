@@ -120,16 +120,15 @@ export default function HomePage({
           <p className="mt-6 max-w-2xl text-lg font-medium text-white/90 sm:text-xl">
             {hero("subheading")}
           </p>
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Link href="/marketplace">
-              <Button className="bg-white text-primary hover:bg-gray-100 hover:text-blue-700">
-                {hero("ctaBrowse")}
-              </Button>
+          <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+            <Link href={`/${locale}/marketplace`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-primary hover:bg-gray-100 hover:text-blue-700 transition-all">
+              {hero("ctaBrowse")}
             </Link>
-            <Link href="/rider/dashboard">
-              <Button className="border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary">
-                {hero("ctaRider")}
-              </Button>
+            <Link href={`/${locale}/farmer/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-emerald-500 text-white hover:bg-emerald-600 transition-all">
+              Start Selling
+            </Link>
+            <Link href={`/${locale}/rider/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
+              {hero("ctaRider")}
             </Link>
           </div>
 
@@ -254,10 +253,8 @@ export default function HomePage({
               ))}
             </ul>
             <div className="mt-10">
-              <Link href="/farmer/dashboard">
-                <Button className="bg-white text-emerald-700 hover:bg-gray-100">
-                  {farmers("cta")}
-                </Button>
+              <Link href={`/${locale}/farmer/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-emerald-700 hover:bg-gray-100 transition-all">
+                {farmers("cta")}
               </Link>
             </div>
           </div>
@@ -316,10 +313,8 @@ export default function HomePage({
               ))}
             </ul>
             <div className="mt-10">
-              <Link href="/rider/dashboard">
-                <Button className="bg-foreground text-amber-500 hover:bg-gray-800">
-                  {riders("cta")}
-                </Button>
+              <Link href={`/${locale}/rider/dashboard`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-foreground text-white hover:bg-gray-800 transition-all">
+                {riders("cta")}
               </Link>
             </div>
           </div>
@@ -340,15 +335,11 @@ export default function HomePage({
             {cta("subtitle")}
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Link href="/auth/login">
-              <Button className="bg-white text-primary hover:bg-gray-100 hover:text-blue-700">
-                {cta("ctaPrimary")}
-              </Button>
+            <Link href={`/${locale}/auth/login`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 bg-white text-primary hover:bg-gray-100 hover:text-blue-700 transition-all">
+              {cta("ctaPrimary")}
             </Link>
-            <Link href="/marketplace">
-              <Button className="border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary">
-                {cta("ctaSecondary")}
-              </Button>
+            <Link href={`/${locale}/marketplace`} className="inline-flex items-center justify-center font-semibold rounded-md h-14 px-8 border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary transition-all">
+              {cta("ctaSecondary")}
             </Link>
           </div>
         </div>
