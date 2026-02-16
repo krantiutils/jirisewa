@@ -62,13 +62,37 @@ export default function RiderDashboard() {
   const params = useParams();
   const locale = params.locale as string;
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("upcoming");
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { pings, removePing } = usePingSubscription();
 
+  // Check auth first
   useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok || !(await res.json()).user) {
+          router.replace(`/${locale}/auth/login`);
+          return;
+        }
+        setIsAuthenticated(true);
+      } catch {
+        router.replace(`/${locale}/auth/login`);
+        return;
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+    checkAuth();
+  }, [locale, router]);
+
+  useEffect(() => {
+    if (!authChecked || !isAuthenticated) return;
+
     async function load() {
       setLoading(true);
       setError(null);
@@ -103,6 +127,22 @@ export default function RiderDashboard() {
     { key: "active", label: t("dashboard.active") },
     { key: "completed", label: t("dashboard.completed") },
   ];
+
+  // Don't render until auth is checked
+  if (!authChecked) {
+    return null;
+  }
+
+  // Show loading state while checking auth
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500">Please log in to access rider dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted">

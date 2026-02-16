@@ -16,6 +16,7 @@ import { CartHeaderLink } from "@/components/cart/CartHeaderLink";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ChatBadge } from "@/components/chat/ChatBadge";
 import { PushNotificationManager } from "@/components/notifications/PushNotificationManager";
+import { Header } from "@/components/layout/Header";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -62,9 +63,8 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
 
-  const [messages, nav] = await Promise.all([
+  const [messages] = await Promise.all([
     getMessages(),
-    getTranslations("nav"),
   ]);
 
   return (
@@ -73,48 +73,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <CartProvider>
-              <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
-                <div className="flex items-center gap-6">
-                  <Link
-                    href={`/${locale}`}
-                    className="text-lg font-bold text-primary"
-                  >
-                    {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
-                  </Link>
-                  <nav className="hidden items-center gap-4 text-sm sm:flex">
-                    <Link
-                      href={`/${locale}/marketplace`}
-                      className="text-gray-600 hover:text-primary transition-colors"
-                    >
-                      {nav("marketplace")}
-                    </Link>
-                    <Link
-                      href={`/${locale}/orders`}
-                      className="text-gray-600 hover:text-primary transition-colors"
-                    >
-                      {nav("orders")}
-                    </Link>
-                    <Link
-                      href={`/${locale}/rider/dashboard`}
-                      className="text-gray-600 hover:text-primary transition-colors"
-                    >
-                      {nav("rider")}
-                    </Link>
-                    <Link
-                      href={`/${locale}/business/dashboard`}
-                      className="text-gray-600 hover:text-primary transition-colors"
-                    >
-                      {nav("business")}
-                    </Link>
-                  </nav>
-                </div>
-                <div className="flex items-center gap-3">
-                  <ChatBadge locale={locale} />
-                  <NotificationBell />
-                  <CartHeaderLink locale={locale} />
-                  <LanguageSwitcher />
-                </div>
-              </header>
+              <Header locale={locale} />
               <PushNotificationManager />
               {children}
             </CartProvider>

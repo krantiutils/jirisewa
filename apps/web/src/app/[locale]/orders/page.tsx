@@ -34,6 +34,8 @@ export default function OrdersPage() {
   const router = useRouter();
   const t = useTranslations("orders");
 
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("active");
   const [allOrders, setAllOrders] = useState<OrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,29 @@ export default function OrdersPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // Check auth first
   useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (!res.ok || !(await res.json()).user) {
+          router.replace(`/${locale}/auth/login`);
+          return;
+        }
+        setIsAuthenticated(true);
+      } catch {
+        router.replace(`/${locale}/auth/login`);
+        return;
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+    checkAuth();
+  }, [locale, router]);
+
+  useEffect(() => {
+    if (!authChecked || !isAuthenticated) return;
+
     async function load() {
       setLoading(true);
       setError(null);
@@ -133,6 +157,22 @@ export default function OrdersPage() {
     activeTab === "active"
       ? [OrderStatus.Pending, OrderStatus.Matched, OrderStatus.PickedUp, OrderStatus.InTransit]
       : COMPLETED_STATUSES;
+
+  // Don't render until auth is checked
+  if (!authChecked) {
+    return null;
+  }
+
+  // Show loading state while checking auth
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500">Please log in to view your orders...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-muted">

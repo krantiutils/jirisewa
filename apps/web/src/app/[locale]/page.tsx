@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { use } from "react";
+import { Link } from "@/i18n/navigation";
 import { SectionBlock, Button, IconCircle } from "@/components/ui";
 import {
   Sprout,
@@ -120,12 +121,16 @@ export default function HomePage({
             {hero("subheading")}
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button className="bg-white text-primary hover:bg-gray-100 hover:text-blue-700">
-              {hero("ctaBrowse")}
-            </Button>
-            <Button className="border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary">
-              {hero("ctaRider")}
-            </Button>
+            <Link href="/marketplace">
+              <Button className="bg-white text-primary hover:bg-gray-100 hover:text-blue-700">
+                {hero("ctaBrowse")}
+              </Button>
+            </Link>
+            <Link href="/rider/dashboard">
+              <Button className="border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary">
+                {hero("ctaRider")}
+              </Button>
+            </Link>
           </div>
 
           {/* Abstract farmer → rider → consumer flow */}
@@ -249,9 +254,11 @@ export default function HomePage({
               ))}
             </ul>
             <div className="mt-10">
-              <Button className="bg-white text-emerald-700 hover:bg-gray-100">
-                {farmers("cta")}
-              </Button>
+              <Link href="/farmer/dashboard">
+                <Button className="bg-white text-emerald-700 hover:bg-gray-100">
+                  {farmers("cta")}
+                </Button>
+              </Link>
             </div>
           </div>
           {/* Geometric illustration */}
@@ -309,9 +316,11 @@ export default function HomePage({
               ))}
             </ul>
             <div className="mt-10">
-              <Button className="bg-foreground text-amber-500 hover:bg-gray-800">
-                {riders("cta")}
-              </Button>
+              <Link href="/rider/dashboard">
+                <Button className="bg-foreground text-amber-500 hover:bg-gray-800">
+                  {riders("cta")}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -331,12 +340,16 @@ export default function HomePage({
             {cta("subtitle")}
           </p>
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button className="bg-white text-primary hover:bg-gray-100 hover:text-blue-700">
-              {cta("ctaPrimary")}
-            </Button>
-            <Button className="border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary">
-              {cta("ctaSecondary")}
-            </Button>
+            <Link href="/auth/login">
+              <Button className="bg-white text-primary hover:bg-gray-100 hover:text-blue-700">
+                {cta("ctaPrimary")}
+              </Button>
+            </Link>
+            <Link href="/marketplace">
+              <Button className="border-4 border-white bg-transparent text-white hover:bg-white hover:text-primary">
+                {cta("ctaSecondary")}
+              </Button>
+            </Link>
           </div>
         </div>
       </SectionBlock>
