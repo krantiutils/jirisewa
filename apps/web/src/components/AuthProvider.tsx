@@ -19,6 +19,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   signInWithOtp: (phone: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   verifyOtp: (
     phone: string,
     token: string,
@@ -59,6 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [supabase],
   );
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        queryParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
+      },
+    });
+    return { error: error ? new Error(error.message) : null };
+  }, [supabase]);
+
   const verifyOtp = useCallback(
     async (phone: string, token: string) => {
       const { error } = await supabase.auth.verifyOtp({
@@ -77,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, signInWithOtp, verifyOtp, signOut }}
+      value={{ ...state, signInWithOtp, signInWithGoogle, verifyOtp, signOut }}
     >
       {children}
     </AuthContext.Provider>
