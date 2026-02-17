@@ -23,10 +23,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Create a response that we can modify with cookies
-  let response = NextResponse.next();
-
   // Create Supabase client with proper cookie handling for edge runtime
+  // In edge runtime, we need to collect cookies and apply them to the final redirect response
+  const cookiesToSet: { name: string; value: string; options: any }[] = [];
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -35,10 +35,9 @@ export async function GET(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
+        setAll(cookies) {
+          cookies.forEach(({ name, value, options }) => {
+            cookiesToSet.push({ name, value, options });
           });
         },
       },
@@ -92,17 +91,22 @@ export async function GET(request: NextRequest) {
       }
 
       // New user - redirect to onboarding with locale prefix
-      // Use the response that has the session cookies set
-      return NextResponse.redirect(new URL("/ne/onboarding", baseUrl), {
-        headers: response.headers,
+      const redirectUrl = new URL("/ne/onboarding", baseUrl);
+      const response = NextResponse.redirect(redirectUrl);
+      cookiesToSet.forEach(({ name, value, options }) => {
+        response.cookies.set(name, value, options);
       });
+      return response;
     }
 
     // Profile exists - check onboarding status
     if (profile && !profile.onboarding_completed) {
-      return NextResponse.redirect(new URL("/ne/onboarding", baseUrl), {
-        headers: response.headers,
+      const redirectUrl = new URL("/ne/onboarding", baseUrl);
+      const response = NextResponse.redirect(redirectUrl);
+      cookiesToSet.forEach(({ name, value, options }) => {
+        response.cookies.set(name, value, options);
       });
+      return response;
     }
 
     // Onboarding complete - redirect to appropriate dashboard
@@ -113,14 +117,20 @@ export async function GET(request: NextRequest) {
         customer: "/customer",
       };
       const redirectPath = dashboardMap[profile.role || "customer"] || "/customer";
-      return NextResponse.redirect(new URL("/ne" + redirectPath, baseUrl), {
-        headers: response.headers,
+      const redirectUrl = new URL("/ne" + redirectPath, baseUrl);
+      const response = NextResponse.redirect(redirectUrl);
+      cookiesToSet.forEach(({ name, value, options }) => {
+        response.cookies.set(name, value, options);
       });
+      return response;
     }
   }
 
   // Fallback - redirect to onboarding with locale prefix
-  return NextResponse.redirect(new URL("/ne/onboarding", baseUrl), {
-    headers: response.headers,
+  const redirectUrl = new URL("/ne/onboarding", baseUrl);
+  const response = NextResponse.redirect(redirectUrl);
+  cookiesToSet.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options);
   });
+  return response;
 }
