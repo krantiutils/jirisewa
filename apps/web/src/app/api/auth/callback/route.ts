@@ -9,10 +9,17 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
+  // Get the actual host from the request (not localhost)
+  const host = request.headers.get('host') || 'khetbata.xyz';
+  const protocol = request.headers.get('x-forwarded-proto') || 'https';
+  const baseUrl = protocol + "://" + host;
+
   // Handle OAuth errors
   if (error) {
+    const errorParam = error ? encodeURIComponent(error) : "";
+    const descParam = errorDescription ? encodeURIComponent(errorDescription) : "";
     return NextResponse.redirect(
-      new URL(`/?error=${error}&description=${errorDescription || ""}`, request.url)
+      new URL("/?error=" + errorParam + "&description=" + descParam, baseUrl)
     );
   }
 
@@ -28,14 +35,14 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    // Check if profile exists
-    const { data: profile, error: profileError } = await supabase
-      .from("user_profiles")
+    // Check if profile exists - use type assertion
+    const { data: profile, error: profileError } = await (supabase
+      .from("user_profiles" as any)
       .select("id, onboarding_completed, role")
       .eq("id", user.id)
-      .single();
+      .single() as any);
 
-    // If profile doesn't exist (RLS or not created), create it using metadata
+    // If profile does not exist (RLS or not created), create it using metadata
     if (!profile || profileError) {
       const fullName =
         user.user_metadata?.full_name ||
@@ -46,8 +53,9 @@ export async function GET(request: NextRequest) {
         user.user_metadata?.picture ||
         null;
 
-      const { error: insertError } = await supabase
-        .from("user_profiles")
+      // Use any to bypass type checking since user_profiles is not in types yet
+      const { error: insertError } = await (supabase
+        .from("user_profiles" as any)
         .insert({
           id: user.id,
           email: user.email,
@@ -55,7 +63,7 @@ export async function GET(request: NextRequest) {
           avatar_url: avatarUrl,
           role: null,
           onboarding_completed: false,
-        });
+        }) as any);
 
       // If insert failed due to RLS, the trigger should have created it anyway
       if (insertError && insertError.code !== "23505") {
@@ -64,12 +72,12 @@ export async function GET(request: NextRequest) {
       }
 
       // New user - redirect to onboarding
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+      return NextResponse.redirect(new URL("/onboarding", baseUrl));
     }
 
     // Profile exists - check onboarding status
     if (profile && !profile.onboarding_completed) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+      return NextResponse.redirect(new URL("/onboarding", baseUrl));
     }
 
     // Onboarding complete - redirect to appropriate dashboard
@@ -80,10 +88,10 @@ export async function GET(request: NextRequest) {
         customer: "/customer",
       };
       const redirectPath = dashboardMap[profile.role || "customer"] || "/customer";
-      return NextResponse.redirect(new URL(redirectPath, request.url));
+      return NextResponse.redirect(new URL(redirectPath, baseUrl));
     }
   }
 
   // Fallback - redirect to onboarding or root
-  return NextResponse.redirect(new URL("/onboarding", request.url));
+  return NextResponse.redirect(new URL("/onboarding", baseUrl));
 }
