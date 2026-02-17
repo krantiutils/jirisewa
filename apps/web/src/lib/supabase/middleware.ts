@@ -25,8 +25,9 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Refresh the auth token (important for Server Components)
-  await supabase.auth.getUser();
+  // IMPORTANT: Call getSession to refresh the auth token
+  // This is critical for OAuth callbacks to work properly
+  await supabase.auth.getSession();
 
   return supabaseResponse;
 }
