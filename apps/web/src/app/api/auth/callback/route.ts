@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
@@ -23,7 +23,27 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  // Create a response that we can modify with cookies
+  let response = NextResponse.next();
+
+  // Create Supabase client with proper cookie handling for edge runtime
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
   // Exchange code for session (Supabase handles this automatically via cookie)
   // The code is already in the URL from the OAuth callback
@@ -71,13 +91,18 @@ export async function GET(request: NextRequest) {
         console.error("Failed to create user profile:", insertError);
       }
 
-      // New user - redirect to onboarding
-      return NextResponse.redirect(new URL("/onboarding", baseUrl));
+      // New user - redirect to onboarding with locale prefix
+      // Use the response that has the session cookies set
+      return NextResponse.redirect(new URL("/ne/onboarding", baseUrl), {
+        headers: response.headers,
+      });
     }
 
     // Profile exists - check onboarding status
     if (profile && !profile.onboarding_completed) {
-      return NextResponse.redirect(new URL("/onboarding", baseUrl));
+      return NextResponse.redirect(new URL("/ne/onboarding", baseUrl), {
+        headers: response.headers,
+      });
     }
 
     // Onboarding complete - redirect to appropriate dashboard
@@ -88,10 +113,14 @@ export async function GET(request: NextRequest) {
         customer: "/customer",
       };
       const redirectPath = dashboardMap[profile.role || "customer"] || "/customer";
-      return NextResponse.redirect(new URL(redirectPath, baseUrl));
+      return NextResponse.redirect(new URL("/ne" + redirectPath, baseUrl), {
+        headers: response.headers,
+      });
     }
   }
 
-  // Fallback - redirect to onboarding or root
-  return NextResponse.redirect(new URL("/onboarding", baseUrl));
+  // Fallback - redirect to onboarding with locale prefix
+  return NextResponse.redirect(new URL("/ne/onboarding", baseUrl), {
+    headers: response.headers,
+  });
 }
