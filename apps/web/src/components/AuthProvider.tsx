@@ -10,10 +10,22 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
+import { useRouter } from "@/i18n/navigation";
+
+interface UserProfile {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  onboarding_completed: boolean;
+}
 
 interface AuthState {
   session: Session | null;
   user: User | null;
+  profile: UserProfile | null;
   loading: boolean;
 }
 
@@ -25,6 +37,7 @@ interface AuthContextValue extends AuthState {
     token: string,
   ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,24 +46,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     session: null,
     user: null,
+    profile: null,
     loading: true,
   });
-
+  const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({ session, user: session?.user ?? null, loading: false });
-    });
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ session, user: session?.user ?? null, loading: false });
+    return data as UserProfile | null;
+  }, [supabase]);
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user ?? null;
+
+      let profile: UserProfile | null = null;
+      if (user) {
+        profile = await fetchProfile(user.id);
+      }
+
+      setState({ session, user, profile, loading: false });
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const user = session?.user ?? null;
+
+      let profile: UserProfile | null = null;
+      if (user) {
+        profile = await fetchProfile(user.id);
+
+        // Redirect to onboarding if profile exists but onboarding not completed
+        if (profile && !profile.onboarding_completed) {
+          router.replace("/onboarding");
+        }
+        // Redirect to appropriate dashboard if onboarding is complete
+        else if (profile?.onboarding_completed) {
+          const currentPath = window.location.pathname;
+          const isAuthPage = currentPath.includes("/auth/") || currentPath === "/login" || currentPath === "/register";
+
+          if (isAuthPage) {
+            const dashboardMap: Record<string, string> = {
+              farmer: "/farmer/dashboard",
+              rider: "/rider/dashboard",
+              customer: "/customer",
+            };
+            router.replace(dashboardMap[profile.role || "customer"] || "/customer");
+          }
+        }
+      }
+
+      setState({ session, user, profile, loading: false });
     });
 
     return () => subscription.unsubscribe();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [supabase, fetchProfile, router]);
 
   const signInWithOtp = useCallback(
     async (phone: string) => {
@@ -93,11 +151,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  }, [supabase]);
+    setState({ session: null, user: null, profile: null, loading: false });
+    router.replace("/");
+  }, [supabase, router]);
+
+  const refreshProfile = useCallback(async () => {
+    if (state.user) {
+      const profile = await fetchProfile(state.user.id);
+      setState(prev => ({ ...prev, profile }));
+    }
+  }, [state.user, fetchProfile]);
 
   return (
     <AuthContext.Provider
-      value={{ ...state, signInWithOtp, signInWithGoogle, verifyOtp, signOut }}
+      value={{ ...state, signInWithOtp, signInWithGoogle, verifyOtp, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

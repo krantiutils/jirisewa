@@ -26,7 +26,8 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
-      router.replace("/");
+      // Let AuthProvider handle the redirect based on profile
+      router.replace("/onboarding");
     }
   }, [user, router]);
 

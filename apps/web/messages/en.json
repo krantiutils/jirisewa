@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "title": "JiriSewa — Farm to Consumer Marketplace",
+    "title": "JiriSewa \u2014 Farm to Consumer Marketplace",
     "description": "Connecting Nepali farmers directly with consumers through community riders. Fresh produce, fair prices."
   },
   "nav": {
@@ -150,7 +150,7 @@
     "location": "Location",
     "notFound": "Product not found",
     "notFoundHint": "This product may have been removed or is no longer available.",
-    "shareTitle": "{name} — Fresh from {farmer} on JiriSewa",
+    "shareTitle": "{name} \u2014 Fresh from {farmer} on JiriSewa",
     "photos": "Photos"
   },
   "cart": {
@@ -301,15 +301,15 @@
     "payoutPending": "Pending",
     "payoutSettled": "Settled",
     "payoutRefunded": "Refunded",
-    "multiFarmerOrder": "Multi-farmer order — items from {count} farms"
+    "multiFarmerOrder": "Multi-farmer order \u2014 items from {count} farms"
   },
   "ratings": {
     "title": "Ratings & Reviews",
     "submitRating": "Submit Rating",
     "submitting": "Submitting...",
     "rateYourExperience": "Rate your experience",
-    "rateFarmerTitle": "Rate Farmer — {name}",
-    "rateRiderTitle": "Rate Rider — {name}",
+    "rateFarmerTitle": "Rate Farmer \u2014 {name}",
+    "rateRiderTitle": "Rate Rider \u2014 {name}",
     "produceQuality": "Produce Quality",
     "deliveryQuality": "Delivery Quality",
     "cooperation": "Cooperation",
@@ -368,7 +368,7 @@
       "nameEn": "Name (English)",
       "nameEnPlaceholder": "e.g. Fresh Tomatoes",
       "nameNe": "Name (Nepali)",
-      "nameNePlaceholder": "e.g. ताजा गोलभेडा",
+      "nameNePlaceholder": "e.g. \u0924\u093e\u091c\u093e \u0917\u094b\u0932\u092d\u0947\u0921\u093e",
       "description": "Description",
       "descriptionPlaceholder": "Describe your produce...",
       "pricePerKg": "Price per kg (NPR)",
@@ -503,7 +503,7 @@
       "cancel": "Cancel Trip",
       "confirmPickup": "Confirm Pickup",
       "startDelivery": "Start Delivery",
-      "confirmFarmerPickup": "Confirm Pickup — {farmer}",
+      "confirmFarmerPickup": "Confirm Pickup \u2014 {farmer}",
       "markUnavailable": "Mark Unavailable",
       "stopNumber": "Stop {num}",
       "allPickupsComplete": "All pickups completed",
@@ -582,12 +582,12 @@
   },
   "languageSwitcher": {
     "en": "English",
-    "ne": "नेपाली"
+    "ne": "\u0928\u0947\u092a\u093e\u0932\u0940"
   },
   "landing": {
     "hero": {
       "heading": "Fresh from farm to your door",
-      "subheading": "JiriSewa connects farmers, riders, and consumers — cutting out middlemen so farmers earn more and you pay less.",
+      "subheading": "JiriSewa connects farmers, riders, and consumers \u2014 cutting out middlemen so farmers earn more and you pay less.",
       "ctaBrowse": "Browse Produce",
       "ctaFarmer": "Start Selling",
       "ctaRider": "Become a Rider",
@@ -621,7 +621,7 @@
     "forFarmers": {
       "title": "For Farmers",
       "subtitle": "Sell directly. Earn fairly.",
-      "benefit1": "Set your own prices — no middlemen taking 75%",
+      "benefit1": "Set your own prices \u2014 no middlemen taking 75%",
       "benefit2": "Reach consumers in Kathmandu and beyond",
       "benefit3": "Get paid when your produce is delivered",
       "benefit4": "List in minutes with photos from your phone",
@@ -632,7 +632,7 @@
       "subtitle": "You're already traveling. Start earning.",
       "benefit1": "Earn money on trips you're already taking",
       "benefit2": "Choose which deliveries to accept",
-      "benefit3": "Flexible — no commitment, no schedule",
+      "benefit3": "Flexible \u2014 no commitment, no schedule",
       "benefit4": "Help connect rural farms to city kitchens",
       "cta": "Start Earning"
     },
@@ -662,7 +662,7 @@
       "email": "info@jirisewa.com",
       "phone": "+977-1-XXXXXXX",
       "address": "Kathmandu, Nepal",
-      "mapAttribution": "Map data © OpenStreetMap contributors",
+      "mapAttribution": "Map data \u00a9 OpenStreetMap contributors",
       "copyright": "JiriSewa. All rights reserved."
     }
   },
@@ -845,7 +845,7 @@
     "nameEn": "Name (English)",
     "nameEnPlaceholder": "e.g. Weekly Veggie Box",
     "nameNe": "Name (Nepali)",
-    "nameNePlaceholder": "e.g. हप्ताको तरकारी बाकस",
+    "nameNePlaceholder": "e.g. \u0939\u092a\u094d\u0924\u093e\u0915\u094b \u0924\u0930\u0915\u093e\u0930\u0940 \u092c\u093e\u0915\u0938",
     "descriptionEn": "Description (English)",
     "descriptionNe": "Description (Nepali)",
     "descriptionPlaceholder": "What's included in this box...",
@@ -980,7 +980,7 @@
       "viewAll": "View All",
       "noOrders": "No bulk orders yet",
       "placeFirst": "Place Your First Order",
-      "orderSummary": "{items} items from {farmers} farmers · {kg} kg"
+      "orderSummary": "{items} items from {farmers} farmers \u00b7 {kg} kg"
     },
     "orders": {
       "title": "Bulk Orders",
@@ -1045,6 +1045,32 @@
       "notesPlaceholder": "Optional notes for the buyer...",
       "sendQuote": "Send Quote",
       "decline": "Decline"
+    }
+  },
+  "onboarding": {
+    "heading": "How will you use JiriSewa?",
+    "subheading": "Select your role to personalize your experience",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "continue": "Continue",
+    "skipPrefix": "Not sure?",
+    "skipLink": "Continue as Customer",
+    "farmerTitle": "Farmer",
+    "farmerDesc": "Sell your fresh produce directly to consumers",
+    "riderTitle": "Rider",
+    "riderDesc": "Deliver orders and earn money in your area",
+    "customerTitle": "Customer",
+    "customerDesc": "Browse and order fresh produce from local farmers",
+    "features": {
+      "listings": "Create product listings",
+      "analytics": "Track sales & analytics",
+      "subscriptions": "Manage subscriptions",
+      "navigation": "GPS navigation",
+      "earnings": "Track earnings",
+      "flexible": "Flexible schedule",
+      "browse": "Browse fresh produce",
+      "delivery": "Home delivery",
+      "track": "Track orders in real-time"
     }
   }
 }
