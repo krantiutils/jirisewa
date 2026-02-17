@@ -17,10 +17,12 @@ port = 54323
 enabled = true
 port = 54321
 schemas = ["public"]
+external_url = "https://khetbata.xyz/_supabase"
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
+site_url = "https://khetbata.xyz"
+additional_redirect_urls = ["https://khetbata.xyz/_supabase/auth/v1/callback"]
 
 [auth.sms]
 enable_signup = true

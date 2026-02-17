@@ -61,16 +61,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signInWithGoogle = useCallback(async () => {
+    // For production with nginx proxy, redirect to the public Supabase endpoint
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const redirectUrl = `${origin}/_supabase/auth/v1/callback`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        redirectTo: redirectUrl,
         queryParams: {
           access_type: "offline",
           prompt: "consent",
         },
       },
     });
+
     return { error: error ? new Error(error.message) : null };
   }, [supabase]);
 
