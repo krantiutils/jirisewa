@@ -53,13 +53,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = createClient();
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-    return data as UserProfile | null;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        // If profile doesn't exist or RLS blocks it, return null
+        // Profile will be created by trigger or callback handler
+        if (error.code === "PGRST116") {
+          return null; // Profile not found
+        }
+        // For RLS errors or other issues, also return null
+        return null;
+      }
+      return data as UserProfile | null;
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+      return null;
+    }
   }, [supabase]);
 
   useEffect(() => {
@@ -119,9 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signInWithGoogle = useCallback(async () => {
-    // For production with nginx proxy, redirect to the public Supabase endpoint
+    // redirectTo should point to our callback handler which will handle the session and redirect
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const redirectUrl = `${origin}/_supabase/auth/v1/callback`;
+    const redirectUrl = `${origin}/api/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -131,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           access_type: "offline",
           prompt: "consent",
         },
+        skipBrowserRedirect: false,
       },
     });
 
