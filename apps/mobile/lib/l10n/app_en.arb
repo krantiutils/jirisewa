@@ -1,0 +1,517 @@
+{
+  "@@locale": "en",
+
+  "navHome": "Home",
+  "navMarketplace": "Marketplace",
+  "navTrips": "Trips",
+  "navOrders": "Orders",
+  "navProfile": "Profile",
+  "navMessages": "Messages",
+
+  "authLoginTitle": "Login to JiriSewa",
+  "authLoginSubtitle": "Enter your phone number to get started",
+  "authPhoneLabel": "Phone Number",
+  "authPhonePlaceholder": "98XXXXXXXX",
+  "authPhoneHint": "Enter your 10-digit Nepal mobile number",
+  "authSendOtp": "Send OTP",
+  "authOtpTitle": "Verify OTP",
+  "authOtpSubtitle": "Enter the 6-digit code sent to {phone}",
+  "@authOtpSubtitle": {
+    "placeholders": {
+      "phone": { "type": "String" }
+    }
+  },
+  "authOtpPlaceholder": "Enter 6-digit code",
+  "authVerifyOtp": "Verify",
+  "authResendOtp": "Resend OTP",
+  "authResendIn": "Resend in {seconds}s",
+  "@authResendIn": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "authChangePhone": "Change phone number",
+  "authInvalidPhone": "Enter a valid Nepal mobile number (98XXXXXXXX)",
+  "authOtpSent": "OTP sent to your phone",
+  "authOtpError": "Failed to send OTP. Please try again.",
+  "authVerifyError": "Invalid OTP. Please try again.",
+  "authSending": "Sending...",
+  "authVerifying": "Verifying...",
+
+  "registerTitle": "Complete Your Profile",
+  "registerSubtitle": "Tell us about yourself to get started",
+  "registerNameLabel": "Full Name",
+  "registerNamePlaceholder": "Your full name",
+  "registerLanguageLabel": "Preferred Language",
+  "registerAddressLabel": "Address",
+  "registerAddressPlaceholder": "Your address or municipality",
+  "registerMunicipalityLabel": "Municipality",
+  "registerMunicipalityPlaceholder": "e.g. Kathmandu, Pokhara, Biratnagar",
+  "registerRoleTitle": "I am a...",
+  "registerRoleSubtitle": "Select all that apply",
+  "registerRoleFarmer": "Farmer",
+  "registerRoleFarmerDesc": "I grow and sell produce",
+  "registerRoleConsumer": "Consumer",
+  "registerRoleConsumerDesc": "I buy fresh produce",
+  "registerRoleRider": "Rider",
+  "registerRoleRiderDesc": "I travel and can carry produce",
+  "registerFarmNameLabel": "Farm Name",
+  "registerFarmNamePlaceholder": "Name of your farm",
+  "registerVehicleTypeLabel": "Vehicle Type",
+  "registerVehicleCapacityLabel": "Carrying Capacity (kg)",
+  "registerVehicleCapacityPlaceholder": "e.g. 50",
+  "registerBike": "Bike",
+  "registerCar": "Car",
+  "registerTruck": "Truck",
+  "registerBus": "Bus",
+  "registerOther": "Other",
+  "registerNext": "Next",
+  "registerBack": "Back",
+  "registerComplete": "Complete Registration",
+  "registerCompleting": "Completing...",
+  "registerSelectRole": "Please select at least one role",
+  "registerNameRequired": "Name is required",
+  "registerStep": "Step {current} of {total}",
+  "@registerStep": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "marketplaceTitle": "Marketplace",
+  "marketplaceSubtitle": "Fresh produce directly from local farmers",
+  "marketplaceSearchPlaceholder": "Search produce...",
+  "marketplaceFilters": "Filters",
+  "marketplaceClearFilters": "Clear filters",
+  "marketplaceAllCategories": "All Categories",
+  "marketplacePriceRange": "Price Range",
+  "marketplaceMinPrice": "Min (NPR)",
+  "marketplaceMaxPrice": "Max (NPR)",
+  "marketplaceSortBy": "Sort by",
+  "marketplaceSortPriceAsc": "Price: Low to High",
+  "marketplaceSortPriceDesc": "Price: High to Low",
+  "marketplaceSortFreshness": "Freshness",
+  "marketplaceSortRating": "Farmer Rating",
+  "marketplaceSortDistance": "Distance",
+  "marketplaceNoResults": "No produce found",
+  "marketplaceNoResultsHint": "Try adjusting your filters or search terms.",
+  "marketplacePerKg": "/kg",
+  "marketplaceLoadMore": "Load more",
+  "marketplaceShowing": "Showing {count} items",
+  "@marketplaceShowing": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "marketplaceSetLocation": "Set your location",
+  "marketplaceSetLocationHint": "Set your location to see nearby produce and distances.",
+  "marketplaceUseMyLocation": "Use my location",
+  "marketplaceLocationSet": "Location set",
+  "marketplaceKmAway": "{distance} km away",
+  "@marketplaceKmAway": {
+    "placeholders": {
+      "distance": { "type": "String" }
+    }
+  },
+  "marketplaceHarvestedOn": "Harvested {date}",
+  "@marketplaceHarvestedOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "marketplaceAvailable": "{qty} kg available",
+  "@marketplaceAvailable": {
+    "placeholders": {
+      "qty": { "type": "String" }
+    }
+  },
+  "marketplaceFarmerRating": "{rating} ({count} reviews)",
+  "@marketplaceFarmerRating": {
+    "placeholders": {
+      "rating": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "marketplaceVerifiedFarmer": "Verified",
+
+  "produceAddToCart": "Add to Cart",
+  "produceAddedToCart": "Added!",
+  "produceQuantity": "Quantity (kg)",
+  "producePricePerKg": "NPR {price}/kg",
+  "@producePricePerKg": {
+    "placeholders": {
+      "price": { "type": "String" }
+    }
+  },
+  "produceTotalPrice": "Total: NPR {total}",
+  "@produceTotalPrice": {
+    "placeholders": {
+      "total": { "type": "String" }
+    }
+  },
+  "produceFarmerInfo": "Farmer Information",
+  "produceFreshness": "Freshness",
+  "produceDescription": "Description",
+  "produceCategory": "Category",
+  "produceLocation": "Location",
+  "produceNotFound": "Product not found",
+  "produceNotFoundHint": "This product may have been removed or is no longer available.",
+  "producePhotos": "Photos",
+
+  "cartTitle": "Shopping Cart",
+  "cartEmpty": "Your cart is empty",
+  "cartEmptyHint": "Browse the marketplace to find fresh produce.",
+  "cartBrowseMarketplace": "Browse Marketplace",
+  "cartClearAll": "Clear all",
+  "cartFromFarmer": "from {farmer}",
+  "@cartFromFarmer": {
+    "placeholders": {
+      "farmer": { "type": "String" }
+    }
+  },
+  "cartRemove": "Remove",
+  "cartSubtotal": "Subtotal",
+  "cartProceedToCheckout": "Proceed to Checkout",
+
+  "checkoutTitle": "Checkout",
+  "checkoutOrderSummary": "Order Summary",
+  "checkoutDeliveryLocation": "Delivery Location",
+  "checkoutDeliveryLocationHint": "Tap the map to set your delivery location.",
+  "checkoutSelectDeliveryLocation": "Please select a delivery location on the map.",
+  "checkoutCashOnDelivery": "Cash on Delivery",
+  "checkoutCashOnDeliveryHint": "Pay the rider in cash when your order is delivered.",
+  "checkoutEsewaPayment": "eSewa",
+  "checkoutEsewaPaymentHint": "Pay securely with your eSewa digital wallet. Payment held in escrow until delivery.",
+  "checkoutKhaltiPayment": "Khalti",
+  "checkoutKhaltiPaymentHint": "Pay securely with your Khalti digital wallet. Payment held in escrow until delivery.",
+  "checkoutConnectipsPayment": "connectIPS",
+  "checkoutConnectipsPaymentHint": "Pay directly from your bank account via connectIPS. Payment held in escrow until delivery.",
+  "checkoutSubtotal": "Subtotal",
+  "checkoutDeliveryFee": "Delivery Fee",
+  "checkoutCalculatingFee": "Calculating delivery fee...",
+  "checkoutFeeError": "Could not calculate delivery fee. Please try a different delivery location.",
+  "checkoutBaseFee": "Base Fee",
+  "checkoutDistanceFee": "Distance ({km} km)",
+  "@checkoutDistanceFee": {
+    "placeholders": {
+      "km": { "type": "String" }
+    }
+  },
+  "checkoutWeightFee": "Weight ({kg} kg)",
+  "@checkoutWeightFee": {
+    "placeholders": {
+      "kg": { "type": "String" }
+    }
+  },
+  "checkoutTotal": "Total",
+  "checkoutPlaceOrder": "Place Order",
+  "checkoutPlacing": "Placing order...",
+  "checkoutRedirectingToPayment": "Redirecting to payment...",
+
+  "ordersTitle": "My Orders",
+  "ordersNoOrders": "No orders yet",
+  "ordersOrderNumber": "Order #{id}",
+  "@ordersOrderNumber": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "ordersPlaced": "Placed {date}",
+  "@ordersPlaced": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "ordersTabActive": "Active",
+  "ordersTabCompleted": "Completed",
+  "ordersStatusPending": "Pending",
+  "ordersStatusMatched": "Matched",
+  "ordersStatusPickedUp": "Picked Up",
+  "ordersStatusInTransit": "In Transit",
+  "ordersStatusDelivered": "Delivered",
+  "ordersStatusCancelled": "Cancelled",
+  "ordersStatusDisputed": "Disputed",
+  "ordersOrderDetail": "Order Details",
+  "ordersItems": "Items",
+  "ordersFromFarmer": "from {farmer}",
+  "@ordersFromFarmer": {
+    "placeholders": {
+      "farmer": { "type": "String" }
+    }
+  },
+  "ordersDeliveryAddress": "Delivery Address",
+  "ordersRiderInfo": "Rider Information",
+  "ordersSubtotal": "Subtotal",
+  "ordersDeliveryFee": "Delivery Fee",
+  "ordersTotal": "Total",
+  "ordersPaymentMethod": "Payment Method",
+  "ordersPaymentStatus": "Payment Status",
+  "ordersPaymentStatusPending": "Pending",
+  "ordersPaymentStatusEscrowed": "Held in Escrow",
+  "ordersPaymentStatusCollected": "Collected",
+  "ordersPaymentStatusSettled": "Settled",
+  "ordersPaymentStatusRefunded": "Refunded",
+  "ordersPaymentSuccess": "Payment successful! Your funds are held securely in escrow until delivery.",
+  "ordersPaymentFailed": "Payment was not completed. You can retry below.",
+  "ordersConfirmDelivery": "Confirm Delivery Received",
+  "ordersCancelOrder": "Cancel Order",
+  "ordersDeliveryConfirmed": "Delivery confirmed! Thank you.",
+  "ordersRateOrder": "Rate this order",
+  "ordersRateFarmer": "Rate Farmer",
+  "ordersRateRider": "Rate Rider",
+  "ordersRated": "Rated",
+  "ordersReorder": "Reorder",
+  "ordersRetryEsewaPayment": "Pay with eSewa",
+  "ordersRetryKhaltiPayment": "Pay with Khalti",
+  "ordersRetryConnectIPSPayment": "Pay with connectIPS",
+  "ordersTotalItems": "{count} items",
+  "@ordersTotalItems": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "ordersRider": "Rider",
+  "ordersFarmer": "Farmer",
+  "ordersReceipt": "Receipt",
+  "ordersBackToOrders": "Back to orders",
+
+  "ratingsTitle": "Ratings & Reviews",
+  "ratingsSubmitRating": "Submit Rating",
+  "ratingsSubmitting": "Submitting...",
+  "ratingsRateYourExperience": "Rate your experience",
+  "ratingsCommentPlaceholder": "Share your experience (optional)",
+  "ratingsStar1": "Poor",
+  "ratingsStar2": "Fair",
+  "ratingsStar3": "Good",
+  "ratingsStar4": "Very Good",
+  "ratingsStar5": "Excellent",
+  "ratingsThankYou": "Thank you for your rating!",
+  "ratingsAlreadyRated": "You have already rated this person for this order.",
+  "ratingsNoRatings": "No ratings yet",
+  "ratingsError": "Failed to submit rating. Please try again.",
+  "ratingsClose": "Close",
+
+  "farmerDashboardTitle": "Farmer Dashboard",
+  "farmerAddListing": "Add Listing",
+  "farmerActiveListings": "Active Listings",
+  "farmerPendingOrders": "Pending Orders",
+  "farmerEarnings": "Total Earnings",
+  "farmerMyListings": "My Listings",
+  "farmerNoListings": "You haven't listed any produce yet.",
+  "farmerAddFirstListing": "Add Your First Listing",
+  "farmerNewListingTitle": "Add New Listing",
+  "farmerEditListingTitle": "Edit Listing",
+  "farmerListingActive": "Active",
+  "farmerListingInactive": "Inactive",
+  "farmerFormCategory": "Category",
+  "farmerFormSelectCategory": "Select a category",
+  "farmerFormNameEn": "Name (English)",
+  "farmerFormNameNe": "Name (Nepali)",
+  "farmerFormDescription": "Description",
+  "farmerFormPricePerKg": "Price per kg (NPR)",
+  "farmerFormAvailableQty": "Available Quantity (kg)",
+  "farmerFormFreshnessDate": "Freshness Date",
+  "farmerFormPhotos": "Photos (up to 5)",
+  "farmerFormSaving": "Saving...",
+  "farmerFormCreate": "Create Listing",
+  "farmerFormUpdate": "Update Listing",
+  "farmerFormCancel": "Cancel",
+  "farmerFormErrorCategory": "Please select a category.",
+  "farmerFormErrorName": "Both English and Nepali names are required.",
+  "farmerFormErrorPrice": "Please enter a valid price.",
+  "farmerFormErrorQty": "Please enter a valid quantity.",
+
+  "farmerVerificationTitle": "Identity Verification",
+  "farmerVerificationDescription": "Submit your documents to get verified. Verified farmers get a badge and appear higher in search results.",
+  "farmerVerificationStatusUnverified": "Your account is not yet verified.",
+  "farmerVerificationStatusPending": "Your documents are under review.",
+  "farmerVerificationStatusApproved": "Your account is verified!",
+  "farmerVerificationStatusRejected": "Your verification was not approved.",
+  "farmerVerificationSubmit": "Submit Documents",
+  "farmerVerificationResubmit": "Resubmit Documents",
+  "farmerVerificationCitizenshipPhoto": "Citizenship / ID Card Photo",
+  "farmerVerificationFarmPhoto": "Farm Photo",
+  "farmerVerificationMunicipalityLetter": "Municipality Letter (Optional)",
+  "farmerVerificationUploading": "Uploading...",
+  "farmerVerificationSubmitting": "Submitting...",
+  "farmerVerificationSubmitted": "Documents submitted for review!",
+  "farmerVerificationVerifiedBadge": "Verified Farmer",
+
+  "farmerAnalyticsTitle": "Analytics",
+  "farmerAnalyticsTotalRevenue": "Total Revenue",
+  "farmerAnalyticsTotalOrders": "Total Orders",
+  "farmerAnalyticsAvgRating": "Avg Rating",
+  "farmerAnalyticsRevenueTrend": "Revenue Trend",
+  "farmerAnalyticsSalesByCategory": "Sales by Category",
+  "farmerAnalyticsTopProducts": "Top Products",
+  "farmerAnalyticsPriceBenchmarks": "Price Comparison",
+  "farmerAnalyticsFulfillmentRate": "Fulfillment Rate",
+  "farmerAnalyticsNoData": "No data for this period.",
+  "farmerAnalyticsPeriod7days": "7 days",
+  "farmerAnalyticsPeriod30days": "30 days",
+  "farmerAnalyticsPeriod90days": "90 days",
+
+  "riderDashboardTitle": "Rider Dashboard",
+  "riderPostTrip": "Post a Trip",
+  "riderUpcoming": "Upcoming",
+  "riderActive": "Active",
+  "riderCompleted": "Completed",
+  "riderNoTrips": "No trips yet",
+  "riderPostFirstTrip": "Post your first trip",
+  "riderTripFormTitle": "Post a Trip",
+  "riderPickOrigin": "Where are you starting?",
+  "riderPickOriginHint": "Tap the map to select your starting point.",
+  "riderPickDestination": "Where are you heading?",
+  "riderPickDestinationHint": "Tap the map to select your destination.",
+  "riderTripDetails": "Trip Details",
+  "riderDepartureDate": "Departure Date",
+  "riderDepartureTime": "Departure Time",
+  "riderCapacity": "Available Capacity (kg)",
+  "riderVehicleType": "Vehicle Type",
+  "riderDistance": "Distance",
+  "riderDuration": "Est. Duration",
+  "riderFrom": "From",
+  "riderTo": "To",
+  "riderNext": "Next",
+  "riderBack": "Back",
+  "riderReview": "Review",
+  "riderReviewTitle": "Review Your Trip",
+  "riderPostTripBtn": "Post Trip",
+  "riderPosting": "Posting...",
+  "riderCalculatingRoute": "Calculating route...",
+  "riderRouteError": "Could not calculate route. Please try different locations.",
+
+  "riderTripDetailTitle": "Trip Detail",
+  "riderTripInfo": "Trip Information",
+  "riderTotalCapacity": "Total Capacity",
+  "riderRemainingCapacity": "Remaining Capacity",
+  "riderMatchedOrders": "Matched Orders",
+  "riderNoMatchedOrders": "No orders matched to this trip yet.",
+  "riderStartTrip": "Start Trip",
+  "riderStarting": "Starting...",
+  "riderCompleteTrip": "Complete Trip",
+  "riderCompleting": "Completing...",
+  "riderCancelTrip": "Cancel Trip",
+  "riderConfirmPickup": "Confirm Pickup",
+  "riderStartDelivery": "Start Delivery",
+  "riderOptimizeRoute": "Optimize Route",
+  "riderOptimizing": "Optimizing...",
+
+  "riderTripStatusScheduled": "Scheduled",
+  "riderTripStatusInTransit": "In Transit",
+  "riderTripStatusCompleted": "Completed",
+  "riderTripStatusCancelled": "Cancelled",
+
+  "riderPingsNewOrders": "New Order Requests",
+  "riderPingsPickup": "Pickup",
+  "riderPingsDelivery": "Delivery",
+  "riderPingsWeight": "Weight",
+  "riderPingsEarnings": "Earnings",
+  "riderPingsDetour": "Detour",
+  "riderPingsAccept": "Accept",
+  "riderPingsDecline": "Decline",
+  "riderPingsExpired": "Expired",
+  "riderPingsAccepting": "Accepting...",
+  "riderPingsDeclining": "Declining...",
+  "riderPingsAccepted": "Accepted",
+  "riderPingsExpiresIn": "Expires in {time}",
+  "@riderPingsExpiresIn": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+
+  "chatTitle": "Messages",
+  "chatNoConversations": "No messages yet",
+  "chatNoConversationsHint": "Start a conversation from an order page.",
+  "chatSearchPlaceholder": "Search conversations...",
+  "chatYou": "You",
+  "chatImage": "Photo",
+  "chatLocation": "Location",
+  "chatTypeMessage": "Type a message...",
+  "chatSend": "Send",
+  "chatSendImage": "Send image",
+  "chatToday": "Today",
+  "chatYesterday": "Yesterday",
+  "chatLoadMore": "Load earlier messages",
+
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "No notifications yet",
+  "notificationsMarkAllRead": "Mark all as read",
+  "notificationsPreferencesTitle": "Notification Preferences",
+  "notificationsConsumerGroup": "Order Updates",
+  "notificationsFarmerGroup": "Farm Orders",
+  "notificationsRiderGroup": "Trip & Delivery",
+
+  "subscriptionsTitle": "Subscription Boxes",
+  "subscriptionsSubtitle": "Fresh produce delivered to your door every week",
+  "subscriptionsNoPlans": "No subscription plans available yet.",
+  "subscriptionsNoSubscriptions": "You have no active subscriptions.",
+  "subscriptionsBrowse": "Browse Plans",
+  "subscriptionsMy": "My Subscriptions",
+  "subscriptionsFrequencyWeekly": "Weekly",
+  "subscriptionsFrequencyBiweekly": "Biweekly",
+  "subscriptionsFrequencyMonthly": "Monthly",
+  "subscriptionsStatusActive": "Active",
+  "subscriptionsStatusPaused": "Paused",
+  "subscriptionsStatusCancelled": "Cancelled",
+  "subscriptionsByFarmer": "by {name}",
+  "@subscriptionsByFarmer": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "subscriptionsSubscribe": "Subscribe",
+  "subscriptionsSubscribing": "Subscribing...",
+  "subscriptionsPause": "Pause",
+  "subscriptionsResume": "Resume",
+  "subscriptionsCancel": "Cancel",
+  "subscriptionsCreatePlan": "Create Plan",
+
+  "businessRegisterTitle": "Register Your Business",
+  "businessDashboardTitle": "Business Dashboard",
+  "businessCreateOrder": "New Bulk Order",
+  "businessBulkOrdersTitle": "Bulk Orders",
+  "businessActiveOrders": "Active Orders",
+  "businessCompletedOrders": "Completed",
+  "businessTotalSpent": "Total Spent",
+  "businessNoOrders": "No bulk orders yet",
+  "businessStatusDraft": "Draft",
+  "businessStatusSubmitted": "Submitted",
+  "businessStatusQuoted": "Quoted",
+  "businessStatusAccepted": "Accepted",
+  "businessStatusInProgress": "In Progress",
+  "businessStatusFulfilled": "Fulfilled",
+  "businessStatusCancelled": "Cancelled",
+  "businessAcceptQuotes": "Accept All Quotes",
+  "businessCancelOrder": "Cancel Order",
+
+  "commonLoading": "Loading...",
+  "commonError": "Error",
+  "commonRetry": "Retry",
+  "commonCancel": "Cancel",
+  "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonConfirm": "Confirm",
+  "commonSearch": "Search",
+  "commonNoData": "No data available",
+  "commonSuccess": "Success",
+  "commonUnknownError": "Something went wrong. Please try again.",
+  "commonClose": "Close",
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "commonDone": "Done",
+  "commonEdit": "Edit",
+  "commonOk": "OK",
+  "commonYes": "Yes",
+  "commonNo": "No",
+
+  "languageEnglish": "English",
+  "languageNepali": "Nepali",
+
+  "paymentProcessing": "Processing payment...",
+  "paymentSuccess": "Payment successful!",
+  "paymentFailed": "Payment failed",
+  "paymentVerifying": "Verifying payment..."
+}
