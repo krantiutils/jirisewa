@@ -1,78 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
+import 'package:jirisewa_mobile/features/orders/providers/orders_provider.dart';
 
 /// Orders list screen — shows orders based on active role.
 /// Consumer: orders they placed. Rider: orders assigned to them.
-class OrdersScreen extends StatefulWidget {
+class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ordersAsync = ref.watch(ordersListProvider);
 
-class _OrdersScreenState extends State<OrdersScreen> {
-  bool _loading = true;
-  String? _error;
-  List<Map<String, dynamic>> _orders = [];
-
-  SupabaseClient get _supabase => Supabase.instance.client;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadOrders();
-  }
-
-  Future<void> _loadOrders() async {
-    final session = SessionProvider.of(context);
-    final currentProfile = session.profile;
-    if (!session.isAuthenticated || currentProfile == null) return;
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final userId = currentProfile.id;
-      final role = session.activeRole;
-
-      final query = _supabase
-          .from('orders')
-          .select('id, status, total_price, delivery_fee, delivery_address, created_at');
-
-      List<dynamic> result;
-      if (role == 'rider') {
-        result = await query
-            .eq('rider_id', userId)
-            .order('created_at', ascending: false)
-            .limit(20);
-      } else {
-        result = await query
-            .eq('consumer_id', userId)
-            .order('created_at', ascending: false)
-            .limit(20);
-      }
-
-      setState(() {
-        _orders = List<Map<String, dynamic>>.from(result);
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load orders: $e';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -88,43 +30,48 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
             Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                              const SizedBox(height: 12),
-                              Text(_error!),
-                              const SizedBox(height: 12),
-                              ElevatedButton(onPressed: _loadOrders, child: const Text('Retry')),
-                            ],
-                          ),
-                        )
-                      : _orders.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.receipt_long, size: 48, color: Colors.grey[400]),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No orders yet',
-                                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _loadOrders,
-                              child: ListView.builder(
-                                itemCount: _orders.length,
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                itemBuilder: (ctx, i) => _orderTile(_orders[i]),
-                              ),
+              child: ordersAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text('Failed to load orders: $error'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(ordersListProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (data) => data.orders.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.receipt_long, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No orders yet',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 16),
                             ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () => ref.refresh(ordersListProvider.future),
+                        child: ListView.builder(
+                          itemCount: data.orders.length,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemBuilder: (ctx, i) =>
+                              _orderTile(context, data.orders[i]),
+                        ),
+                      ),
+              ),
             ),
           ],
         ),
@@ -132,7 +79,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _orderTile(Map<String, dynamic> order) {
+  Widget _orderTile(BuildContext context, Map<String, dynamic> order) {
     final status = order['status'] as String? ?? 'pending';
     final total = (order['total_price'] as num?)?.toDouble() ?? 0;
     final fee = (order['delivery_fee'] as num?)?.toDouble() ?? 0;

@@ -1,41 +1,35 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/core/constants/map_constants.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
+import 'package:jirisewa_mobile/features/orders/providers/orders_provider.dart';
 
 /// Order detail screen with fulfillment flow:
 /// Farmer pickup -> Rider transit -> Customer delivery.
-class OrderDetailScreen extends StatefulWidget {
+class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
 
   const OrderDetailScreen({super.key, required this.orderId});
 
   @override
-  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
+  ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState extends State<OrderDetailScreen> {
-  bool _loading = true;
-  String? _error;
-  Map<String, dynamic>? _order;
-  List<Map<String, dynamic>> _items = [];
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   LatLng? _riderLocation;
   DateTime? _lastRiderUpdateAt;
   RealtimeChannel? _trackingChannel;
   Timer? _staleTimer;
 
-  SupabaseClient get _supabase => Supabase.instance.client;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadOrder();
-  }
+  /// Track which tripId we are currently subscribed to, so we can
+  /// re-subscribe when order data refreshes with a different trip.
+  String? _subscribedTripId;
 
   @override
   void dispose() {
@@ -43,59 +37,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _loadOrder() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final order = await _supabase
-          .from('orders')
-          .select()
-          .eq('id', widget.orderId)
-          .maybeSingle();
-
-      if (order == null) {
-        setState(() {
-          _error = 'Order not found';
-          _loading = false;
-        });
-        return;
-      }
-
-      final items = await _supabase
-          .from('order_items')
-          .select('*, produce_listings(name_en, name_ne)')
-          .eq('order_id', widget.orderId);
-
-      final castOrder = Map<String, dynamic>.from(order);
-      final castItems = List<Map<String, dynamic>>.from(items);
-
-      setState(() {
-        _order = castOrder;
-        _items = castItems;
-        _loading = false;
-      });
-
-      await _setupTracking(castOrder);
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load order: $e';
-        _loading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final pickup = _pickupPoint();
-    final delivery = _deliveryPoint();
-    final status = _order?['status'] as String? ?? 'pending';
-    final isTrackingActive = status == 'picked_up' || status == 'in_transit';
-    final isSignalStale =
-        _lastRiderUpdateAt != null &&
-        DateTime.now().difference(_lastRiderUpdateAt!).inSeconds > 30;
+    final orderDetailAsync = ref.watch(orderDetailProvider(widget.orderId));
 
     return Scaffold(
       appBar: AppBar(
@@ -104,209 +48,228 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         foregroundColor: AppColors.foreground,
         elevation: 0,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                  const SizedBox(height: 12),
-                  Text(_error!),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _loadOrder,
-                    child: const Text('Retry'),
-                  ),
-                ],
+      body: orderDetailAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: AppColors.error),
+              const SizedBox(height: 12),
+              Text('Failed to load order: $error'),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () =>
+                    ref.invalidate(orderDetailProvider(widget.orderId)),
+                child: const Text('Retry'),
               ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadOrder,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            ],
+          ),
+        ),
+        data: (data) {
+          // Set up tracking when data arrives (idempotent via _subscribedTripId check).
+          _maybeSetupTracking(data.order);
+
+          return _buildContent(data);
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(OrderDetailData data) {
+    final order = data.order;
+    final items = data.items;
+    final pickup = _pickupPoint(items);
+    final delivery = _deliveryPoint(order);
+    final status = order['status'] as String? ?? 'pending';
+    final isTrackingActive = status == 'picked_up' || status == 'in_transit';
+    final isSignalStale =
+        _lastRiderUpdateAt != null &&
+        DateTime.now().difference(_lastRiderUpdateAt!).inSeconds > 30;
+
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.refresh(orderDetailProvider(widget.orderId).future),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _statusBadge(status),
+            const SizedBox(height: 16),
+
+            _sectionTitle('Fulfillment Map'),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox(
+                height: 200,
+                child: RouteMapWidget(
+                  origin: pickup,
+                  destination: delivery,
+                  originName: 'Farmer pickup',
+                  destinationName: 'Customer delivery',
+                  currentPosition: _riderLocation,
+                  isActive: status == 'in_transit',
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (isTrackingActive)
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isSignalStale
+                      ? Colors.amber.withAlpha(28)
+                      : AppColors.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
                   children: [
-                    _statusBadge(_order!['status'] as String? ?? 'pending'),
-                    const SizedBox(height: 16),
-
-                    _sectionTitle('Fulfillment Map'),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        height: 200,
-                        child: RouteMapWidget(
-                          origin: pickup,
-                          destination: delivery,
-                          originName: 'Farmer pickup',
-                          destinationName: 'Customer delivery',
-                          currentPosition: _riderLocation,
-                          isActive:
-                              (_order!['status'] as String? ?? '') ==
-                              'in_transit',
-                        ),
-                      ),
+                    Icon(
+                      isSignalStale ? Icons.wifi_off : Icons.navigation,
+                      size: 16,
+                      color: isSignalStale
+                          ? Colors.amber[800]
+                          : AppColors.primary,
                     ),
-                    const SizedBox(height: 10),
-                    if (isTrackingActive)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _riderLocation == null
+                            ? 'Waiting for rider GPS signal...'
+                            : isSignalStale
+                            ? 'Rider signal is stale (>30s).'
+                            : 'Live rider location active.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: isSignalStale
-                              ? Colors.amber.withAlpha(28)
-                              : AppColors.primary.withAlpha(20),
-                          borderRadius: BorderRadius.circular(8),
+                              ? Colors.amber[900]
+                              : AppColors.primary,
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isSignalStale ? Icons.wifi_off : Icons.navigation,
-                              size: 16,
-                              color: isSignalStale
-                                  ? Colors.amber[800]
-                                  : AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _riderLocation == null
-                                    ? 'Waiting for rider GPS signal...'
-                                    : isSignalStale
-                                    ? 'Rider signal is stale (>30s).'
-                                    : 'Live rider location active.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isSignalStale
-                                      ? Colors.amber[900]
-                                      : AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    _flowChips(),
-                    const SizedBox(height: 24),
-
-                    _sectionTitle('Delivery'),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.muted,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                size: 18,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _order!['delivery_address'] as String? ??
-                                      'No address',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.payments_outlined,
-                                size: 18,
-                                color: AppColors.secondary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                (_order!['payment_method'] as String? ?? 'cash')
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                _formatPaymentStatus(
-                                  _order!['payment_status'] as String? ??
-                                      'pending',
-                                ),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    _sectionTitle('Items'),
-                    const SizedBox(height: 8),
-                    if (_items.isEmpty)
-                      const Text(
-                        'No items',
-                        style: TextStyle(color: Colors.grey),
-                      )
-                    else
-                      ..._items.map(_itemTile),
-
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.muted,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          _totalRow(
-                            'Produce',
-                            'Rs ${_order!['total_price'] ?? 0}',
-                          ),
-                          const SizedBox(height: 4),
-                          _totalRow(
-                            'Delivery',
-                            'Rs ${_order!['delivery_fee'] ?? 0}',
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Container(
-                              height: 2,
-                              color: AppColors.border,
-                            ),
-                          ),
-                          _totalRow(
-                            'Total',
-                            'Rs ${(((_order!['total_price'] as num?)?.toDouble() ?? 0) + ((_order!['delivery_fee'] as num?)?.toDouble() ?? 0)).toStringAsFixed(0)}',
-                            bold: true,
-                          ),
-                        ],
                       ),
                     ),
                   ],
                 ),
               ),
+            _flowChips(order, items),
+            const SizedBox(height: 24),
+
+            _sectionTitle('Delivery'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.muted,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 18,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          order['delivery_address'] as String? ??
+                              'No address',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.payments_outlined,
+                        size: 18,
+                        color: AppColors.secondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        (order['payment_method'] as String? ?? 'cash')
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _formatPaymentStatus(
+                          order['payment_status'] as String? ??
+                              'pending',
+                        ),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 24),
+
+            _sectionTitle('Items'),
+            const SizedBox(height: 8),
+            if (items.isEmpty)
+              const Text(
+                'No items',
+                style: TextStyle(color: Colors.grey),
+              )
+            else
+              ...items.map(_itemTile),
+
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.muted,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  _totalRow(
+                    'Produce',
+                    'Rs ${order['total_price'] ?? 0}',
+                  ),
+                  const SizedBox(height: 4),
+                  _totalRow(
+                    'Delivery',
+                    'Rs ${order['delivery_fee'] ?? 0}',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Container(
+                      height: 2,
+                      color: AppColors.border,
+                    ),
+                  ),
+                  _totalRow(
+                    'Total',
+                    'Rs ${(((order['total_price'] as num?)?.toDouble() ?? 0) + ((order['delivery_fee'] as num?)?.toDouble() ?? 0)).toStringAsFixed(0)}',
+                    bold: true,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -337,12 +300,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _flowChips() {
-    final anyPicked = _items.any((item) => item['pickup_confirmed'] == true);
+  Widget _flowChips(
+    Map<String, dynamic> order,
+    List<Map<String, dynamic>> items,
+  ) {
+    final anyPicked = items.any((item) => item['pickup_confirmed'] == true);
     final allDelivered =
-        _items.isNotEmpty &&
-        _items.every((item) => item['delivery_confirmed'] == true);
-    final inTransit = (_order?['status'] as String? ?? '') == 'in_transit';
+        items.isNotEmpty &&
+        items.every((item) => item['delivery_confirmed'] == true);
+    final inTransit = (order['status'] as String? ?? '') == 'in_transit';
 
     final steps = [
       ('Farmer ready', anyPicked, AppColors.secondary),
@@ -404,7 +370,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${qty}kg × Rs $price',
+                  '${qty}kg x Rs $price',
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 4),
@@ -499,9 +465,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  LatLng _pickupPoint() {
-    if (_items.isNotEmpty) {
-      final first = _items.first;
+  LatLng _pickupPoint(List<Map<String, dynamic>> items) {
+    if (items.isNotEmpty) {
+      final first = items.first;
       final pickupLocation = first['pickup_location'];
       final fromPickup = _tryParsePoint(pickupLocation);
       if (fromPickup != null) return fromPickup;
@@ -509,10 +475,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return const LatLng(27.6306, 86.2305);
   }
 
-  LatLng _deliveryPoint() {
-    final fromDeliveryGeo = _tryParsePoint(_order?['delivery_location']);
+  LatLng _deliveryPoint(Map<String, dynamic> order) {
+    final fromDeliveryGeo = _tryParsePoint(order['delivery_location']);
     if (fromDeliveryGeo != null) return fromDeliveryGeo;
-    return _addressToLatLng(_order?['delivery_address'] as String?);
+    return _addressToLatLng(order['delivery_address'] as String?);
   }
 
   LatLng _addressToLatLng(String? address) {
@@ -560,16 +526,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return null;
   }
 
-  Future<void> _setupTracking(Map<String, dynamic> order) async {
-    _stopTrackingSubscription();
-
+  /// Idempotent tracking setup: only (re-)subscribes when the tripId changes.
+  void _maybeSetupTracking(Map<String, dynamic> order) {
     final tripId = order['rider_trip_id'] as String?;
     final status = order['status'] as String? ?? 'pending';
     final shouldTrack =
         tripId != null && (status == 'picked_up' || status == 'in_transit');
 
     if (!shouldTrack) {
-      if (mounted) {
+      if (_subscribedTripId != null) {
+        _stopTrackingSubscription();
         setState(() {
           _riderLocation = null;
           _lastRiderUpdateAt = null;
@@ -578,15 +544,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       return;
     }
 
+    // Already subscribed to this trip — nothing to do.
+    if (_subscribedTripId == tripId) return;
+
+    _stopTrackingSubscription();
+    _subscribedTripId = tripId;
+    _setupTracking(tripId);
+  }
+
+  Future<void> _setupTracking(String tripId) async {
+    final repo = ref.read(orderRepositoryProvider);
+
     try {
       // Seed UI with latest known rider point before subscribing.
-      final latest = await _supabase
-          .from('rider_location_log')
-          .select('location, recorded_at')
-          .eq('trip_id', tripId)
-          .order('recorded_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
+      final latest = await repo.getLatestRiderLocation(tripId);
 
       if (latest != null) {
         final point = _tryParsePoint(latest['location']);
@@ -603,30 +574,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       // Best effort - live updates will still work even if seed lookup fails.
     }
 
-    _trackingChannel = _supabase
-        .channel('order_tracking_${widget.orderId}_$tripId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'rider_location_log',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'trip_id',
-            value: tripId,
-          ),
-          callback: (payload) {
-            final row = payload.newRecord;
-            final point = _tryParsePoint(row['location']);
-            if (!mounted || point == null) return;
-            setState(() {
-              _riderLocation = point;
-              _lastRiderUpdateAt =
-                  DateTime.tryParse(row['recorded_at']?.toString() ?? '') ??
-                  DateTime.now();
-            });
-          },
-        )
-        .subscribe();
+    _trackingChannel = repo.subscribeToRiderLocation(
+      tripId,
+      widget.orderId,
+      onInsert: (row) {
+        final point = _tryParsePoint(row['location']);
+        if (!mounted || point == null) return;
+        setState(() {
+          _riderLocation = point;
+          _lastRiderUpdateAt =
+              DateTime.tryParse(row['recorded_at']?.toString() ?? '') ??
+              DateTime.now();
+        });
+      },
+    );
 
     _staleTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted || _lastRiderUpdateAt == null) return;
@@ -638,11 +599,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   void _stopTrackingSubscription() {
     _staleTimer?.cancel();
     _staleTimer = null;
+    _subscribedTripId = null;
 
     final channel = _trackingChannel;
     _trackingChannel = null;
     if (channel != null) {
-      _supabase.removeChannel(channel);
+      ref.read(orderRepositoryProvider).removeChannel(channel);
     }
   }
 }
