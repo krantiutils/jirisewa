@@ -7,6 +7,8 @@ import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/cart/models/cart.dart';
 import 'package:jirisewa_mobile/features/cart/providers/cart_provider.dart';
 import 'package:jirisewa_mobile/features/marketplace/providers/produce_detail_provider.dart';
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
+import 'package:go_router/go_router.dart';
 
 /// Full produce detail screen with photo carousel, produce info, farmer info,
 /// and a pinned add-to-cart bottom bar with quantity selector.
@@ -80,7 +82,7 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
     final availableQty =
         (listing['available_qty_kg'] as num?)?.toDouble() ?? 0;
     final freshnessDate = listing['freshness_date'] as String?;
-    final descriptionEn = listing['description_en'] as String?;
+    final descriptionEn = listing['description'] as String?;
 
     final farmer = listing['users'] as Map<String, dynamic>?;
     final farmerName = farmer?['name'] as String? ?? 'Unknown Farmer';
@@ -93,11 +95,6 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
 
     final municipality = listing['municipalities'] as Map<String, dynamic>?;
     final municipalityName = municipality?['name_en'] as String?;
-
-    // Clamp quantity to available
-    if (_quantity > availableQty && availableQty > 0) {
-      _quantity = availableQty;
-    }
 
     return Column(
       children: [
@@ -524,7 +521,7 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
         action: SnackBarAction(
           label: 'VIEW CART',
           onPressed: () {
-            // Navigate to cart if needed - for now just dismiss
+            context.push(AppRoutes.cart);
           },
         ),
       ),

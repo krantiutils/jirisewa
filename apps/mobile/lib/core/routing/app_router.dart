@@ -161,7 +161,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CheckoutScreen(),
       ),
       GoRoute(
-        path: '/produce/:id',
+        path: AppRoutes.produceDetail,
         builder: (context, state) {
           final listingId = state.pathParameters['id']!;
           return ProduceDetailScreen(listingId: listingId);
