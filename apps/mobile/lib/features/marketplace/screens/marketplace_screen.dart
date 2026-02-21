@@ -76,6 +76,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                         center: jiriCenter,
                         zoom: 10.8,
                         onMarkerTap: (listingId) {
+                          if (data.listings.isEmpty) return;
                           final listing = data.listings.firstWhere(
                             (item) => item['id'] == listingId,
                             orElse: () => data.listings.first,
@@ -186,9 +187,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(marketplaceDataProvider);
-      },
+      onRefresh: () => ref.refresh(marketplaceDataProvider.future),
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         itemCount: data.listings.length,
@@ -252,9 +251,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
 
   Widget _farmerFlowList(MarketplaceData data) {
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(marketplaceDataProvider);
-      },
+      onRefresh: () => ref.refresh(marketplaceDataProvider.future),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [

@@ -17,12 +17,12 @@ class MarketplaceData {
 }
 
 final produceRepositoryProvider = Provider<ProduceRepository>((ref) {
-  return ProduceRepository(ref.read(supabaseProvider));
+  return ProduceRepository(ref.watch(supabaseProvider));
 });
 
 final marketplaceDataProvider =
     FutureProvider.autoDispose<MarketplaceData>((ref) async {
-  final repo = ref.read(produceRepositoryProvider);
+  final repo = ref.watch(produceRepositoryProvider);
   final profile = ref.watch(userProfileProvider);
   final role = ref.watch(activeRoleProvider);
 
