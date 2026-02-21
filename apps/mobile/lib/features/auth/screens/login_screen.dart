@@ -2,18 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/core/phone_validation.dart';
+import 'package:jirisewa_mobile/core/providers/supabase_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
   bool _showOtp = false;
@@ -22,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   int _resendCooldown = 0;
   Timer? _resendTimer;
 
-  SupabaseClient get _supabase => Supabase.instance.client;
+  SupabaseClient get _supabase => ref.read(supabaseProvider);
 
   @override
   void dispose() {

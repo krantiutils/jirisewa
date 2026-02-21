@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:jirisewa_mobile/core/routing/app_router.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/providers/supabase_provider.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
 
 enum UserRole { farmer, consumer, rider }
 
 enum VehicleType { bike, car, truck, bus, other }
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   static const _totalSteps = 3;
 
   int _step = 1;
@@ -34,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final Set<UserRole> _roles = {};
   VehicleType _vehicleType = VehicleType.bike;
 
-  SupabaseClient get _supabase => Supabase.instance.client;
+  SupabaseClient get _supabase => ref.read(supabaseProvider);
 
   @override
   void dispose() {
@@ -128,13 +128,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      // Refresh session service so it picks up the new profile/roles,
-      // then GoRouter redirect navigates to /home.
-      final session = SessionProvider.read(context);
-      await session.refreshProfile();
-
-      if (!mounted) return;
-      context.go(AppRoutes.home);
+      // Refresh the Riverpod session so it picks up the new profile/roles,
+      // then GoRouter redirect navigates to /home automatically.
+      await ref.read(userSessionProvider.notifier).refresh();
     } on PostgrestException catch (e) {
       setState(() {
         _loading = false;
