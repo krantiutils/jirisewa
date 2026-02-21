@@ -16,26 +16,31 @@ final esewaServiceProvider = Provider<EsewaService>((ref) {
   return EsewaService(
     secretKey: const String.fromEnvironment(
       'ESEWA_SECRET_KEY',
-      defaultValue: '8gBm/:&EnhH.1/q', // eSewa sandbox test key
+      defaultValue: '', // Must be set via --dart-define
     ),
     productCode: const String.fromEnvironment(
       'ESEWA_PRODUCT_CODE',
       defaultValue: 'EPAYTEST',
     ),
-    isProduction: false,
+    isProduction:
+        const String.fromEnvironment('ESEWA_ENVIRONMENT') == 'production',
   );
 });
 
 /// Provides the configured [KhaltiService] instance.
 ///
 /// TODO: Read secretKey from environment / remote config.
+/// NOTE: Khalti initiation is called directly from the mobile client,
+/// which exposes the secret key on the device. For production, route
+/// Khalti initiation through a backend endpoint instead.
 final khaltiServiceProvider = Provider<KhaltiService>((ref) {
   return KhaltiService(
     secretKey: const String.fromEnvironment(
       'KHALTI_SECRET_KEY',
       defaultValue: '', // Must be set via --dart-define
     ),
-    isProduction: false,
+    isProduction:
+        const String.fromEnvironment('KHALTI_ENVIRONMENT') == 'production',
   );
 });
 
@@ -56,7 +61,8 @@ final connectipsServiceProvider = Provider<ConnectIPSService>((ref) {
       'CONNECTIPS_APP_NAME',
       defaultValue: 'JiriSewa',
     ),
-    isProduction: false,
+    isProduction: const String.fromEnvironment('CONNECTIPS_ENVIRONMENT') ==
+        'production',
   );
 });
 
@@ -68,9 +74,9 @@ final connectipsServiceProvider = Provider<ConnectIPSService>((ref) {
 /// gateway based on the payment method.
 final paymentServiceProvider = Provider<PaymentService>((ref) {
   return PaymentService(
-    esewa: ref.read(esewaServiceProvider),
-    khalti: ref.read(khaltiServiceProvider),
-    connectips: ref.read(connectipsServiceProvider),
+    esewa: ref.watch(esewaServiceProvider),
+    khalti: ref.watch(khaltiServiceProvider),
+    connectips: ref.watch(connectipsServiceProvider),
   );
 });
 
