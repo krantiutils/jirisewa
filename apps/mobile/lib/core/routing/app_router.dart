@@ -29,6 +29,11 @@ import 'package:jirisewa_mobile/features/farmer/screens/analytics_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/verification_screen.dart';
 import 'package:jirisewa_mobile/features/subscriptions/screens/subscription_browse_screen.dart';
 import 'package:jirisewa_mobile/features/subscriptions/screens/farmer_subscriptions_screen.dart';
+import 'package:jirisewa_mobile/features/business/screens/business_register_screen.dart';
+import 'package:jirisewa_mobile/features/business/screens/business_dashboard_screen.dart';
+import 'package:jirisewa_mobile/features/business/screens/bulk_orders_screen.dart';
+import 'package:jirisewa_mobile/features/business/screens/bulk_order_detail_screen.dart';
+import 'package:jirisewa_mobile/features/business/screens/farmer_bulk_orders_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -243,6 +248,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerSubscriptions,
         builder: (context, state) => const FarmerSubscriptionsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.businessRegister,
+        builder: (context, state) => const BusinessRegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.businessDashboard,
+        builder: (context, state) => const BusinessDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.businessOrderDetail,
+        builder: (context, state) {
+          final orderId = state.pathParameters['id']!;
+          return BulkOrderDetailScreen(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.businessOrders,
+        builder: (context, state) => const BulkOrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.farmerBulkOrders,
+        builder: (context, state) => const FarmerBulkOrdersScreen(),
       ),
     ],
   );
