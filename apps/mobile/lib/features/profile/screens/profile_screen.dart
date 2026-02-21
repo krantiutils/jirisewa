@@ -22,12 +22,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _saving = false;
   String? _error;
 
-  late TextEditingController _nameController;
-  late TextEditingController _addressController;
-  late TextEditingController _municipalityController;
-  late String _lang;
+  final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _municipalityController = TextEditingController();
+  String _lang = 'ne';
 
-  bool _controllersInitialized = false;
+  bool _controllersPopulated = false;
 
   @override
   void dispose() {
@@ -37,13 +37,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.dispose();
   }
 
-  void _initControllers(UserProfile? profile) {
-    if (_controllersInitialized) return;
-    _nameController = TextEditingController(text: profile?.name ?? '');
-    _addressController = TextEditingController(text: profile?.address ?? '');
-    _municipalityController = TextEditingController(text: profile?.municipality ?? '');
-    _lang = profile?.lang ?? 'ne';
-    _controllersInitialized = true;
+  void _populateControllers(UserProfile profile) {
+    if (_controllersPopulated) return;
+    _nameController.text = profile.name;
+    _addressController.text = profile.address ?? '';
+    _municipalityController.text = profile.municipality ?? '';
+    _lang = profile.lang;
+    _controllersPopulated = true;
   }
 
   void _resetForm() {
@@ -128,12 +128,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final activeRole = ref.watch(activeRoleProvider);
     final roles = ref.watch(userRolesProvider);
 
-    // Initialize controllers on first build with profile data
-    _initControllers(profile);
-
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    _populateControllers(profile);
 
     return Scaffold(
       body: SafeArea(
