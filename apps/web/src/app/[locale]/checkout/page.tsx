@@ -6,9 +6,12 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { MapPin, Loader2 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 import { useCart, getCartSubtotal } from "@/lib/cart";
 import { placeOrder } from "@/lib/actions/orders";
 import { calculateDeliveryFee } from "@/lib/actions/delivery-fee";
+import { listAddresses, createAddress } from "@/lib/actions/addresses";
+import type { SavedAddress } from "@/lib/actions/addresses";
 import { Button } from "@/components/ui/Button";
 import type { Locale } from "@/lib/i18n";
 import type { LatLng } from "@/lib/map";
@@ -41,6 +44,17 @@ export default function CheckoutPage() {
   const [feeEstimate, setFeeEstimate] = useState<DeliveryFeeEstimate | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
+
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [saveNewAddress, setSaveNewAddress] = useState(false);
+
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
 
   const subtotal = getCartSubtotal(cart);
   const total = subtotal + (feeEstimate?.totalFee ?? 0);
@@ -98,6 +112,25 @@ export default function CheckoutPage() {
     computeFee(location);
   };
 
+  // Load saved addresses when authenticated
+  useEffect(() => {
+    if (authLoading || !user) return;
+    listAddresses().then((result) => {
+      if (result.data) {
+        setSavedAddresses(result.data);
+        // Auto-select the default address if no delivery location is set yet
+        const defaultAddr = result.data.find((a) => a.isDefault);
+        if (defaultAddr && !deliveryLocation) {
+          setDeliveryLocation({ lat: defaultAddr.lat, lng: defaultAddr.lng });
+          setDeliveryAddress(defaultAddr.addressText);
+          computeFee({ lat: defaultAddr.lat, lng: defaultAddr.lng });
+        }
+      }
+    });
+    // Run only once when user is authenticated
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user]);
+
   const handlePlaceOrder = async () => {
     if (!deliveryLocation) {
       setError(t("selectDeliveryLocation"));
@@ -138,6 +171,16 @@ export default function CheckoutPage() {
 
     clearCart();
 
+    // Save the delivery address if user opted in
+    if (saveNewAddress && deliveryLocation && deliveryAddress) {
+      await createAddress({
+        label: "Delivery",
+        addressText: deliveryAddress,
+        lat: deliveryLocation.lat,
+        lng: deliveryLocation.lng,
+      });
+    }
+
     // For eSewa: redirect to eSewa payment page via hidden form POST
     if (result.data.esewaForm) {
       setEsewaForm(result.data.esewaForm);
@@ -159,6 +202,8 @@ export default function CheckoutPage() {
     // For cash: go directly to order detail
     router.push(`/${locale}/orders/${result.data.orderId}`);
   };
+
+  if (authLoading || !user) return null;
 
   if (!hydrated || cart.items.length === 0) {
     return (
@@ -267,6 +312,30 @@ export default function CheckoutPage() {
           <p className="mt-1 text-sm text-gray-500">
             {t("deliveryLocationHint")}
           </p>
+          {savedAddresses.length > 0 && (
+            <div className="mt-3 mb-4">
+              <p className="mb-2 text-sm font-medium text-gray-700">{t("savedAddresses")}</p>
+              <div className="flex flex-wrap gap-2">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    onClick={() => {
+                      setDeliveryLocation({ lat: addr.lat, lng: addr.lng });
+                      setDeliveryAddress(addr.addressText);
+                      computeFee({ lat: addr.lat, lng: addr.lng });
+                    }}
+                    className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                      deliveryAddress === addr.addressText
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-gray-300 text-gray-600 hover:border-primary/50"
+                    }`}
+                  >
+                    {addr.label}{addr.isDefault ? " \u2605" : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="mt-3 h-64 overflow-hidden rounded-lg border-2 border-gray-200">
             <LocationPicker
               value={deliveryLocation}
@@ -276,6 +345,12 @@ export default function CheckoutPage() {
           </div>
           {deliveryAddress && (
             <p className="mt-2 text-sm text-gray-600">{deliveryAddress}</p>
+          )}
+          {deliveryLocation && !savedAddresses.some(a => a.lat === deliveryLocation.lat && a.lng === deliveryLocation.lng) && (
+            <label className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={saveNewAddress} onChange={(e) => setSaveNewAddress(e.target.checked)} className="rounded" />
+              {t("saveAddress")}
+            </label>
           )}
         </section>
 
@@ -493,6 +568,15 @@ export default function CheckoutPage() {
               t("placeOrder")
             )}
           </Button>
+          {!submitting && (!deliveryLocation || feeLoading || !feeEstimate) && (
+            <p className="mt-2 text-center text-sm text-gray-500">
+              {!deliveryLocation
+                ? t("selectDeliveryLocation")
+                : feeLoading
+                  ? t("calculatingFee")
+                  : t("feeError")}
+            </p>
+          )}
         </section>
       </div>
 
