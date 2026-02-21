@@ -27,6 +27,8 @@ import 'package:jirisewa_mobile/features/farmer/screens/create_listing_screen.da
 import 'package:jirisewa_mobile/features/farmer/screens/edit_listing_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/analytics_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/verification_screen.dart';
+import 'package:jirisewa_mobile/features/subscriptions/screens/subscription_browse_screen.dart';
+import 'package:jirisewa_mobile/features/subscriptions/screens/farmer_subscriptions_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -233,6 +235,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerVerification,
         builder: (context, state) => const VerificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.subscriptions,
+        builder: (context, state) => const SubscriptionBrowseScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.farmerSubscriptions,
+        builder: (context, state) => const FarmerSubscriptionsScreen(),
       ),
     ],
   );
