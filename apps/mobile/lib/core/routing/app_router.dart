@@ -34,6 +34,7 @@ import 'package:jirisewa_mobile/features/business/screens/business_dashboard_scr
 import 'package:jirisewa_mobile/features/business/screens/bulk_orders_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/bulk_order_detail_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/farmer_bulk_orders_screen.dart';
+import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -66,6 +67,13 @@ abstract final class AppRoutes {
   static const businessDashboard = '/business/dashboard';
   static const businessOrders = '/business/orders';
   static const businessOrderDetail = '/business/orders/:id';
+
+  // Payment callback deep link routes
+  static const paymentEsewaSuccess = '/payment/esewa/success';
+  static const paymentEsewaFailure = '/payment/esewa/failure';
+  static const paymentKhaltiCallback = '/payment/khalti/callback';
+  static const paymentConnectipsSuccess = '/payment/connectips/success';
+  static const paymentConnectipsFailure = '/payment/connectips/failure';
 }
 
 abstract final class ShellBranch {
@@ -271,6 +279,49 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerBulkOrders,
         builder: (context, state) => const FarmerBulkOrdersScreen(),
+      ),
+      // Payment callback deep link routes
+      GoRoute(
+        path: AppRoutes.paymentEsewaSuccess,
+        builder: (context, state) => PaymentCallbackScreen(
+          gateway: 'esewa',
+          result: 'success',
+          queryParams: state.uri.queryParameters,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentEsewaFailure,
+        builder: (context, state) => PaymentCallbackScreen(
+          gateway: 'esewa',
+          result: 'failure',
+          queryParams: state.uri.queryParameters,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentKhaltiCallback,
+        builder: (context, state) => PaymentCallbackScreen(
+          gateway: 'khalti',
+          result: state.uri.queryParameters['status'] == 'Completed'
+              ? 'success'
+              : 'failure',
+          queryParams: state.uri.queryParameters,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentConnectipsSuccess,
+        builder: (context, state) => PaymentCallbackScreen(
+          gateway: 'connectips',
+          result: 'success',
+          queryParams: state.uri.queryParameters,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentConnectipsFailure,
+        builder: (context, state) => PaymentCallbackScreen(
+          gateway: 'connectips',
+          result: 'failure',
+          queryParams: state.uri.queryParameters,
+        ),
       ),
     ],
   );
