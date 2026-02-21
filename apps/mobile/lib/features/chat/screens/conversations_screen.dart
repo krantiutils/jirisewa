@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/chat/models/conversation.dart';
 import 'package:jirisewa_mobile/features/chat/providers/chat_provider.dart';
@@ -84,7 +83,8 @@ class ConversationsScreen extends ConsumerWidget {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 20),
                               itemBuilder: (ctx, i) =>
-                                  _conversationTile(context, conversations[i]),
+                                  _ConversationTile(
+                                      conversation: conversations[i]),
                             ),
                     ),
               ),
@@ -94,18 +94,20 @@ class ConversationsScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _conversationTile(BuildContext context, Conversation conversation) {
+class _ConversationTile extends StatelessWidget {
+  const _ConversationTile({required this.conversation});
+  final Conversation conversation;
+
+  @override
+  Widget build(BuildContext context) {
     final orderLabel =
         'Order #${conversation.orderId.length >= 8 ? conversation.orderId.substring(0, 8) : conversation.orderId}';
-    final preview = _messagePreview(conversation);
-    final timeLabel = conversation.lastMessageAt != null
-        ? _timeAgo(conversation.lastMessageAt!)
-        : _timeAgo(conversation.createdAt);
+    final preview = _messagePreview();
+    final timeLabel = _timeAgo(
+        conversation.lastMessageAt ?? conversation.createdAt);
     final hasUnread = conversation.unreadCount > 0;
-    final avatarLetter = conversation.orderId.isNotEmpty
-        ? conversation.orderId[0].toUpperCase()
-        : '#';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -113,10 +115,7 @@ class ConversationsScreen extends ConsumerWidget {
       color: AppColors.muted,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
-        onTap: () => context.push(
-          AppRoutes.chatDetail
-              .replaceFirst(':conversationId', conversation.id),
-        ),
+        onTap: () => context.push('/chat/${conversation.id}'),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -125,14 +124,8 @@ class ConversationsScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: AppColors.primary.withAlpha(25),
-                child: Text(
-                  avatarLetter,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                child: const Icon(Icons.receipt_outlined,
+                    color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -196,7 +189,9 @@ class ConversationsScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(100),
                             ),
                             child: Text(
-                              '${conversation.unreadCount}',
+                              conversation.unreadCount > 99
+                                  ? '99+'
+                                  : '${conversation.unreadCount}',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
@@ -217,13 +212,10 @@ class ConversationsScreen extends ConsumerWidget {
     );
   }
 
-  String _messagePreview(Conversation conversation) {
-    if (conversation.lastMessageContent == null &&
-        conversation.lastMessageType == null) {
-      return 'No messages yet';
-    }
-
+  String _messagePreview() {
     switch (conversation.lastMessageType) {
+      case null:
+        return conversation.lastMessageContent ?? 'No messages yet';
       case 'image':
         return 'Image';
       case 'location':
@@ -233,22 +225,22 @@ class ConversationsScreen extends ConsumerWidget {
     }
   }
 
-  String _timeAgo(DateTime dateTime) {
+  static String _timeAgo(DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime);
+    final local = dateTime.toLocal();
+    final difference = now.difference(local);
 
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
-    }
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+
+    final today = DateTime(now.year, now.month, now.day);
+    final msgDay = DateTime(local.year, local.month, local.day);
+    final dayDiff = today.difference(msgDay).inDays;
+
+    if (dayDiff == 1) return 'Yesterday';
+    if (dayDiff < 7) return '${dayDiff}d ago';
+
+    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
   }
 }
