@@ -430,13 +430,15 @@ class TripRepository {
     String tripId,
     List<String> stopIds,
   ) async {
-    for (var i = 0; i < stopIds.length; i++) {
-      await _client
-          .from('trip_stops')
-          .update({'sequence_order': i})
-          .eq('id', stopIds[i])
-          .eq('trip_id', tripId);
-    }
+    if (stopIds.isEmpty) return;
+    await Future.wait([
+      for (var i = 0; i < stopIds.length; i++)
+        _client
+            .from('trip_stops')
+            .update({'sequence_order': i})
+            .eq('id', stopIds[i])
+            .eq('trip_id', tripId),
+    ]);
   }
 
   // ---------------------------------------------------------------------------
