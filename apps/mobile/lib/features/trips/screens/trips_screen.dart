@@ -10,6 +10,7 @@ import 'package:jirisewa_mobile/features/map/widgets/ping_beacon_map.dart';
 import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
 import 'package:jirisewa_mobile/features/tracking/screens/trip_tracking_screen.dart';
 import 'package:jirisewa_mobile/features/trips/providers/trips_provider.dart';
+import 'package:jirisewa_mobile/features/trips/repositories/trip_repository.dart';
 
 /// Rider workflow screen:
 /// - Trip route/capacity
@@ -27,6 +28,10 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
   RealtimeChannel? _pingChannel;
   String? _subscribedRiderId;
 
+  /// Captured reference to the repository so we can clean up the channel in
+  /// [dispose] without reading from [ref] (which is invalid after unmount).
+  TripRepository? _tripRepo;
+
   @override
   void dispose() {
     _cleanupPingSubscription();
@@ -38,7 +43,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     _pingChannel = null;
     _subscribedRiderId = null;
     if (channel != null) {
-      ref.read(tripRepositoryProvider).removeChannel(channel);
+      _tripRepo?.removeChannel(channel);
     }
   }
 
@@ -51,7 +56,8 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
 
     _cleanupPingSubscription();
     _subscribedRiderId = riderId;
-    _pingChannel = ref.read(tripRepositoryProvider).subscribeToPings(
+    _tripRepo = ref.read(tripRepositoryProvider);
+    _pingChannel = _tripRepo!.subscribeToPings(
       riderId,
       onEvent: (_) {
         // A ping was inserted or updated; invalidate to refetch all data.

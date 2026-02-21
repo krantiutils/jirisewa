@@ -33,8 +33,7 @@ Client createMockHttpClient() {
 
 /// Creates a [SupabaseClient] backed by mock HTTP responses.
 ///
-/// This client can be used directly in widget tests via
-/// [SessionService.forTesting].
+/// This client can be used directly in widget tests via provider overrides.
 SupabaseClient createMockSupabaseClient() {
   return SupabaseClient(
     'http://localhost:54321',
@@ -110,6 +109,22 @@ Response _restResponse(
 
     case 'rider_trips':
       rows = mockRiderTrips;
+      break;
+
+    case 'notifications':
+    case 'notification_preferences':
+    case 'subscription_plans':
+    case 'subscriptions':
+    case 'business_profiles':
+    case 'bulk_orders':
+    case 'bulk_order_items':
+    case 'ratings':
+    case 'chat_conversations':
+    case 'chat_messages':
+    case 'user_devices':
+    case 'produce_categories':
+    case 'verification_documents':
+      rows = [];
       break;
 
     default:
