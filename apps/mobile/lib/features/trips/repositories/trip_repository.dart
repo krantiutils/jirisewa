@@ -321,6 +321,100 @@ class TripRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Trip Detail — single trip, stops, and matched orders
+  // ---------------------------------------------------------------------------
+
+  /// Fetch a single trip with all fields.
+  Future<Map<String, dynamic>?> getTrip(String tripId) async {
+    final result = await _client
+        .from('rider_trips')
+        .select()
+        .eq('id', tripId)
+        .maybeSingle();
+    return result != null ? Map<String, dynamic>.from(result) : null;
+  }
+
+  /// Fetch ordered stops for a trip.
+  Future<List<Map<String, dynamic>>> listTripStops(String tripId) async {
+    final result = await _client
+        .from('trip_stops')
+        .select()
+        .eq('trip_id', tripId)
+        .order('sequence_order', ascending: true);
+    return List<Map<String, dynamic>>.from(result);
+  }
+
+  /// Fetch orders matched to this trip with their items.
+  Future<List<Map<String, dynamic>>> listOrdersByTrip(String tripId) async {
+    final result = await _client
+        .from('orders')
+        .select(
+          '*, order_items(*, produce_listings(name_en, name_ne))',
+        )
+        .eq('rider_trip_id', tripId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(result);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Trip lifecycle actions
+  // ---------------------------------------------------------------------------
+
+  /// Start a scheduled trip (scheduled -> in_transit).
+  Future<void> startTrip(String tripId) async {
+    await _client
+        .from('rider_trips')
+        .update({'status': 'in_transit'})
+        .eq('id', tripId);
+  }
+
+  /// Complete an in-transit trip (in_transit -> completed).
+  Future<void> completeTrip(String tripId) async {
+    await _client
+        .from('rider_trips')
+        .update({'status': 'completed'})
+        .eq('id', tripId);
+  }
+
+  /// Cancel a scheduled trip (scheduled -> cancelled).
+  Future<void> cancelTrip(String tripId) async {
+    await _client
+        .from('rider_trips')
+        .update({'status': 'cancelled'})
+        .eq('id', tripId);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Per-farmer order actions
+  // ---------------------------------------------------------------------------
+
+  /// Confirm pickup for a specific farmer's items in an order.
+  Future<void> confirmFarmerPickup(String orderId, String farmerId) async {
+    await _client
+        .from('order_items')
+        .update({'pickup_status': 'picked_up'})
+        .eq('order_id', orderId)
+        .eq('farmer_id', farmerId);
+  }
+
+  /// Mark a specific farmer's items as unavailable in an order.
+  Future<void> markItemsUnavailable(String orderId, String farmerId) async {
+    await _client
+        .from('order_items')
+        .update({'pickup_status': 'unavailable'})
+        .eq('order_id', orderId)
+        .eq('farmer_id', farmerId);
+  }
+
+  /// Transition an order to in_transit status.
+  Future<void> startDelivery(String orderId) async {
+    await _client
+        .from('orders')
+        .update({'status': 'in_transit'})
+        .eq('id', orderId);
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
