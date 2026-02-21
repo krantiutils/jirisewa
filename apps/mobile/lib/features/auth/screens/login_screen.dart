@@ -98,10 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (response.user != null) {
-        // SessionService picks up the auth state change via onAuthStateChange,
-        // fetches the profile, then notifies listeners. GoRouter's
-        // refreshListenable triggers redirect: → /register or /home.
-        // No manual navigation needed here.
+        // Auth state change propagates via authStateProvider → userSessionProvider.
+        // GoRouter's redirect logic reads auth/session state and redirects
+        // to /register or /home. No manual navigation needed here.
         setState(() => _loading = false);
       } else {
         setState(() {

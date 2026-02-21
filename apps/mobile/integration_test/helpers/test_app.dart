@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/core/models/user_profile.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/core/providers/supabase_provider.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 
 import 'mock_supabase.dart';
@@ -13,35 +15,63 @@ import 'test_data.dart';
 final SupabaseClient mockClient = createMockSupabaseClient();
 
 /// Wraps a screen widget in the minimum widget tree needed for testing:
-/// MaterialApp + SessionProvider with mock data.
+/// ProviderScope with Riverpod overrides for session data.
 Widget buildTestApp({
   required Widget child,
   UserProfile? profile,
   List<UserRoleDetails>? roles,
   String activeRole = 'consumer',
 }) {
-  final service = SessionService.forTesting(
-    client: mockClient,
+  final testUserSession = UserSession(
     profile: profile ?? testProfile,
     roles: roles ?? testRoles,
-    activeRole: activeRole,
   );
 
-  return MaterialApp(
-    theme: buildAppTheme(),
-    debugShowCheckedModeBanner: false,
-    home: SessionProvider(
-      service: service,
-      child: child,
+  return ProviderScope(
+    overrides: [
+      supabaseProvider.overrideWithValue(mockClient),
+      userSessionProvider.overrideWith(() => _TestUserSessionNotifier(testUserSession)),
+      activeRoleProvider.overrideWith(() => _TestActiveRoleNotifier(activeRole)),
+    ],
+    child: MaterialApp(
+      theme: buildAppTheme(),
+      debugShowCheckedModeBanner: false,
+      home: child,
     ),
   );
 }
 
-/// Wraps a screen without SessionProvider — for screens that don't need it.
+/// Wraps a screen without session overrides — for screens that don't need it.
 Widget buildBareTestApp({required Widget child}) {
-  return MaterialApp(
-    theme: buildAppTheme(),
-    debugShowCheckedModeBanner: false,
-    home: child,
+  return ProviderScope(
+    child: MaterialApp(
+      theme: buildAppTheme(),
+      debugShowCheckedModeBanner: false,
+      home: child,
+    ),
   );
+}
+
+class _TestUserSessionNotifier extends UserSessionNotifier {
+  final UserSession _session;
+  _TestUserSessionNotifier(this._session);
+
+  @override
+  Future<UserSession> build() async => _session;
+
+  @override
+  Future<void> refresh() async {}
+}
+
+class _TestActiveRoleNotifier extends ActiveRoleNotifier {
+  final String _role;
+  _TestActiveRoleNotifier(this._role);
+
+  @override
+  String build() => _role;
+
+  @override
+  void switchRole(String role) {
+    state = role;
+  }
 }
