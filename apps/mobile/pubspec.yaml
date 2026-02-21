@@ -32,6 +32,12 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  shared_preferences: ^2.3.0
+  cached_network_image: ^3.4.1
+  url_launcher: ^6.3.0
+  image_picker: ^1.1.2
+  intl: ^0.20.0
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   geolocator: ^14.0.2
@@ -53,6 +59,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  riverpod_generator: ^2.6.3
+  build_runner: ^2.4.13
+  riverpod_lint: ^2.6.3
+  custom_lint: ^0.7.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
