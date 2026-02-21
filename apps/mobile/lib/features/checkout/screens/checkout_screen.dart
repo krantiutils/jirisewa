@@ -60,16 +60,10 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
-  void dispose() {
+  void deactivate() {
     // Reset checkout state when user leaves the screen.
-    Future.microtask(() {
-      if (mounted) return;
-      // Provider might already be disposed; wrap in try-catch.
-      try {
-        ref.read(checkoutProvider.notifier).reset();
-      } catch (_) {}
-    });
-    super.dispose();
+    ref.read(checkoutProvider.notifier).reset();
+    super.deactivate();
   }
 
   @override
@@ -407,31 +401,37 @@ class _PaymentStep extends ConsumerWidget {
 // Step 2: Review Order
 // ---------------------------------------------------------------------------
 
-class _ReviewStep extends ConsumerWidget {
+class _ReviewStep extends ConsumerStatefulWidget {
   const _ReviewStep({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ReviewStep> createState() => _ReviewStepState();
+}
+
+class _ReviewStepState extends ConsumerState<_ReviewStep> {
+  @override
+  Widget build(BuildContext context) {
     final checkout = ref.watch(checkoutProvider);
     final cart = ref.watch(cartProvider);
 
     // Compute fee when we land on this step.
-    final feeAsync = checkout.deliveryLocation != null
-        ? ref.watch(deliveryFeeProvider(DeliveryFeeParams(
+    final feeParams = checkout.deliveryLocation != null
+        ? DeliveryFeeParams(
             deliveryLocation: checkout.deliveryLocation!,
             weightKg: cart.totalKg,
-          )))
+          )
         : null;
 
-    // Propagate fee estimate to checkout state once loaded.
-    if (feeAsync != null) {
-      feeAsync.whenData((estimate) {
-        // Use addPostFrameCallback to avoid modifying provider during build.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            ref.read(checkoutProvider.notifier).setFeeEstimate(estimate);
-          }
-        });
+    final feeAsync =
+        feeParams != null ? ref.watch(deliveryFeeProvider(feeParams)) : null;
+
+    // Propagate fee estimate to checkout state via ref.listen (not in build).
+    if (feeParams != null) {
+      ref.listen(deliveryFeeProvider(feeParams), (prev, next) {
+        final estimate = next.valueOrNull;
+        if (estimate != null) {
+          ref.read(checkoutProvider.notifier).setFeeEstimate(estimate);
+        }
       });
     }
 
