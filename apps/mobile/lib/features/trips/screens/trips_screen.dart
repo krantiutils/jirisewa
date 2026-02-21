@@ -42,7 +42,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     }
   }
 
-  void _maybeSubscribeToPings(TripsData data) {
+  void _maybeSubscribeToPings() {
     final profile = ref.read(userProfileProvider);
     if (profile == null) return;
     final riderId = profile.id;
@@ -68,7 +68,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     ref.listen(tripsDataProvider, (prev, next) {
       final data = next.valueOrNull;
       if (data != null) {
-        _maybeSubscribeToPings(data);
+        _maybeSubscribeToPings();
       }
     });
 

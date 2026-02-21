@@ -36,9 +36,14 @@ final tripsDataProvider =
 
   final riderId = profile.id;
 
-  final trips = await repo.listTrips(riderId);
-  final orders = await repo.listRiderOrders(riderId);
-  final pings = await repo.listPendingPings(riderId);
+  final results = await Future.wait([
+    repo.listTrips(riderId),
+    repo.listRiderOrders(riderId),
+    repo.listPendingPings(riderId),
+  ]);
+  final trips = results[0];
+  final orders = results[1];
+  final pings = results[2];
 
   final byTrip = <String, List<Map<String, dynamic>>>{};
   final unassigned = <Map<String, dynamic>>[];
