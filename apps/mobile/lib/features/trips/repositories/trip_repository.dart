@@ -78,6 +78,94 @@ class TripRepository {
     return _firstRpcRow(result);
   }
 
+  /// Create a new rider trip with PostGIS geography data.
+  ///
+  /// Inserts into `rider_trips` with origin/destination as WKT POINTs,
+  /// optional LINESTRING route from OSRM, and municipality IDs.
+  /// Returns the created trip row or throws on failure.
+  Future<Map<String, dynamic>> createTrip({
+    required String riderId,
+    required LatLng origin,
+    required String originName,
+    required LatLng destination,
+    required String destinationName,
+    required DateTime departureAt,
+    required double availableCapacityKg,
+    List<LatLng>? routeCoordinates,
+    String? originMunicipalityId,
+    String? destinationMunicipalityId,
+  }) async {
+    final insertData = <String, dynamic>{
+      'rider_id': riderId,
+      'origin': 'POINT(${origin.longitude} ${origin.latitude})',
+      'origin_name': originName,
+      'destination': 'POINT(${destination.longitude} ${destination.latitude})',
+      'destination_name': destinationName,
+      'departure_at': departureAt.toUtc().toIso8601String(),
+      'available_capacity_kg': availableCapacityKg,
+      'remaining_capacity_kg': availableCapacityKg,
+      'status': 'scheduled',
+    };
+
+    if (routeCoordinates != null && routeCoordinates.length >= 2) {
+      final lineString = routeCoordinates
+          .map((p) => '${p.longitude} ${p.latitude}')
+          .join(',');
+      insertData['route'] = 'LINESTRING($lineString)';
+    }
+
+    if (originMunicipalityId != null) {
+      insertData['origin_municipality_id'] = originMunicipalityId;
+    }
+    if (destinationMunicipalityId != null) {
+      insertData['destination_municipality_id'] = destinationMunicipalityId;
+    }
+
+    final result = await _client
+        .from('rider_trips')
+        .insert(insertData)
+        .select()
+        .single();
+
+    return Map<String, dynamic>.from(result);
+  }
+
+  /// Fetch OSRM driving route between two points.
+  /// Returns route coordinates as [LatLng] list, or null on failure.
+  Future<List<LatLng>?> fetchOsrmRoute(LatLng origin, LatLng destination) async {
+    try {
+      final coords =
+          '${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}';
+      final uri = Uri.parse(
+        '$osrmBaseUrl/route/v1/driving/$coords?overview=full&geometries=geojson',
+      );
+      final response = await http.get(uri);
+      if (response.statusCode != 200) return null;
+
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      if (data['code'] != 'Ok') return null;
+
+      final routes = data['routes'] as List<dynamic>?;
+      if (routes == null || routes.isEmpty) return null;
+
+      final route = routes.first as Map<String, dynamic>;
+      final geometry = route['geometry'] as Map<String, dynamic>;
+      final coordsRaw = geometry['coordinates'] as List<dynamic>;
+      if (coordsRaw.length < 2) return null;
+
+      return coordsRaw.map((coord) {
+        final pair = coord as List<dynamic>;
+        return LatLng(
+          (pair[1] as num).toDouble(),
+          (pair[0] as num).toDouble(),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('fetchOsrmRoute failed: $e');
+      return null;
+    }
+  }
+
   /// Full OSRM route recalculation for a trip from its active stops.
   /// Returns true if the route was successfully recalculated and persisted.
   Future<bool> recalculateTripRoute(String tripId) async {

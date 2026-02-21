@@ -16,6 +16,7 @@ import 'package:jirisewa_mobile/features/checkout/screens/checkout_screen.dart';
 import 'package:jirisewa_mobile/features/marketplace/screens/produce_detail_screen.dart';
 import 'package:jirisewa_mobile/features/shell/app_shell.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trips_screen.dart';
+import 'package:jirisewa_mobile/features/trips/screens/trip_creation_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -166,6 +167,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final listingId = state.pathParameters['id']!;
           return ProduceDetailScreen(listingId: listingId);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.tripNew,
+        builder: (context, state) => const TripCreationScreen(),
       ),
     ],
   );
