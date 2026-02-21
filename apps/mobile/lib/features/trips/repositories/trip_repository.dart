@@ -419,6 +419,27 @@ class TripRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Stop reordering
+  // ---------------------------------------------------------------------------
+
+  /// Batch-update sequence_order values for trip stops.
+  ///
+  /// [stopIds] should be the stop IDs in the desired order. Each stop's
+  /// sequence_order will be set to its index in the list.
+  Future<void> reorderStops(
+    String tripId,
+    List<String> stopIds,
+  ) async {
+    for (var i = 0; i < stopIds.length; i++) {
+      await _client
+          .from('trip_stops')
+          .update({'sequence_order': i})
+          .eq('id', stopIds[i])
+          .eq('trip_id', tripId);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
