@@ -714,7 +714,8 @@
       "users": "Users",
       "orders": "Orders",
       "disputes": "Disputes",
-      "farmers": "Farmer Verification"
+      "farmers": "Farmer Verification",
+      "payouts": "Payouts"
     },
     "dashboard": {
       "title": "Platform Dashboard",
@@ -830,6 +831,32 @@
       "rejecting": "Rejecting...",
       "rejectionNotes": "Rejection reason (optional)",
       "rejectionNotesPlaceholder": "Explain why the verification was rejected..."
+    },
+    "payouts": {
+      "title": "Payout Management",
+      "totalRequests": "total requests",
+      "user": "User",
+      "phone": "Phone",
+      "amount": "Amount",
+      "method": "Method",
+      "status": "Status",
+      "date": "Date",
+      "allStatuses": "All",
+      "noResults": "No payout requests found.",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "complete": "Mark Completed",
+      "completing": "Completing...",
+      "reject": "Reject",
+      "rejecting": "Rejecting...",
+      "cancel": "Cancel",
+      "rejectNotesPlaceholder": "Reason for rejection...",
+      "statusLabels": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed",
+        "rejected": "Rejected"
+      }
     },
     "pagination": {
       "showing": "Showing {from}-{to} of {total}",
