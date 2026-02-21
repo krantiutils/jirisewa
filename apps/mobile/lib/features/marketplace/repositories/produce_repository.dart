@@ -42,6 +42,21 @@ class ProduceRepository {
     return List<Map<String, dynamic>>.from(result);
   }
 
+  /// Fetch a single produce listing with joined farmer, category, and
+  /// municipality data for the detail screen.
+  Future<Map<String, dynamic>?> getListingDetail(String listingId) async {
+    final result = await _client
+        .from('produce_listings')
+        .select(
+          '*, users!farmer_id(id, name, rating_avg, rating_count), '
+          'produce_categories!category_id(name_en, name_ne, icon), '
+          'municipalities!municipality_id(name_en, name_ne)',
+        )
+        .eq('id', listingId)
+        .maybeSingle();
+    return result;
+  }
+
   Future<Map<String, Map<String, dynamic>>> fetchOrdersForIds(
       List<String> orderIds) async {
     if (orderIds.isEmpty) return {};
