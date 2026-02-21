@@ -34,6 +34,7 @@ import 'package:jirisewa_mobile/features/business/screens/business_dashboard_scr
 import 'package:jirisewa_mobile/features/business/screens/bulk_orders_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/bulk_order_detail_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/farmer_bulk_orders_screen.dart';
+import 'package:jirisewa_mobile/features/orders/screens/order_tracking_screen.dart';
 import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
 
 abstract final class AppRoutes {
@@ -279,6 +280,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerBulkOrders,
         builder: (context, state) => const FarmerBulkOrdersScreen(),
+      ),
+      // Order tracking — full-screen map, outside shell (no bottom nav).
+      GoRoute(
+        path: AppRoutes.orderTracking,
+        builder: (context, state) {
+          final orderId = state.pathParameters['id']!;
+          return OrderTrackingScreen(orderId: orderId);
+        },
       ),
       // Payment callback deep link routes
       GoRoute(
