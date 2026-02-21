@@ -365,7 +365,8 @@ class TripRepository {
     await _client
         .from('rider_trips')
         .update({'status': 'in_transit'})
-        .eq('id', tripId);
+        .eq('id', tripId)
+        .eq('status', 'scheduled');
   }
 
   /// Complete an in-transit trip (in_transit -> completed).
@@ -373,7 +374,8 @@ class TripRepository {
     await _client
         .from('rider_trips')
         .update({'status': 'completed'})
-        .eq('id', tripId);
+        .eq('id', tripId)
+        .eq('status', 'in_transit');
   }
 
   /// Cancel a scheduled trip (scheduled -> cancelled).
@@ -381,7 +383,8 @@ class TripRepository {
     await _client
         .from('rider_trips')
         .update({'status': 'cancelled'})
-        .eq('id', tripId);
+        .eq('id', tripId)
+        .eq('status', 'scheduled');
   }
 
   // ---------------------------------------------------------------------------
@@ -406,12 +409,13 @@ class TripRepository {
         .eq('farmer_id', farmerId);
   }
 
-  /// Transition an order to in_transit status.
+  /// Transition an order to in_transit status (matched -> in_transit).
   Future<void> startDelivery(String orderId) async {
     await _client
         .from('orders')
         .update({'status': 'in_transit'})
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('status', 'matched');
   }
 
   // ---------------------------------------------------------------------------

@@ -222,7 +222,9 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
               value: total > 0 ? (used / total).clamp(0.0, 1.0) : 0,
               backgroundColor: AppColors.border,
               valueColor: AlwaysStoppedAnimation<Color>(
-                used / total > 0.85 ? AppColors.error : AppColors.primary,
+                total > 0 && used / total > 0.85
+                    ? AppColors.error
+                    : AppColors.primary,
               ),
               minHeight: 6,
             ),
