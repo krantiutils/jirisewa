@@ -36,12 +36,6 @@ class TripCreationScreen extends ConsumerStatefulWidget {
 
 class _TripCreationScreenState extends ConsumerState<TripCreationScreen> {
   @override
-  void deactivate() {
-    ref.read(tripCreationProvider.notifier).reset();
-    super.deactivate();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final tripState = ref.watch(tripCreationProvider);
 
@@ -1032,7 +1026,6 @@ class _BottomBar extends ConsumerWidget {
           backgroundColor: AppColors.secondary,
         ),
       );
-      ref.read(tripCreationProvider.notifier).reset();
       context.go(AppRoutes.trips);
     }
   }

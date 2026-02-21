@@ -98,11 +98,11 @@ class TripCreationState {
 // ---------------------------------------------------------------------------
 
 final tripCreationProvider =
-    NotifierProvider<TripCreationNotifier, TripCreationState>(
+    AutoDisposeNotifierProvider<TripCreationNotifier, TripCreationState>(
   TripCreationNotifier.new,
 );
 
-class TripCreationNotifier extends Notifier<TripCreationState> {
+class TripCreationNotifier extends AutoDisposeNotifier<TripCreationState> {
   @override
   TripCreationState build() => const TripCreationState();
 
@@ -228,8 +228,4 @@ class TripCreationNotifier extends Notifier<TripCreationState> {
     }
   }
 
-  /// Reset state (e.g. when navigating away).
-  void reset() {
-    state = const TripCreationState();
-  }
 }
