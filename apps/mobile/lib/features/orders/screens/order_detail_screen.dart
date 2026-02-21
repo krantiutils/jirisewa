@@ -41,6 +41,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final orderDetailAsync = ref.watch(orderDetailProvider(widget.orderId));
 
+    // Set up tracking outside the build tree to avoid setState during build.
+    ref.listen(orderDetailProvider(widget.orderId), (prev, next) {
+      final order = next.valueOrNull?.order;
+      if (order != null) {
+        _maybeSetupTracking(order);
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Order #${widget.orderId.substring(0, 8)}'),
@@ -66,12 +74,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ],
           ),
         ),
-        data: (data) {
-          // Set up tracking when data arrives (idempotent via _subscribedTripId check).
-          _maybeSetupTracking(data.order);
-
-          return _buildContent(data);
-        },
+        data: (data) => _buildContent(data),
       ),
     );
   }

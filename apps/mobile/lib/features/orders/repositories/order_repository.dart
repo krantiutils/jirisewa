@@ -15,6 +15,8 @@ class OrderRepository {
         .from('orders')
         .select('id, status, total_price, delivery_fee, delivery_address, created_at');
 
+    // Farmers currently see orders they placed as consumers.
+    // Farmer-specific order view (orders containing their produce) is planned for a future task.
     List<dynamic> result;
     if (role == 'rider') {
       result = await query
