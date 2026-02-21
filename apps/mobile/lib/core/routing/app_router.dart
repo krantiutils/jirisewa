@@ -25,6 +25,8 @@ import 'package:jirisewa_mobile/features/notifications/screens/notification_pref
 import 'package:jirisewa_mobile/features/trips/screens/trip_detail_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/create_listing_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/edit_listing_screen.dart';
+import 'package:jirisewa_mobile/features/farmer/screens/analytics_screen.dart';
+import 'package:jirisewa_mobile/features/farmer/screens/verification_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -223,6 +225,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           final listingId = state.pathParameters['id']!;
           return EditListingScreen(listingId: listingId);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.farmerAnalytics,
+        builder: (context, state) => const AnalyticsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.farmerVerification,
+        builder: (context, state) => const VerificationScreen(),
       ),
     ],
   );

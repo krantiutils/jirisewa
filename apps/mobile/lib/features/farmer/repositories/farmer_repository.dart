@@ -139,4 +139,104 @@ class FarmerRepository {
         .update({'is_active': isActive})
         .eq('id', listingId);
   }
+
+  /// Fetch analytics data via Supabase RPC functions.
+  Future<Map<String, dynamic>> getAnalytics(String farmerId,
+      {int days = 30}) async {
+    final results = await Future.wait<dynamic>([
+      _client.rpc('farmer_sales_by_category',
+          params: {'p_farmer_id': farmerId, 'p_days': days}),
+      _client.rpc('farmer_revenue_trend',
+          params: {'p_farmer_id': farmerId, 'p_days': days}),
+      _client.rpc('farmer_top_products',
+          params: {'p_farmer_id': farmerId, 'p_days': days, 'p_limit': 10}),
+      _client
+          .rpc('farmer_price_benchmarks', params: {'p_farmer_id': farmerId}),
+      _client.rpc('farmer_fulfillment_rate',
+          params: {'p_farmer_id': farmerId, 'p_days': days}),
+      _client
+          .rpc('farmer_rating_distribution', params: {'p_farmer_id': farmerId}),
+      _client
+          .from('users')
+          .select('rating_avg, rating_count')
+          .eq('id', farmerId)
+          .single(),
+    ]);
+
+    return {
+      'salesByCategory': results[0] as List,
+      'revenueTrend': results[1] as List,
+      'topProducts': results[2] as List,
+      'priceBenchmarks': results[3] as List,
+      'fulfillment':
+          (results[4] as List).isNotEmpty ? results[4][0] : <String, dynamic>{},
+      'ratingDistribution': results[5] as List,
+      'ratingAvg': (results[6] as Map<String, dynamic>)['rating_avg'],
+      'ratingCount': (results[6] as Map<String, dynamic>)['rating_count'],
+    };
+  }
+
+  /// Get current verification status for the farmer.
+  Future<Map<String, dynamic>?> getVerificationStatus(String farmerId) async {
+    final role = await _client
+        .from('user_roles')
+        .select('id, verification_status')
+        .eq('user_id', farmerId)
+        .eq('role', 'farmer')
+        .maybeSingle();
+
+    if (role == null) return null;
+
+    final doc = await _client
+        .from('verification_documents')
+        .select()
+        .eq('user_role_id', role['id'] as String)
+        .maybeSingle();
+
+    return {
+      'roleId': role['id'],
+      'verificationStatus': role['verification_status'],
+      'document': doc,
+    };
+  }
+
+  /// Upload a verification document photo.
+  Future<String> uploadVerificationDoc(
+    String userId,
+    Uint8List bytes,
+    String docType, {
+    String extension = 'jpg',
+  }) async {
+    final path =
+        '$userId/$docType/${DateTime.now().millisecondsSinceEpoch}.$extension';
+    await _client.storage.from('verification-docs').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+        );
+    return _client.storage.from('verification-docs').getPublicUrl(path);
+  }
+
+  /// Submit verification documents.
+  Future<void> submitVerification(
+    String roleId, {
+    required String citizenshipPhotoUrl,
+    required String farmPhotoUrl,
+    String? municipalityLetterUrl,
+  }) async {
+    await _client.from('verification_documents').upsert(
+      {
+        'user_role_id': roleId,
+        'citizenship_photo_url': citizenshipPhotoUrl,
+        'farm_photo_url': farmPhotoUrl,
+        'municipality_letter_url': municipalityLetterUrl,
+      },
+      onConflict: 'user_role_id',
+    );
+
+    // Update status to pending
+    await _client
+        .from('user_roles')
+        .update({'verification_status': 'pending'}).eq('id', roleId);
+  }
 }
