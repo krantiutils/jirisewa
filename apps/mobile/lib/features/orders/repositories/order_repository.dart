@@ -152,10 +152,42 @@ class OrderRepository {
   /// a payment gateway transaction record.
   ///
   /// Returns the order ID and optional payment redirect data.
+  /// Throws on validation failure or database error (cleans up partial state).
   Future<PlaceOrderResult> placeOrder(PlaceOrderInput input) async {
-    // 1. Calculate monetary totals
-    final totalPrice =
-        _round2(input.items.fold(0.0, (sum, item) => sum + item.subtotal));
+    // --- Validation ---
+    if (input.items.isEmpty) {
+      throw ArgumentError('Cannot place an order with an empty cart');
+    }
+    const validMethods = {'cash', 'esewa', 'khalti', 'connectips'};
+    if (!validMethods.contains(input.paymentMethod)) {
+      throw ArgumentError('Invalid payment method: ${input.paymentMethod}');
+    }
+
+    // 1. Verify prices server-side and fetch pickup locations
+    final listingIds =
+        input.items.map((item) => item.listingId).toSet().toList();
+    final listings = await _client
+        .from('produce_listings')
+        .select('id, location, price_per_kg, farmer_id')
+        .inFilter('id', listingIds);
+
+    final listingMap = <String, Map<String, dynamic>>{};
+    for (final listing in listings) {
+      listingMap[listing['id'] as String] = listing;
+    }
+
+    // Use server-side prices for subtotal calculation
+    double totalPrice = 0;
+    for (final item in input.items) {
+      final listing = listingMap[item.listingId];
+      if (listing == null) {
+        throw StateError('Listing ${item.listingId} not found or inactive');
+      }
+      final serverPrice = (listing['price_per_kg'] as num).toDouble();
+      totalPrice += item.quantityKg * serverPrice;
+    }
+    totalPrice = _round2(totalPrice);
+
     final deliveryFee = _round2(input.feeEstimate.totalFee);
     final grandTotal = _round2(totalPrice + deliveryFee);
 
@@ -182,123 +214,123 @@ class OrderRepository {
 
     final orderId = orderRow['id'] as String;
 
-    // 3. Fetch pickup locations from produce_listings for each unique listing
-    final listingIds =
-        input.items.map((item) => item.listingId).toSet().toList();
-    final listings = await _client
-        .from('produce_listings')
-        .select('id, location')
-        .inFilter('id', listingIds);
-    final listingLocationMap = <String, String?>{};
-    for (final listing in listings) {
-      listingLocationMap[listing['id'] as String] =
-          listing['location'] as String?;
-    }
-
-    // 4. Assign pickup_sequence per farmer group (1-indexed)
-    final farmerGroups = <String, int>{};
-    var farmerIndex = 0;
-    for (final item in input.items) {
-      if (!farmerGroups.containsKey(item.farmerId)) {
-        farmerIndex++;
-        farmerGroups[item.farmerId] = farmerIndex;
+    try {
+      // 3. Assign pickup_sequence per farmer group (1-indexed)
+      final farmerGroups = <String, int>{};
+      var farmerIndex = 0;
+      for (final item in input.items) {
+        if (!farmerGroups.containsKey(item.farmerId)) {
+          farmerIndex++;
+          farmerGroups[item.farmerId] = farmerIndex;
+        }
       }
-    }
 
-    // 5. Insert order_items
-    final itemRows = input.items
-        .map((item) => <String, dynamic>{
+      // 4. Insert order_items (using server-side prices)
+      final itemRows = input.items
+          .map((item) {
+            final listing = listingMap[item.listingId]!;
+            final serverPrice = (listing['price_per_kg'] as num).toDouble();
+            return <String, dynamic>{
               'order_id': orderId,
               'listing_id': item.listingId,
               'farmer_id': item.farmerId,
               'quantity_kg': item.quantityKg,
-              'price_per_kg': item.pricePerKg,
-              'subtotal': _round2(item.subtotal),
-              'pickup_location': listingLocationMap[item.listingId],
+              'price_per_kg': serverPrice,
+              'subtotal': _round2(item.quantityKg * serverPrice),
+              'pickup_location': listing['location'] as String?,
               'pickup_sequence': farmerGroups[item.farmerId],
               'pickup_status': 'pending_pickup',
-            })
-        .toList();
+            };
+          })
+          .toList();
 
-    await _client.from('order_items').insert(itemRows);
+      await _client.from('order_items').insert(itemRows);
 
-    // 6. Insert farmer_payouts (one per unique farmer)
-    final payoutsByFarmer = <String, double>{};
-    for (final item in input.items) {
-      payoutsByFarmer[item.farmerId] =
-          (payoutsByFarmer[item.farmerId] ?? 0) + item.subtotal;
+      // 5. Insert farmer_payouts (one per unique farmer, using server prices)
+      final payoutsByFarmer = <String, double>{};
+      for (final row in itemRows) {
+        final fid = row['farmer_id'] as String;
+        payoutsByFarmer[fid] =
+            (payoutsByFarmer[fid] ?? 0) + (row['subtotal'] as double);
+      }
+
+      final payoutRows = payoutsByFarmer.entries
+          .map((e) => <String, dynamic>{
+                'order_id': orderId,
+                'farmer_id': e.key,
+                'amount': _round2(e.value),
+                'status': 'pending',
+              })
+          .toList();
+
+      await _client.from('farmer_payouts').insert(payoutRows);
+
+      // 6. Create payment transaction for digital payments
+      Map<String, dynamic>? paymentData;
+
+      if (input.paymentMethod == 'esewa') {
+        final txnUuid = _generateUuid();
+        await _client.from('esewa_transactions').insert({
+          'order_id': orderId,
+          'transaction_uuid': txnUuid,
+          'product_code': 'EPAYTEST', // TODO: use env config
+          'amount': totalPrice,
+          'tax_amount': 0,
+          'service_charge': 0,
+          'delivery_charge': deliveryFee,
+          'total_amount': grandTotal,
+          'status': 'PENDING',
+        });
+        paymentData = {
+          'orderId': orderId,
+          'transactionUuid': txnUuid,
+          'gateway': 'esewa',
+        };
+      } else if (input.paymentMethod == 'khalti') {
+        final purchaseOrderId = 'KH-$orderId';
+        final amountPaisa = (grandTotal * 100).round();
+        await _client.from('khalti_transactions').insert({
+          'order_id': orderId,
+          'purchase_order_id': purchaseOrderId,
+          'amount_paisa': amountPaisa,
+          'total_amount': grandTotal,
+          'status': 'PENDING',
+        });
+        paymentData = {
+          'orderId': orderId,
+          'purchaseOrderId': purchaseOrderId,
+          'amountPaisa': amountPaisa,
+          'gateway': 'khalti',
+        };
+      } else if (input.paymentMethod == 'connectips') {
+        final txnId = 'CI-$orderId';
+        final referenceId = 'REF-$orderId';
+        final amountPaisa = (grandTotal * 100).round();
+        await _client.from('connectips_transactions').insert({
+          'order_id': orderId,
+          'txn_id': txnId,
+          'reference_id': referenceId,
+          'amount_paisa': amountPaisa,
+          'total_amount': grandTotal,
+          'status': 'PENDING',
+        });
+        paymentData = {
+          'orderId': orderId,
+          'txnId': txnId,
+          'referenceId': referenceId,
+          'amountPaisa': amountPaisa,
+          'gateway': 'connectips',
+        };
+      }
+
+      return PlaceOrderResult(orderId: orderId, paymentData: paymentData);
+    } catch (e) {
+      // Clean up partial state on failure
+      await _client.from('farmer_payouts').delete().eq('order_id', orderId);
+      await _client.from('order_items').delete().eq('order_id', orderId);
+      await _client.from('orders').delete().eq('id', orderId);
+      rethrow;
     }
-
-    final payoutRows = payoutsByFarmer.entries
-        .map((e) => <String, dynamic>{
-              'order_id': orderId,
-              'farmer_id': e.key,
-              'amount': _round2(e.value),
-              'status': 'pending',
-            })
-        .toList();
-
-    await _client.from('farmer_payouts').insert(payoutRows);
-
-    // 7. Create payment transaction for digital payments
-    Map<String, dynamic>? paymentData;
-
-    if (input.paymentMethod == 'esewa') {
-      final txnUuid = _generateUuid();
-      await _client.from('esewa_transactions').insert({
-        'order_id': orderId,
-        'transaction_uuid': txnUuid,
-        'product_code': 'EPAYTEST', // TODO: use env config
-        'amount': totalPrice,
-        'tax_amount': 0,
-        'service_charge': 0,
-        'delivery_charge': deliveryFee,
-        'total_amount': grandTotal,
-        'status': 'PENDING',
-      });
-      paymentData = {
-        'orderId': orderId,
-        'transactionUuid': txnUuid,
-        'gateway': 'esewa',
-      };
-    } else if (input.paymentMethod == 'khalti') {
-      final purchaseOrderId = 'KH-$orderId';
-      final amountPaisa = (grandTotal * 100).round();
-      await _client.from('khalti_transactions').insert({
-        'order_id': orderId,
-        'purchase_order_id': purchaseOrderId,
-        'amount_paisa': amountPaisa,
-        'total_amount': grandTotal,
-        'status': 'PENDING',
-      });
-      paymentData = {
-        'orderId': orderId,
-        'purchaseOrderId': purchaseOrderId,
-        'amountPaisa': amountPaisa,
-        'gateway': 'khalti',
-      };
-    } else if (input.paymentMethod == 'connectips') {
-      final txnId = 'CI-$orderId';
-      final referenceId = 'REF-$orderId';
-      final amountPaisa = (grandTotal * 100).round();
-      await _client.from('connectips_transactions').insert({
-        'order_id': orderId,
-        'txn_id': txnId,
-        'reference_id': referenceId,
-        'amount_paisa': amountPaisa,
-        'total_amount': grandTotal,
-        'status': 'PENDING',
-      });
-      paymentData = {
-        'orderId': orderId,
-        'txnId': txnId,
-        'referenceId': referenceId,
-        'amountPaisa': amountPaisa,
-        'gateway': 'connectips',
-      };
-    }
-
-    return PlaceOrderResult(orderId: orderId, paymentData: paymentData);
   }
 
   // -------------------------------------------------------------------------
@@ -314,7 +346,7 @@ class OrderRepository {
   /// unique 32-character identifier (formatted with hyphens like a UUID v4).
   static String _generateUuid() {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final rng = Random();
+    final rng = Random.secure();
     final hex = StringBuffer();
     hex.write(now.toRadixString(16).padLeft(12, '0'));
     for (var i = hex.length; i < 32; i++) {
