@@ -75,45 +75,45 @@ class ChatRepository {
         .contains('participant_ids', [userId])
         .order('created_at', ascending: false);
 
-    final conversations = <Conversation>[];
-
-    for (final row in rows) {
+    // Enrich each conversation with last message + unread count in parallel.
+    final enriched = await Future.wait(rows.map((row) async {
       final convId = row['id'] as String;
 
-      // Fetch last message.
-      final lastMsg = await _client
+      final lastMsgFuture = _client
           .from('chat_messages')
           .select('content, message_type, created_at')
           .eq('conversation_id', convId)
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
-
-      // Count unread messages (not sent by current user, read_at is null).
-      final unreadCount = await _client
+      final unreadCountFuture = _client
           .from('chat_messages')
           .count()
           .eq('conversation_id', convId)
           .neq('sender_id', userId)
           .isFilter('read_at', null);
 
-      final enriched = Map<String, dynamic>.from(row);
-      enriched['last_message_content'] = lastMsg?['content'];
-      enriched['last_message_at'] = lastMsg?['created_at'];
-      enriched['last_message_type'] = lastMsg?['message_type'];
-      enriched['unread_count'] = unreadCount;
+      final results = await (lastMsgFuture, unreadCountFuture).wait;
+      final lastMsg = results.$1;
+      final unreadCount = results.$2;
 
-      conversations.add(Conversation.fromJson(enriched));
-    }
+      final data = Map<String, dynamic>.from(row);
+      data['last_message_content'] = lastMsg?['content'];
+      data['last_message_at'] = lastMsg?['created_at'];
+      data['last_message_type'] = lastMsg?['message_type'];
+      data['unread_count'] = unreadCount;
+
+      return Conversation.fromJson(data);
+    }));
 
     // Sort by last-message time descending, falling back to created_at.
-    conversations.sort((a, b) {
+    enriched.sort((a, b) {
       final aTime = a.lastMessageAt ?? a.createdAt;
       final bTime = b.lastMessageAt ?? b.createdAt;
       return bTime.compareTo(aTime);
     });
 
-    return conversations;
+    return enriched;
   }
 
   // ---------------------------------------------------------------------------
