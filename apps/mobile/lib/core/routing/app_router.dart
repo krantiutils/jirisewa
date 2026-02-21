@@ -14,6 +14,7 @@ import 'package:jirisewa_mobile/features/profile/screens/profile_screen.dart';
 import 'package:jirisewa_mobile/features/cart/screens/cart_screen.dart';
 import 'package:jirisewa_mobile/features/checkout/screens/checkout_screen.dart';
 import 'package:jirisewa_mobile/features/marketplace/screens/produce_detail_screen.dart';
+import 'package:jirisewa_mobile/features/chat/screens/conversations_screen.dart';
 import 'package:jirisewa_mobile/features/shell/app_shell.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trips_screen.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trip_creation_screen.dart';
@@ -162,6 +163,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.checkout,
         builder: (context, state) => const CheckoutScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.chat,
+        builder: (context, state) => const ConversationsScreen(),
       ),
       GoRoute(
         path: AppRoutes.produceDetail,
