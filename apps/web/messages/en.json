@@ -1146,5 +1146,37 @@
     "deleteConfirm": "Delete this address?",
     "empty": "No saved addresses yet",
     "emptyHint": "Add your frequently used delivery locations for faster checkout"
+  },
+  "earnings": {
+    "title": "Earnings",
+    "totalEarned": "Total Earned",
+    "pendingBalance": "Available Balance",
+    "settled": "Settled",
+    "withdrawn": "Withdrawn",
+    "requested": "Requested",
+    "requestPayout": "Request Payout",
+    "amount": "Amount (NPR)",
+    "maxAmount": "Available: NPR {amount}",
+    "method": "Payment Method",
+    "esewa": "eSewa",
+    "khalti": "Khalti",
+    "bank": "Bank Transfer",
+    "phone": "Phone Number",
+    "bankName": "Bank Name",
+    "bankAccount": "Account Number",
+    "submit": "Submit Request",
+    "submitting": "Submitting...",
+    "payoutSuccess": "Payout request submitted successfully",
+    "noEarnings": "No earnings yet",
+    "noEarningsHint": "Your earnings will appear here after orders are delivered",
+    "orderId": "Order",
+    "farmer": "Farmer",
+    "rider": "Rider",
+    "status": {
+      "pending": "Pending",
+      "settled": "Settled",
+      "disputed": "Disputed"
+    },
+    "backToDashboard": "Back to Dashboard"
   }
 }
