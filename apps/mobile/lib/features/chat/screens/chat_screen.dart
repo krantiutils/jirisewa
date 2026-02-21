@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/features/chat/models/chat_message.dart';
 import 'package:jirisewa_mobile/features/chat/providers/chat_provider.dart';
 import 'package:jirisewa_mobile/features/chat/widgets/message_bubble.dart';
 
@@ -30,7 +31,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _markRead();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _markRead());
   }
 
   @override
@@ -43,22 +44,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// Marks the conversation as read and invalidates related providers so that
   /// the conversations list and unread badge update accordingly.
   Future<void> _markRead() async {
+    if (!mounted) return;
     final profile = ref.read(userProfileProvider);
     if (profile == null) return;
 
     final repo = ref.read(chatRepositoryProvider);
     try {
       await repo.markConversationRead(widget.conversationId, profile.id);
-      ref.invalidate(conversationsProvider);
-      ref.invalidate(unreadChatCountProvider);
+      if (mounted) {
+        ref.invalidate(conversationsProvider);
+        ref.invalidate(unreadChatCountProvider);
+      }
     } catch (_) {
       // Non-critical — silently ignore mark-read failures.
     }
   }
 
+  bool _isNearBottom() {
+    if (!_scrollController.hasClients) return true;
+    final pos = _scrollController.position;
+    return pos.maxScrollExtent - pos.pixels < 100;
+  }
+
   void _scrollToBottom() {
-    if (!_scrollController.hasClients) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -84,6 +94,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       await repo.sendMessage(widget.conversationId, profile.id, text);
     } catch (e) {
       if (mounted) {
+        // Restore text on failure so user doesn't lose their message.
+        _textController.text = text;
+        _textController.selection = TextSelection.fromPosition(
+          TextPosition(offset: text.length),
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send message: $e'),
@@ -181,6 +196,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final profile = ref.watch(userProfileProvider);
     final currentUserId = profile?.id ?? '';
 
+    // Auto-scroll only when new messages arrive and user is near bottom.
+    ref.listen<AsyncValue<List<ChatMessage>>>(
+      messagesProvider(widget.conversationId),
+      (previous, next) {
+        final prevCount = previous?.valueOrNull?.length ?? 0;
+        final nextCount = next.valueOrNull?.length ?? 0;
+        if (nextCount > prevCount && _isNearBottom()) _scrollToBottom();
+      },
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chat'),
@@ -214,9 +239,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
               data: (messages) {
-                // Auto-scroll when new messages arrive.
-                _scrollToBottom();
-
                 if (messages.isEmpty) {
                   return Center(
                     child: Column(
@@ -261,6 +283,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildInputBar() {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom > 0
+        ? 8.0
+        : MediaQuery.of(context).padding.bottom + 8;
+
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.background,
@@ -270,7 +296,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         left: 8,
         right: 8,
         top: 8,
-        bottom: MediaQuery.of(context).padding.bottom + 8,
+        bottom: bottomInset,
       ),
       child: Row(
         children: [

@@ -228,7 +228,6 @@ class ChatRepository {
       if (channel != null) {
         _client.removeChannel(channel!);
       }
-      controller.close();
     };
 
     return controller.stream;

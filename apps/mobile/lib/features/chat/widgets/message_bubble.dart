@@ -71,6 +71,23 @@ class MessageBubble extends StatelessWidget {
   Widget _buildContent(Color textColor) {
     switch (message.messageType) {
       case 'image':
+        final uri = Uri.tryParse(message.content);
+        final isValidUrl = uri != null &&
+            uri.scheme == 'https' &&
+            uri.host.endsWith('.supabase.co');
+        if (!isValidUrl) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.broken_image, color: textColor, size: 20),
+              const SizedBox(width: 6),
+              Text(
+                'Image unavailable',
+                style: TextStyle(color: textColor, fontSize: 14),
+              ),
+            ],
+          );
+        }
         return ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.network(
