@@ -169,6 +169,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ConversationsScreen(),
       ),
       GoRoute(
+        path: AppRoutes.chatDetail,
+        builder: (context, state) {
+          final conversationId = state.pathParameters['conversationId']!;
+          return Scaffold(
+            appBar: AppBar(title: const Text('Chat')),
+            body: Center(child: Text('Chat: $conversationId')),
+          );
+        },
+      ),
+      GoRoute(
         path: AppRoutes.produceDetail,
         builder: (context, state) {
           final listingId = state.pathParameters['id']!;

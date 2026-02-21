@@ -51,33 +51,42 @@ class ConversationsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                data: (conversations) => conversations.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 48, color: Colors.grey[400]),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No conversations yet',
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 16),
+                data: (conversations) => RefreshIndicator(
+                      onRefresh: () =>
+                          ref.refresh(conversationsProvider.future),
+                      child: conversations.isEmpty
+                          ? ListView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              children: [
+                                SizedBox(
+                                    height: MediaQuery.of(context).size.height *
+                                        0.3),
+                                Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.chat_bubble_outline,
+                                          size: 48, color: Colors.grey[400]),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No conversations yet',
+                                        style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 16),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ListView.builder(
+                              itemCount: conversations.length,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              itemBuilder: (ctx, i) =>
+                                  _conversationTile(context, conversations[i]),
                             ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () =>
-                            ref.refresh(conversationsProvider.future),
-                        child: ListView.builder(
-                          itemCount: conversations.length,
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 20),
-                          itemBuilder: (ctx, i) =>
-                              _conversationTile(context, conversations[i]),
-                        ),
-                      ),
+                    ),
               ),
             ),
           ],
@@ -182,9 +191,9 @@ class ConversationsScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 2),
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: AppColors.primary,
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(100),
                             ),
                             child: Text(
                               '${conversation.unreadCount}',
