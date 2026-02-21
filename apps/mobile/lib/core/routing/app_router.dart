@@ -20,6 +20,8 @@ import 'package:jirisewa_mobile/features/shell/app_shell.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trips_screen.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trip_creation_screen.dart';
 import 'package:jirisewa_mobile/features/trips/screens/route_plan_screen.dart';
+import 'package:jirisewa_mobile/features/notifications/screens/notifications_screen.dart';
+import 'package:jirisewa_mobile/features/notifications/screens/notification_preferences_screen.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trip_detail_screen.dart';
 
 abstract final class AppRoutes {
@@ -175,6 +177,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           final conversationId = state.pathParameters['conversationId']!;
           return ChatScreen(conversationId: conversationId);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.notificationPreferences,
+        builder: (context, state) => const NotificationPreferencesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: AppRoutes.produceDetail,
