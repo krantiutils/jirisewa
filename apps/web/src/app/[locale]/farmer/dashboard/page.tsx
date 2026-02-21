@@ -2,7 +2,8 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui";
-import { Plus, Package, ShoppingCart, Wallet, BarChart3 } from "lucide-react";
+import { Plus, Package, ShoppingCart, Wallet, BarChart3, DollarSign } from "lucide-react";
+import { requireAuth } from "@/lib/auth/require-auth";
 import { getFarmerDashboardData } from "../actions";
 import { getVerificationStatus } from "../verification-actions";
 import { ListingCard } from "../_components/ListingCard";
@@ -15,8 +16,10 @@ export default async function FarmerDashboardPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  await requireAuth(locale);
 
   const t = await getTranslations("farmer");
+  const tEarnings = await getTranslations("earnings");
   const result = await getFarmerDashboardData();
 
   if (!result.success) {
@@ -25,7 +28,7 @@ export default async function FarmerDashboardPage({
         <h1 className="text-2xl font-bold text-foreground">
           {t("dashboard.title")}
         </h1>
-        <p className="mt-2 text-gray-500">{t("dashboard.loginRequired")}</p>
+        <p className="mt-2 text-gray-500">{result.error}</p>
       </div>
     );
   }
@@ -33,6 +36,7 @@ export default async function FarmerDashboardPage({
   const {
     listings,
     activeListings,
+    inactiveListings,
     pendingOrderCount,
     totalEarnings,
   } = result.data;
@@ -58,6 +62,13 @@ export default async function FarmerDashboardPage({
           {t("dashboard.title")}
         </h1>
         <div className="flex items-center gap-3">
+          <Link
+            href="/farmer/earnings"
+            className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 h-14 font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:scale-105"
+          >
+            <DollarSign className="h-5 w-5" />
+            {tEarnings("title")}
+          </Link>
           <Link
             href="/farmer/analytics"
             className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 h-14 font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:scale-105"
@@ -122,33 +133,65 @@ export default async function FarmerDashboardPage({
 
       {/* Listings */}
       <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">
-            {t("dashboard.myListings")}
-          </h2>
-          {listings.length > 0 && (
-            <Badge color="primary">{listings.length}</Badge>
-          )}
-        </div>
-
         {listings.length === 0 ? (
-          <div className="rounded-lg bg-white p-12 text-center">
-            <Package className="mx-auto h-12 w-12 text-gray-300" />
-            <p className="mt-4 text-gray-500">{t("dashboard.noListings")}</p>
-            <Link
-              href="/farmer/listings/new"
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-6 h-12 font-semibold text-white transition-all duration-200 hover:bg-blue-600 hover:scale-105"
-            >
-              <Plus className="h-5 w-5" />
-              {t("dashboard.addFirstListing")}
-            </Link>
-          </div>
+          <>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t("dashboard.myListings")}
+              </h2>
+            </div>
+            <div className="rounded-lg bg-white p-12 text-center">
+              <Package className="mx-auto h-12 w-12 text-gray-300" />
+              <p className="mt-4 text-gray-500">{t("dashboard.noListings")}</p>
+              <Link
+                href="/farmer/listings/new"
+                className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-6 h-12 font-semibold text-white transition-all duration-200 hover:bg-blue-600 hover:scale-105"
+              >
+                <Plus className="h-5 w-5" />
+                {t("dashboard.addFirstListing")}
+              </Link>
+            </div>
+          </>
         ) : (
-          <div className="space-y-3">
-            {listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
+          <>
+            {/* Active Listings */}
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t("dashboard.activeListings")}
+              </h2>
+              {activeListings.length > 0 && (
+                <Badge color="secondary">{activeListings.length}</Badge>
+              )}
+            </div>
+            {activeListings.length > 0 ? (
+              <div className="space-y-3">
+                {activeListings.map((listing) => (
+                  <ListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg bg-white p-8 text-center">
+                <p className="text-sm text-gray-500">{t("dashboard.noListings")}</p>
+              </div>
+            )}
+
+            {/* Inactive Listings */}
+            {inactiveListings.length > 0 && (
+              <div className="mt-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-400">
+                    {t("listing.inactive")}
+                  </h2>
+                  <Badge color="accent">{inactiveListings.length}</Badge>
+                </div>
+                <div className="space-y-3 opacity-60">
+                  {inactiveListings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
