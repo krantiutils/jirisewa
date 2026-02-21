@@ -23,6 +23,8 @@ import 'package:jirisewa_mobile/features/trips/screens/route_plan_screen.dart';
 import 'package:jirisewa_mobile/features/notifications/screens/notifications_screen.dart';
 import 'package:jirisewa_mobile/features/notifications/screens/notification_preferences_screen.dart';
 import 'package:jirisewa_mobile/features/trips/screens/trip_detail_screen.dart';
+import 'package:jirisewa_mobile/features/farmer/screens/create_listing_screen.dart';
+import 'package:jirisewa_mobile/features/farmer/screens/edit_listing_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -209,6 +211,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final tripId = state.pathParameters['id']!;
           return TripDetailScreen(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.farmerListingNew,
+        builder: (context, state) => const CreateListingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.farmerListingEdit,
+        builder: (context, state) {
+          final listingId = state.pathParameters['id']!;
+          return EditListingScreen(listingId: listingId);
         },
       ),
     ],
