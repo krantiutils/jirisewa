@@ -14,7 +14,10 @@
     "messages": "Messages",
     "business": "Business",
     "login": "Login",
-    "register": "Register"
+    "register": "Register",
+    "account": "Account",
+    "notifications": "Notifications",
+    "signOut": "Sign Out"
   },
   "home": {
     "title": "JiriSewa",
@@ -23,7 +26,10 @@
   },
   "auth": {
     "loginTitle": "Login to JiriSewa",
-    "loginSubtitle": "Enter your phone number to get started",
+    "loginSubtitle": "Enter your phone number or email to get started",
+    "orContinueWith": "or continue with",
+    "phoneTab": "Phone",
+    "emailTab": "Email",
     "phoneLabel": "Phone Number",
     "phonePlaceholder": "98XXXXXXXX",
     "phoneHint": "Enter your 10-digit Nepal mobile number",
@@ -40,7 +46,23 @@
     "otpError": "Failed to send OTP. Please try again.",
     "verifyError": "Invalid OTP. Please try again.",
     "sending": "Sending...",
-    "verifying": "Verifying..."
+    "verifying": "Verifying...",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "confirmPasswordLabel": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signingIn": "Signing in...",
+    "signingUp": "Signing up...",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "emailRequired": "Email and password are required.",
+    "passwordTooShort": "Password must be at least 6 characters.",
+    "passwordMismatch": "Passwords do not match.",
+    "emailSignInError": "Invalid email or password. Please try again."
   },
   "register": {
     "title": "Complete Your Profile",
@@ -137,7 +159,7 @@
     "backToMarketplace": "Back to marketplace",
     "addToCart": "Add to Cart",
     "addedToCart": "Added!",
-    "quantity": "Quantity (kg)",
+    "quantity": "Quantity",
     "pricePerKg": "NPR {price}/kg",
     "totalPrice": "Total: NPR {total}",
     "farmerInfo": "Farmer Information",
@@ -200,7 +222,9 @@
     "payWithConnectIPS": "Pay with connectIPS",
     "redirectingToPayment": "Redirecting to payment...",
     "pickupFrom": "Pickup from {farmer}",
-    "multiFarmerNote": "This order includes items from {count} farmers. Each pickup is a separate stop."
+    "multiFarmerNote": "This order includes items from {count} farmers. Each pickup is a separate stop.",
+    "savedAddresses": "Saved Addresses",
+    "saveAddress": "Save this address for next time"
   },
   "orders": {
     "title": "My Orders",
@@ -209,7 +233,7 @@
     "noFilterResults": "No orders match your filters",
     "browseMarketplace": "Browse Marketplace",
     "moreItems": "more",
-    "totalItems": "{count} items",
+    "totalItems": "{count, plural, one {# item} other {# items}}",
     "orderNumber": "Order #{id}",
     "placed": "Placed {date}",
     "tabs": {
@@ -372,7 +396,18 @@
       "description": "Description",
       "descriptionPlaceholder": "Describe your produce...",
       "pricePerKg": "Price per kg (NPR)",
-      "availableQty": "Available Quantity (kg)",
+      "pricePerUnit": "Price per {unit} (NPR)",
+      "unit": "Unit",
+      "units": {
+        "kg": "kg",
+        "piece": "piece",
+        "dozen": "dozen",
+        "bundle": "bundle",
+        "liter": "liter",
+        "bhari": "bhari"
+      },
+      "kalimatiHint": "Kalimati market price: NPR {min}-{max}/{unit}",
+      "availableQty": "Available Quantity",
       "freshnessDate": "Freshness Date",
       "photos": "Photos (up to 5)",
       "saving": "Saving...",
@@ -459,7 +494,13 @@
       "completed": "Completed",
       "noTrips": "No trips yet",
       "postFirstTrip": "Post your first trip",
-      "unknownLocation": "Unknown location"
+      "unknownLocation": "Unknown location",
+      "browseOrders": "Browse Orders",
+      "noAvailableOrders": "No available orders right now",
+      "acceptOrder": "Accept Order",
+      "accepting": "Accepting...",
+      "orderWeight": "Weight",
+      "orderEarnings": "Earnings"
     },
     "tripForm": {
       "title": "Post a Trip",
@@ -1053,6 +1094,8 @@
     "loading": "Loading...",
     "saving": "Saving...",
     "continue": "Continue",
+    "nameLabel": "Full Name",
+    "namePlaceholder": "What should we call you?",
     "skipPrefix": "Not sure?",
     "skipLink": "Continue as Customer",
     "farmerTitle": "Farmer",
@@ -1061,6 +1104,20 @@
     "riderDesc": "Deliver orders and earn money in your area",
     "customerTitle": "Customer",
     "customerDesc": "Browse and order fresh produce from local farmers",
+    "vehicleType": "Vehicle Type",
+    "vehicleTypes": {
+      "bike": "Bike",
+      "car": "Car",
+      "truck": "Truck",
+      "bus": "Bus",
+      "other": "Other"
+    },
+    "fixedRouteTitle": "Fixed Route",
+    "fixedRouteHint": "If you travel the same route regularly, set it here so we can match orders along your path.",
+    "routeOrigin": "Starting Point",
+    "routeOriginPlaceholder": "e.g. Jiri, Dolakha",
+    "routeDestination": "Destination",
+    "routeDestinationPlaceholder": "e.g. Kathmandu",
     "features": {
       "listings": "Create product listings",
       "analytics": "Track sales & analytics",
@@ -1072,5 +1129,22 @@
       "delivery": "Home delivery",
       "track": "Track orders in real-time"
     }
+  },
+  "addresses": {
+    "title": "Saved Addresses",
+    "addNew": "Add Address",
+    "label": "Label",
+    "labelPlaceholder": "e.g. Home, Office",
+    "address": "Address",
+    "setDefault": "Set as default",
+    "default": "Default",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this address?",
+    "empty": "No saved addresses yet",
+    "emptyHint": "Add your frequently used delivery locations for faster checkout"
   }
 }
