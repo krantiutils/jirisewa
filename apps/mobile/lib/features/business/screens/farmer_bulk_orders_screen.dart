@@ -215,7 +215,7 @@ class _FarmerOrderCard extends ConsumerWidget {
             const SizedBox(height: 8),
 
             ...myItems.map(
-              (item) => _FarmerItemRow(item: item, ref: ref),
+              (item) => _FarmerItemRow(item: item),
             ),
           ],
         ),
@@ -228,10 +228,9 @@ class _FarmerOrderCard extends ConsumerWidget {
 // Farmer Item Row with quote/reject actions
 // ---------------------------------------------------------------------------
 
-class _FarmerItemRow extends StatelessWidget {
-  const _FarmerItemRow({required this.item, required this.ref});
+class _FarmerItemRow extends ConsumerWidget {
+  const _FarmerItemRow({required this.item});
   final BulkOrderItem item;
-  final WidgetRef ref;
 
   Color get _statusColor {
     switch (item.status) {
@@ -250,7 +249,7 @@ class _FarmerItemRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 0,
@@ -471,7 +470,10 @@ class _FarmerItemRow extends StatelessWidget {
           ],
         );
       },
-    );
+    ).whenComplete(() {
+      priceController.dispose();
+      notesController.dispose();
+    });
   }
 
   void _showRejectDialog(
@@ -526,7 +528,9 @@ class _FarmerItemRow extends StatelessWidget {
           ],
         );
       },
-    );
+    ).whenComplete(() {
+      notesController.dispose();
+    });
   }
 
   Future<void> _quoteItem(

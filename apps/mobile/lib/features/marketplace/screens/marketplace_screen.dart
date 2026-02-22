@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:jirisewa_mobile/core/constants/map_constants.dart';
 import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/map/widgets/listings_map.dart';
 import 'package:jirisewa_mobile/features/marketplace/providers/marketplace_provider.dart';
@@ -76,18 +78,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                         center: jiriCenter,
                         zoom: 10.8,
                         onMarkerTap: (listingId) {
-                          if (data.listings.isEmpty) return;
-                          final listing = data.listings.firstWhere(
-                            (item) => item['id'] == listingId,
-                            orElse: () => data.listings.first,
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '${listing['name_en'] ?? 'Produce'} • NPR ${listing['price_per_kg'] ?? 0}/kg',
-                              ),
-                            ),
-                          );
+                          context.push('${AppRoutes.marketplace}/$listingId');
                         },
                       );
                     },

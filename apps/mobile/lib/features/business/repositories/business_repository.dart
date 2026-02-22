@@ -498,11 +498,13 @@ class BusinessRepository {
     String query, {
     int limit = 20,
   }) async {
+    // Escape PostgREST special chars to prevent filter injection
+    final safeQuery = query.replaceAll(RegExp(r'[,.()\[\]\\]'), '');
     final result = await _client
         .from('produce_listings')
         .select('id, name_en, name_ne, price_per_kg, farmer_id, photos')
         .eq('is_active', true)
-        .or('name_en.ilike.%$query%,name_ne.ilike.%$query%')
+        .or('name_en.ilike.%$safeQuery%,name_ne.ilike.%$safeQuery%')
         .limit(limit);
 
     return List<Map<String, dynamic>>.from(result);

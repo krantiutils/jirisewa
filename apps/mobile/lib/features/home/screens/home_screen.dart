@@ -293,7 +293,7 @@ class HomeScreen extends ConsumerWidget {
             Icon(Icons.receipt_long, color: _statusColor(status), size: 20),
       ),
       title: Text(
-        'Order #${(order['id'] as String).substring(0, 8)}',
+        'Order #${_shortId(order['id'] as String? ?? '')}',
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
       subtitle: Text(
@@ -452,6 +452,9 @@ class HomeScreen extends ConsumerWidget {
   }
 
   // -- Helpers --
+
+  static String _shortId(String id) =>
+      id.length > 8 ? id.substring(0, 8) : id;
 
   static String _greeting(String name) {
     final hour = DateTime.now().hour;

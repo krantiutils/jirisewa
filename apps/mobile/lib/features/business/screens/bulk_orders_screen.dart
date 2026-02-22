@@ -192,7 +192,7 @@ class _BulkOrdersScreenState extends ConsumerState<BulkOrdersScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _CreateOrderSheet(ref: ref),
+      builder: (context) => const _CreateOrderSheet(),
     );
   }
 }
@@ -330,8 +330,7 @@ class _OrderCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _CreateOrderSheet extends ConsumerStatefulWidget {
-  const _CreateOrderSheet({required this.ref});
-  final WidgetRef ref;
+  const _CreateOrderSheet();
 
   @override
   ConsumerState<_CreateOrderSheet> createState() => _CreateOrderSheetState();
