@@ -85,11 +85,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     try {
-      // 1. Upsert user profile
+      // 1. Upsert user profile (role is NOT NULL in DB — use first selected role)
       await _supabase.from('users').upsert({
         'id': user.id,
         'phone': user.phone ?? '',
         'name': _nameController.text.trim(),
+        'role': _roles.first.name,
         'lang': _lang,
         'address':
             _addressController.text.trim().isEmpty

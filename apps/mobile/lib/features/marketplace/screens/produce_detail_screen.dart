@@ -187,7 +187,7 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          descriptionEn,
+                          _stripHtml(descriptionEn),
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[700],
@@ -546,6 +546,20 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
     } catch (_) {
       return dateStr;
     }
+  }
+
+  /// Strip HTML tags from a string (descriptions may come from a rich-text
+  /// editor on the web app).
+  String _stripHtml(String html) {
+    return html
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&nbsp;', ' ')
+        .trim();
   }
 
   IconData _categoryIconData(String? icon) {

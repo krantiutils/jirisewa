@@ -419,7 +419,8 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   }
 
   LatLng _listingLocation(Map<String, dynamic> listing, int index) {
-    final municipality = (listing['municipality'] as String?)?.toLowerCase();
+    final municipalityData = listing['municipalities'] as Map<String, dynamic>?;
+    final municipality = (municipalityData?['name_en'] as String?)?.toLowerCase();
     if (municipality != null) {
       if (municipality.contains('kathmandu')) {
         return const LatLng(27.7172, 85.3240);

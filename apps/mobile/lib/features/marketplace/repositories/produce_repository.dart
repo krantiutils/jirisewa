@@ -9,7 +9,7 @@ class ProduceRepository {
     final result = await _client
         .from('produce_listings')
         .select(
-            'id, farmer_id, name_en, name_ne, price_per_kg, available_qty_kg, is_active, municipality, created_at')
+            'id, farmer_id, name_en, name_ne, price_per_kg, available_qty_kg, is_active, municipality_id, created_at, municipalities!municipality_id(name_en, name_ne)')
         .eq('is_active', true)
         .order('created_at', ascending: false)
         .limit(limit);
@@ -21,7 +21,7 @@ class ProduceRepository {
     final result = await _client
         .from('produce_listings')
         .select(
-            'id, farmer_id, name_en, name_ne, price_per_kg, available_qty_kg, is_active, municipality, created_at')
+            'id, farmer_id, name_en, name_ne, price_per_kg, available_qty_kg, is_active, municipality_id, created_at, municipalities!municipality_id(name_en, name_ne)')
         .eq('farmer_id', farmerId)
         .eq('is_active', true)
         .order('created_at', ascending: false)
