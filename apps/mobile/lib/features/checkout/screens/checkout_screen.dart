@@ -425,7 +425,7 @@ class _ReviewStepState extends ConsumerState<_ReviewStep> {
     final feeAsync =
         feeParams != null ? ref.watch(deliveryFeeProvider(feeParams)) : null;
 
-    // Propagate fee estimate to checkout state via ref.listen (not in build).
+    // Propagate fee estimate to checkout state when it resolves.
     if (feeParams != null) {
       ref.listen(deliveryFeeProvider(feeParams), (prev, next) {
         final estimate = next.valueOrNull;
@@ -783,21 +783,27 @@ class _BottomBar extends ConsumerWidget {
   }
 
   Future<void> _handlePlaceOrder(BuildContext context, WidgetRef ref) async {
-    await ref.read(checkoutProvider.notifier).placeOrder();
+    final result = await ref.read(checkoutProvider.notifier).placeOrder();
 
     if (!context.mounted) return;
 
-    // Stub: show message and navigate to orders list (Task 1.4 will implement).
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Order placement coming soon'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final error = ref.read(checkoutProvider).error;
+    if (result == null || error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error ?? 'Failed to place order'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    // Clear cart and navigate to orders.
+    // Clear cart and checkout state.
     ref.read(cartProvider.notifier).clear();
     ref.read(checkoutProvider.notifier).reset();
-    context.go(AppRoutes.orders);
+
+    // Navigate to the new order detail.
+    context.go('${AppRoutes.orders}/${result.orderId}');
   }
 }

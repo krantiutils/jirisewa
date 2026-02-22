@@ -34,9 +34,9 @@ class ProduceRepository {
     final result = await _client
         .from('order_items')
         .select(
-            'id, order_id, listing_id, quantity_kg, subtotal, pickup_confirmed')
+            'id, order_id, listing_id, quantity_kg, subtotal, pickup_status')
         .eq('farmer_id', farmerId)
-        .eq('pickup_confirmed', false)
+        .eq('pickup_status', 'pending_pickup')
         .order('id')
         .limit(limit);
     return List<Map<String, dynamic>>.from(result);

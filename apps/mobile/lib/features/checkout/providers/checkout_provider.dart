@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:jirisewa_mobile/core/providers/auth_provider.dart';
+import 'package:jirisewa_mobile/features/cart/providers/cart_provider.dart';
 import 'package:jirisewa_mobile/features/checkout/providers/delivery_fee_provider.dart';
+import 'package:jirisewa_mobile/features/orders/providers/orders_provider.dart';
+import 'package:jirisewa_mobile/features/orders/repositories/order_repository.dart';
 
 // ---------------------------------------------------------------------------
 // State
@@ -105,15 +109,53 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     }
   }
 
-  /// Stub for placing an order. Full implementation in Task 1.4.
-  Future<void> placeOrder() async {
+  /// Place the order via OrderRepository.
+  /// Returns the [PlaceOrderResult] on success (contains orderId and optional
+  /// payment redirect data for digital payments).
+  Future<PlaceOrderResult?> placeOrder() async {
     state = state.copyWith(isPlacingOrder: true, error: null);
 
-    // Simulate a brief delay so the UI spinner shows.
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    try {
+      final session = ref.read(currentSessionProvider);
+      if (session == null) {
+        state = state.copyWith(
+            isPlacingOrder: false, error: 'Not authenticated');
+        return null;
+      }
 
-    // Stub: real implementation will call the server action.
-    state = state.copyWith(isPlacingOrder: false);
+      final cart = ref.read(cartProvider);
+      if (cart.items.isEmpty) {
+        state =
+            state.copyWith(isPlacingOrder: false, error: 'Cart is empty');
+        return null;
+      }
+
+      if (state.deliveryLocation == null ||
+          state.paymentMethod == null ||
+          state.feeEstimate == null) {
+        state = state.copyWith(
+            isPlacingOrder: false, error: 'Missing checkout details');
+        return null;
+      }
+
+      final repo = ref.read(orderRepositoryProvider);
+      final result = await repo.placeOrder(PlaceOrderInput(
+        consumerId: session.user.id,
+        items: cart.items,
+        deliveryAddress: state.deliveryAddress,
+        deliveryLat: state.deliveryLocation!.latitude,
+        deliveryLng: state.deliveryLocation!.longitude,
+        paymentMethod: state.paymentMethod!,
+        feeEstimate: state.feeEstimate!,
+      ));
+
+      state = state.copyWith(isPlacingOrder: false);
+      return result;
+    } catch (e) {
+      state = state.copyWith(
+          isPlacingOrder: false, error: 'Failed to place order: $e');
+      return null;
+    }
   }
 
   /// Reset the checkout state (e.g. after navigating away).

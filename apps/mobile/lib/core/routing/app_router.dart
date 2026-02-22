@@ -56,7 +56,7 @@ abstract final class AppRoutes {
   static const tripNew = '/trips/new';
   static const tripDetail = '/trips/:id';
   static const tripPlan = '/trips/:id/plan';
-  static const orderTracking = '/orders/:id/tracking';
+  static const orderTracking = '/tracking/:id';
   static const farmerListingNew = '/farmer/listings/new';
   static const farmerListingEdit = '/farmer/listings/:id/edit';
   static const farmerAnalytics = '/farmer/analytics';

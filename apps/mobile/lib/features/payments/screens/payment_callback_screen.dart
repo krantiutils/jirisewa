@@ -37,10 +37,11 @@ class _PaymentCallbackScreenState extends State<PaymentCallbackScreen> {
   void _handleCallback() {
     // Extract order ID from various possible query param names used by
     // the different payment gateways.
-    final orderId = widget.queryParams['order_id'] ??
-        widget.queryParams['orderId'] ??
-        widget.queryParams['purchase_order_id'] ??
-        widget.queryParams['transaction_uuid'];
+    // The payment gateway callback deep links include orderId as a query param.
+    // Fallback to order_id for compatibility. Do NOT use transaction_uuid or
+    // purchase_order_id as those are gateway-specific IDs, not order UUIDs.
+    final orderId = widget.queryParams['orderId'] ??
+        widget.queryParams['order_id'];
 
     if (orderId != null && orderId.isNotEmpty && mounted) {
       context.go('${AppRoutes.orders}/$orderId');

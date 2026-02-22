@@ -84,9 +84,9 @@ final homeDashboardProvider =
       final pendingItems = await client
           .from('order_items')
           .select(
-              'id, quantity_kg, price_per_kg, subtotal, pickup_confirmed, order_id')
+              'id, quantity_kg, price_per_kg, subtotal, pickup_status, order_id')
           .eq('farmer_id', userId)
-          .eq('pickup_confirmed', false)
+          .eq('pickup_status', 'pending_pickup')
           .limit(5);
       return HomeDashboardData(
         activeListings: List<Map<String, dynamic>>.from(listings),

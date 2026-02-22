@@ -307,11 +307,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     Map<String, dynamic> order,
     List<Map<String, dynamic>> items,
   ) {
-    final anyPicked = items.any((item) => item['pickup_confirmed'] == true);
-    final allDelivered =
-        items.isNotEmpty &&
-        items.every((item) => item['delivery_confirmed'] == true);
-    final inTransit = (order['status'] as String? ?? '') == 'in_transit';
+    final anyPicked = items.any(
+        (item) => (item['pickup_status'] as String?) == 'picked_up');
+    final orderStatus = order['status'] as String? ?? '';
+    final allDelivered = orderStatus == 'delivered';
+    final inTransit = orderStatus == 'in_transit';
 
     final steps = [
       ('Farmer ready', anyPicked, AppColors.secondary),
@@ -348,8 +348,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final qty = item['quantity_kg'] as num? ?? 0;
     final price = item['price_per_kg'] as num? ?? 0;
     final subtotal = item['subtotal'] as num? ?? 0;
-    final pickedUp = item['pickup_confirmed'] as bool? ?? false;
-    final delivered = item['delivery_confirmed'] as bool? ?? false;
+    final pickupStatus = item['pickup_status'] as String? ?? 'pending_pickup';
+    final pickedUp = pickupStatus == 'picked_up';
+    final unavailable = pickupStatus == 'unavailable';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -381,10 +382,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   children: [
                     if (pickedUp)
                       _badge('Picked up', AppColors.accent)
+                    else if (unavailable)
+                      _badge('Unavailable', AppColors.error)
                     else
                       _badge('Awaiting pickup', Colors.grey),
-                    const SizedBox(width: 6),
-                    if (delivered) _badge('Delivered', AppColors.secondary),
                   ],
                 ),
               ],

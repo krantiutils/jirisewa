@@ -892,8 +892,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   bool _allItemsPickedUp(List<dynamic> items) {
     if (items.isEmpty) return false;
     return items.every((item) {
-      final status =
-          (item as Map<String, dynamic>)['pickup_status'] as String?;
+      final map = item as Map;
+      final status = map['pickup_status'] as String?;
       return status == 'picked_up' || status == 'unavailable';
     });
   }
