@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/features/orders/providers/orders_provider.dart';
 
@@ -37,20 +38,33 @@ final riderLocationStreamProvider =
     StreamProvider.autoDispose.family<RiderLocation, String>(
   (ref, orderId) {
     final controller = StreamController<RiderLocation>();
+    final repo = ref.read(orderRepositoryProvider);
 
-    // Fire-and-forget async initialisation inside the synchronous callback.
+    // Track the channel so we can clean it up synchronously.
+    RealtimeChannel? channel;
+
+    // Register cleanup synchronously (before any async gap) so it
+    // always runs even if the provider is disposed immediately.
+    ref.onDispose(() {
+      if (channel != null) {
+        repo.removeChannel(channel!);
+      }
+      controller.close();
+    });
+
+    // Fire-and-forget async initialisation.
     () async {
-      final repo = ref.read(orderRepositoryProvider);
-
       // 1. Fetch order to get trip ID.
       final detailAsync = await ref.read(orderDetailProvider(orderId).future);
       final order = detailAsync.order;
       final tripId = order['rider_trip_id'] as String?;
 
       if (tripId == null) {
-        controller.addError(
-          StateError('Order has no assigned rider trip'),
-        );
+        if (!controller.isClosed) {
+          controller.addError(
+            StateError('Order has no assigned rider trip'),
+          );
+        }
         return;
       }
 
@@ -68,7 +82,8 @@ final riderLocationStreamProvider =
       }
 
       // 3. Subscribe to realtime inserts.
-      final channel = repo.subscribeToRiderLocation(
+      if (controller.isClosed) return; // Already disposed.
+      channel = repo.subscribeToRiderLocation(
         tripId,
         orderId,
         onInsert: (row) {
@@ -78,12 +93,6 @@ final riderLocationStreamProvider =
           }
         },
       );
-
-      // Cleanup when the provider is disposed.
-      ref.onDispose(() {
-        repo.removeChannel(channel);
-        controller.close();
-      });
     }();
 
     return controller.stream;

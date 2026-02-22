@@ -66,6 +66,10 @@ class FarmerRepository {
   }
 
   /// Update an existing produce listing. Only updates non-null fields.
+  ///
+  /// For clearable optional fields (description, freshnessDate), pass an
+  /// empty string to explicitly set them to null in the database. Pass null
+  /// to leave them unchanged.
   Future<Map<String, dynamic>> updateListing(
     String listingId, {
     String? categoryId,
@@ -83,10 +87,15 @@ class FarmerRepository {
     if (categoryId != null) data['category_id'] = categoryId;
     if (nameEn != null) data['name_en'] = nameEn;
     if (nameNe != null) data['name_ne'] = nameNe;
-    if (description != null) data['description'] = description;
+    if (description != null) {
+      // Empty string means "clear the field" → store as null
+      data['description'] = description.isEmpty ? null : description;
+    }
     if (pricePerKg != null) data['price_per_kg'] = pricePerKg;
     if (availableQtyKg != null) data['available_qty_kg'] = availableQtyKg;
-    if (freshnessDate != null) data['freshness_date'] = freshnessDate;
+    if (freshnessDate != null) {
+      data['freshness_date'] = freshnessDate.isEmpty ? null : freshnessDate;
+    }
     if (photos != null) data['photos'] = photos;
     if (isActive != null) data['is_active'] = isActive;
 
