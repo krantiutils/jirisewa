@@ -11,6 +11,9 @@ import 'package:jirisewa_mobile/features/orders/repositories/order_repository.da
 // State
 // ---------------------------------------------------------------------------
 
+/// Sentinel used by [CheckoutState.copyWith] to explicitly clear nullable fields.
+const _unset = Object();
+
 class CheckoutState {
   final int currentStep;
   final LatLng? deliveryLocation;
@@ -32,19 +35,25 @@ class CheckoutState {
 
   CheckoutState copyWith({
     int? currentStep,
-    LatLng? deliveryLocation,
+    Object? deliveryLocation = _unset,
     String? deliveryAddress,
-    String? paymentMethod,
-    DeliveryFeeEstimate? feeEstimate,
+    Object? paymentMethod = _unset,
+    Object? feeEstimate = _unset,
     bool? isPlacingOrder,
     String? error,
   }) {
     return CheckoutState(
       currentStep: currentStep ?? this.currentStep,
-      deliveryLocation: deliveryLocation ?? this.deliveryLocation,
+      deliveryLocation: deliveryLocation == _unset
+          ? this.deliveryLocation
+          : deliveryLocation as LatLng?,
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
-      feeEstimate: feeEstimate ?? this.feeEstimate,
+      paymentMethod: paymentMethod == _unset
+          ? this.paymentMethod
+          : paymentMethod as String?,
+      feeEstimate: feeEstimate == _unset
+          ? this.feeEstimate
+          : feeEstimate as DeliveryFeeEstimate?,
       isPlacingOrder: isPlacingOrder ?? this.isPlacingOrder,
       error: error,
     );

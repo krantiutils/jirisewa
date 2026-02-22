@@ -273,7 +273,10 @@ class OrderRepository {
         await _client.from('esewa_transactions').insert({
           'order_id': orderId,
           'transaction_uuid': txnUuid,
-          'product_code': 'EPAYTEST', // TODO: use env config
+          'product_code': const String.fromEnvironment(
+            'ESEWA_PRODUCT_CODE',
+            defaultValue: 'EPAYTEST',
+          ),
           'amount': totalPrice,
           'tax_amount': 0,
           'service_charge': 0,

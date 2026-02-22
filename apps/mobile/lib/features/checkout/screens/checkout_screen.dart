@@ -9,6 +9,7 @@ import 'package:jirisewa_mobile/features/cart/providers/cart_provider.dart';
 import 'package:jirisewa_mobile/features/checkout/providers/checkout_provider.dart';
 import 'package:jirisewa_mobile/features/checkout/providers/delivery_fee_provider.dart';
 import 'package:jirisewa_mobile/features/map/widgets/location_picker.dart';
+import 'package:jirisewa_mobile/features/payments/providers/payment_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Step labels for the progress indicator
@@ -803,7 +804,37 @@ class _BottomBar extends ConsumerWidget {
     ref.read(cartProvider.notifier).clear();
     ref.read(checkoutProvider.notifier).reset();
 
-    // Navigate to the new order detail.
-    context.go('${AppRoutes.orders}/${result.orderId}');
+    // For digital payments, initiate the payment gateway redirect.
+    if (result.paymentData != null) {
+      final gateway = result.paymentData!['gateway'] as String?;
+      if (gateway != null && gateway != 'cash') {
+        try {
+          final paymentService = ref.read(paymentServiceProvider);
+          await paymentService.initiatePayment(
+            gateway: gateway,
+            orderId: result.orderId,
+            paymentData: result.paymentData!,
+          );
+          // Payment gateway will handle redirect back via deep link.
+          // Don't navigate to order detail — the callback screen will do it.
+          return;
+        } catch (e) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Order created but payment launch failed: $e'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.orange,
+            ),
+          );
+          // Fall through to navigate to order detail so user can retry.
+        }
+      }
+    }
+
+    // Navigate to the new order detail (cash payments or payment launch failure).
+    if (context.mounted) {
+      context.go('${AppRoutes.orders}/${result.orderId}');
+    }
   }
 }

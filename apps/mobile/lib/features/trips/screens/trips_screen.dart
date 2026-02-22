@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:go_router/go_router.dart';
+
 import 'package:jirisewa_mobile/core/constants/map_constants.dart';
 import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/map/widgets/ping_beacon_map.dart';
 import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
@@ -79,6 +82,11 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     });
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push(AppRoutes.tripNew),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,13 +223,14 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
         (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
     final total =
         (trip['available_capacity_kg'] as num?)?.toDouble() ?? 0;
-    final origin = _coordinatesForPlace(trip['origin_name'] as String?);
-    final destination =
-        _coordinatesForPlace(trip['destination_name'] as String?);
+    final origin = _parsePointOrFallback(trip['origin']);
+    final destination = _parsePointOrFallback(trip['destination']);
     final linkedOrders = ordersByTripId[tripId] ?? const [];
     final opportunities = pingsByTripId[tripId] ?? const [];
 
-    return Card(
+    return GestureDetector(
+      onTap: () => context.push('/trips/$tripId'),
+      child: Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       color: AppColors.muted,
@@ -390,6 +399,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -397,9 +407,8 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     required Map<String, dynamic> trip,
     required List<Map<String, dynamic>> opportunities,
   }) async {
-    final origin = _coordinatesForPlace(trip['origin_name'] as String?);
-    final destination =
-        _coordinatesForPlace(trip['destination_name'] as String?);
+    final origin = _parsePointOrFallback(trip['origin']);
+    final destination = _parsePointOrFallback(trip['destination']);
     final totalEarnings = opportunities.fold<double>(
       0,
       (sum, row) =>
@@ -665,9 +674,8 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     Map<String, dynamic> trip,
     List<Map<String, dynamic>> linkedOrders,
   ) {
-    final origin = _coordinatesForPlace(trip['origin_name'] as String?);
-    final destination =
-        _coordinatesForPlace(trip['destination_name'] as String?);
+    final origin = _parsePointOrFallback(trip['origin']);
+    final destination = _parsePointOrFallback(trip['destination']);
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -709,18 +717,8 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     }
   }
 
-  LatLng _coordinatesForPlace(String? placeName) {
-    switch ((placeName ?? '').trim().toLowerCase()) {
-      case 'jiri':
-        return const LatLng(27.6306, 86.2305);
-      case 'charikot':
-        return const LatLng(27.6681, 86.0290);
-      case 'banepa':
-        return const LatLng(27.6298, 85.5215);
-      case 'kathmandu':
-        return const LatLng(27.7172, 85.3240);
-      default:
-        return jiriCenter;
-    }
+  /// Parse a PostGIS point from the trip row, falling back to [jiriCenter].
+  LatLng _parsePointOrFallback(dynamic value) {
+    return TripRepository.parsePoint(value) ?? jiriCenter;
   }
 }

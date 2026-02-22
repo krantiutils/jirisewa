@@ -19,7 +19,7 @@ class TripRepository {
     final result = await _client
         .from('rider_trips')
         .select(
-          'id, origin_name, destination_name, departure_at, status, remaining_capacity_kg, available_capacity_kg',
+          'id, origin, origin_name, destination, destination_name, departure_at, status, remaining_capacity_kg, available_capacity_kg',
         )
         .eq('rider_id', riderId)
         .order('departure_at', ascending: false)
@@ -60,22 +60,131 @@ class TripRepository {
     return List<Map<String, dynamic>>.from(result);
   }
 
-  /// Accept a ping via RPC. Returns the raw RPC result row.
-  Future<Map<String, dynamic>?> acceptPing(String pingId) async {
-    final result = await _client.rpc(
-      'accept_order_ping',
-      params: {'p_ping_id': pingId},
-    );
-    return _firstRpcRow(result);
+  /// Accept a ping using direct table operations (first-accept-wins).
+  ///
+  /// Mirrors the web app's `acceptPing` server action:
+  /// 1. Verify ping is still pending and not expired.
+  /// 2. Atomically update the order from 'pending' to 'matched'.
+  /// 3. Mark ping as accepted, expire other pings for the same order.
+  /// 4. Deduct trip capacity.
+  ///
+  /// Returns `{'success': true, 'message': ..., 'trip_id': ...}` or
+  /// `{'success': false, 'message': ...}`.
+  Future<Map<String, dynamic>> acceptPing(String pingId) async {
+    // 1. Fetch ping details
+    final ping = await _client
+        .from('order_pings')
+        .select()
+        .eq('id', pingId)
+        .maybeSingle();
+
+    if (ping == null) {
+      return {'success': false, 'message': 'Ping not found'};
+    }
+
+    if ((ping['status'] as String?) != 'pending') {
+      return {'success': false, 'message': 'Ping already responded to'};
+    }
+
+    final expiresAt = DateTime.tryParse(ping['expires_at'] as String? ?? '');
+    if (expiresAt != null && expiresAt.isBefore(DateTime.now())) {
+      await _client
+          .from('order_pings')
+          .update({'status': 'expired'})
+          .eq('id', pingId);
+      return {'success': false, 'message': 'Ping has expired'};
+    }
+
+    final orderId = ping['order_id'] as String;
+    final riderId = ping['rider_id'] as String;
+    final tripId = ping['trip_id'] as String;
+
+    // 2. Atomically match the order (first-accept-wins)
+    final matchedRows = await _client
+        .from('orders')
+        .update({
+          'status': 'matched',
+          'rider_id': riderId,
+          'rider_trip_id': tripId,
+        })
+        .eq('id', orderId)
+        .eq('status', 'pending')
+        .select('id');
+
+    if ((matchedRows as List).isEmpty) {
+      // Race condition — another rider got it first
+      await _client.from('order_pings').update({
+        'status': 'declined',
+        'responded_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', pingId);
+      return {'success': false, 'message': 'Order already matched to another rider'};
+    }
+
+    // 3. Mark ping as accepted
+    await _client.from('order_pings').update({
+      'status': 'accepted',
+      'responded_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', pingId);
+
+    // 4. Expire other pending pings for this order
+    await _client
+        .from('order_pings')
+        .update({'status': 'expired'})
+        .eq('order_id', orderId)
+        .eq('status', 'pending')
+        .neq('id', pingId);
+
+    // 5. Deduct trip capacity
+    final trip = await _client
+        .from('rider_trips')
+        .select('remaining_capacity_kg')
+        .eq('id', tripId)
+        .maybeSingle();
+
+    if (trip != null) {
+      final remaining =
+          (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
+      final weight =
+          (ping['total_weight_kg'] as num?)?.toDouble() ?? 0;
+      final newCapacity = (remaining - weight).clamp(0, double.infinity);
+      await _client
+          .from('rider_trips')
+          .update({'remaining_capacity_kg': newCapacity})
+          .eq('id', tripId);
+    }
+
+    return {
+      'success': true,
+      'message': 'Order accepted',
+      'trip_id': tripId,
+    };
   }
 
-  /// Decline a ping via RPC. Returns the raw RPC result row.
-  Future<Map<String, dynamic>?> declinePing(String pingId) async {
-    final result = await _client.rpc(
-      'decline_order_ping',
-      params: {'p_ping_id': pingId},
-    );
-    return _firstRpcRow(result);
+  /// Decline a ping using direct table update.
+  ///
+  /// Returns `{'success': true, 'message': ...}` or
+  /// `{'success': false, 'message': ...}`.
+  Future<Map<String, dynamic>> declinePing(String pingId) async {
+    final ping = await _client
+        .from('order_pings')
+        .select('id, status')
+        .eq('id', pingId)
+        .maybeSingle();
+
+    if (ping == null) {
+      return {'success': false, 'message': 'Ping not found'};
+    }
+
+    if ((ping['status'] as String?) != 'pending') {
+      return {'success': false, 'message': 'Ping already responded to'};
+    }
+
+    await _client.from('order_pings').update({
+      'status': 'declined',
+      'responded_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', pingId);
+
+    return {'success': true, 'message': 'Ping declined'};
   }
 
   /// Create a new rider trip with PostGIS geography data.
@@ -485,11 +594,4 @@ class TripRepository {
     return null;
   }
 
-  Map<String, dynamic>? _firstRpcRow(dynamic result) {
-    if (result is List && result.isNotEmpty && result.first is Map) {
-      return Map<String, dynamic>.from(result.first as Map);
-    }
-    if (result is Map<String, dynamic>) return result;
-    return null;
-  }
 }
