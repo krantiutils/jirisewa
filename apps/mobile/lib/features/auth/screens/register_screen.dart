@@ -138,7 +138,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             return row;
           }).toList();
 
-      await _supabase.from('user_roles').upsert(roleInserts);
+      await _supabase
+          .from('user_roles')
+          .upsert(roleInserts, onConflict: 'user_id,role');
 
       if (!mounted) return;
 

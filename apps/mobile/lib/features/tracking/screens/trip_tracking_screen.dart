@@ -103,10 +103,21 @@ class _TripTrackingScreenState extends ConsumerState<TripTrackingScreen>
     });
 
     try {
-      await ref.read(supabaseProvider)
+      final result = await ref.read(supabaseProvider)
           .from('rider_trips')
           .update({'status': 'in_transit'})
-          .eq('id', widget.tripId);
+          .eq('id', widget.tripId)
+          .eq('status', 'scheduled')
+          .select()
+          .maybeSingle();
+
+      if (result == null) {
+        setState(() {
+          _actionLoading = false;
+          _error = 'Trip cannot be started — it may have already been started or cancelled';
+        });
+        return;
+      }
 
       setState(() {
         _tripStatus = 'in_transit';
@@ -129,10 +140,21 @@ class _TripTrackingScreenState extends ConsumerState<TripTrackingScreen>
     });
 
     try {
-      await ref.read(supabaseProvider)
+      final result = await ref.read(supabaseProvider)
           .from('rider_trips')
           .update({'status': 'completed'})
-          .eq('id', widget.tripId);
+          .eq('id', widget.tripId)
+          .eq('status', 'in_transit')
+          .select()
+          .maybeSingle();
+
+      if (result == null) {
+        setState(() {
+          _actionLoading = false;
+          _error = 'Trip cannot be completed — it may not be in transit';
+        });
+        return;
+      }
 
       // Only stop tracking after server confirms success
       _tracker.stop();
@@ -186,10 +208,21 @@ class _TripTrackingScreenState extends ConsumerState<TripTrackingScreen>
     });
 
     try {
-      await ref.read(supabaseProvider)
+      final result = await ref.read(supabaseProvider)
           .from('rider_trips')
           .update({'status': 'cancelled'})
-          .eq('id', widget.tripId);
+          .eq('id', widget.tripId)
+          .inFilter('status', ['scheduled', 'in_transit'])
+          .select()
+          .maybeSingle();
+
+      if (result == null) {
+        setState(() {
+          _actionLoading = false;
+          _error = 'Trip cannot be cancelled — it may already be completed or cancelled';
+        });
+        return;
+      }
 
       // Only stop tracking after server confirms success
       _tracker.stop();

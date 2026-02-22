@@ -142,7 +142,7 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           sliver: SliverGrid(
             delegate: SliverChildBuilderDelegate(
-              (ctx, i) => _produceTile(data.nearbyProduce[i]),
+              (ctx, i) => _produceTile(context, data.nearbyProduce[i]),
               childCount: data.nearbyProduce.length,
             ),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -169,7 +169,7 @@ class HomeScreen extends ConsumerWidget {
       else
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (ctx, i) => _tripTile(data.upcomingTrips[i]),
+            (ctx, i) => _tripTile(context, data.upcomingTrips[i]),
             childCount: data.upcomingTrips.length,
           ),
         ),
@@ -202,7 +202,7 @@ class HomeScreen extends ConsumerWidget {
       else
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (ctx, i) => _listingTile(data.activeListings[i]),
+            (ctx, i) => _listingTile(context, data.activeListings[i]),
             childCount: data.activeListings.length,
           ),
         ),
@@ -213,7 +213,7 @@ class HomeScreen extends ConsumerWidget {
       else
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (ctx, i) => _pickupTile(data.pendingOrders[i]),
+            (ctx, i) => _pickupTile(context, data.pendingOrders[i]),
             childCount: data.pendingOrders.length,
           ),
         ),
@@ -308,7 +308,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  static Widget _tripTile(Map<String, dynamic> trip) {
+  static Widget _tripTile(BuildContext context, Map<String, dynamic> trip) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       leading: Container(
@@ -329,62 +329,69 @@ class HomeScreen extends ConsumerWidget {
         '${trip['remaining_capacity_kg'] ?? 0} kg available',
         style: TextStyle(fontSize: 13, color: Colors.grey[600]),
       ),
+      onTap: () => context.push('/trips/${trip['id']}'),
     );
   }
 
-  static Widget _produceTile(Map<String, dynamic> produce) {
+  static Widget _produceTile(
+      BuildContext context, Map<String, dynamic> produce) {
     final photos = produce['photos'] as List?;
     final hasPhoto = photos != null && photos.isNotEmpty;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.muted,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: hasPhoto
-                ? Image.network(photos.first as String,
-                    fit: BoxFit.cover, width: double.infinity)
-                : Container(
-                    color: AppColors.secondary.withAlpha(25),
-                    child: const Center(
-                        child: Icon(Icons.eco,
-                            color: AppColors.secondary, size: 32)),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  (produce['name_en'] as String?) ?? '',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Rs ${produce['price_per_kg'] ?? 0}/kg',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.secondary,
-                      fontWeight: FontWeight.w500),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () =>
+          context.push('${AppRoutes.marketplace}/${produce['id']}'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.muted,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: hasPhoto
+                  ? Image.network(photos.first as String,
+                      fit: BoxFit.cover, width: double.infinity)
+                  : Container(
+                      color: AppColors.secondary.withAlpha(25),
+                      child: const Center(
+                          child: Icon(Icons.eco,
+                              color: AppColors.secondary, size: 32)),
+                    ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    (produce['name_en'] as String?) ?? '',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Rs ${produce['price_per_kg'] ?? 0}/kg',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  static Widget _listingTile(Map<String, dynamic> listing) {
+  static Widget _listingTile(
+      BuildContext context, Map<String, dynamic> listing) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       leading: Container(
@@ -409,10 +416,12 @@ class HomeScreen extends ConsumerWidget {
         'Rs ${listing['price_per_kg'] ?? 0}/kg',
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
+      onTap: () => context.push('/farmer/listings/${listing['id']}/edit'),
     );
   }
 
-  static Widget _pickupTile(Map<String, dynamic> item) {
+  static Widget _pickupTile(
+      BuildContext context, Map<String, dynamic> item) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       leading: Container(
@@ -433,6 +442,12 @@ class HomeScreen extends ConsumerWidget {
         'Awaiting pickup',
         style: TextStyle(fontSize: 13, color: AppColors.accent),
       ),
+      onTap: () {
+        final orderId = item['order_id'] as String?;
+        if (orderId != null) {
+          context.push('${AppRoutes.orders}/$orderId');
+        }
+      },
     );
   }
 

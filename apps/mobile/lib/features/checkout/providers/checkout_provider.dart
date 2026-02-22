@@ -79,9 +79,11 @@ class CheckoutState {
 // ---------------------------------------------------------------------------
 
 final checkoutProvider =
-    NotifierProvider<CheckoutNotifier, CheckoutState>(CheckoutNotifier.new);
+    AutoDisposeNotifierProvider<CheckoutNotifier, CheckoutState>(
+  CheckoutNotifier.new,
+);
 
-class CheckoutNotifier extends Notifier<CheckoutState> {
+class CheckoutNotifier extends AutoDisposeNotifier<CheckoutState> {
   @override
   CheckoutState build() => const CheckoutState();
 

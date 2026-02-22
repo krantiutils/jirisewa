@@ -210,7 +210,12 @@ class OrderRepository {
     final listings = await _client
         .from('produce_listings')
         .select('id, location, price_per_kg, farmer_id')
+        .eq('is_active', true)
         .inFilter('id', listingIds);
+
+    if (listings.length != listingIds.length) {
+      throw StateError('One or more listings are inactive or no longer exist');
+    }
 
     final listingMap = <String, Map<String, dynamic>>{};
     for (final listing in listings) {
