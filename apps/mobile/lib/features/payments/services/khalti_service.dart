@@ -77,7 +77,7 @@ class KhaltiService {
     String websiteUrl = 'https://khetbata.xyz',
   }) async {
     final effectiveReturnUrl = returnUrl ??
-        '$_deepLinkScheme://payment/success?gateway=khalti&orderId=$orderId';
+        '$_deepLinkScheme://payment/khalti/callback?orderId=$orderId';
 
     final client = httpClient ?? http.Client();
     try {

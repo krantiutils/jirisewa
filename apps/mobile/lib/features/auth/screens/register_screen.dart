@@ -85,11 +85,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     try {
-      // 1. Upsert user profile (role is NOT NULL in DB — use first selected role)
+      final name = _nameController.text.trim();
+
+      // 1a. Upsert user profile in `users` table (role is NOT NULL in DB)
       await _supabase.from('users').upsert({
         'id': user.id,
         'phone': user.phone ?? '',
-        'name': _nameController.text.trim(),
+        'name': name,
         'role': _roles.first.name,
         'lang': _lang,
         'address':
@@ -100,6 +102,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             _municipalityController.text.trim().isEmpty
                 ? null
                 : _municipalityController.text.trim(),
+      });
+
+      // 1b. Upsert `user_profiles` row for cross-platform compatibility.
+      // The web app uses user_profiles (created via OAuth callback).
+      // Mobile users also need this row so the web app recognises them.
+      await _supabase.from('user_profiles').upsert({
+        'id': user.id,
+        'email': user.email ?? '',
+        'full_name': name,
+        'role': _roles.first.name,
+        'onboarding_completed': true,
       });
 
       // 2. Insert user roles

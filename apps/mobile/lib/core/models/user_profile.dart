@@ -27,9 +27,9 @@ class UserProfile {
   factory UserProfile.fromMap(Map<String, dynamic> map) {
     return UserProfile(
       id: map['id'] as String,
-      phone: map['phone'] as String,
-      name: map['name'] as String,
-      role: map['role'] as String,
+      phone: (map['phone'] as String?) ?? '',
+      name: (map['name'] as String?) ?? '',
+      role: (map['role'] as String?) ?? 'consumer',
       avatarUrl: map['avatar_url'] as String?,
       address: map['address'] as String?,
       municipality: map['municipality'] as String?,

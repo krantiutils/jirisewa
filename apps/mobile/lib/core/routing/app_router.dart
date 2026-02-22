@@ -85,16 +85,31 @@ abstract final class ShellBranch {
   static const profile = 4;
 }
 
+/// A [ChangeNotifier] that triggers GoRouter's redirect when auth state changes.
+/// This avoids recreating the entire GoRouter (which loses navigation state).
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(Ref ref) {
+    // Listen to auth & profile changes and notify GoRouter to re-evaluate redirects.
+    ref.listen(isAuthenticatedProvider, (_, __) => notifyListeners());
+    ref.listen(hasProfileProvider, (_, __) => notifyListeners());
+    ref.listen(userSessionProvider, (_, __) => notifyListeners());
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final isAuthenticated = ref.watch(isAuthenticatedProvider);
-  final hasProfile = ref.watch(hasProfileProvider);
-  final sessionLoading = ref.watch(userSessionProvider).isLoading;
+  final refreshNotifier = _RouterRefreshNotifier(ref);
+  ref.onDispose(refreshNotifier.dispose);
 
   return GoRouter(
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
+    refreshListenable: refreshNotifier,
     redirect: (BuildContext context, GoRouterState state) {
+      final sessionLoading = ref.read(userSessionProvider).isLoading;
       if (sessionLoading) return null;
+
+      final isAuthenticated = ref.read(isAuthenticatedProvider);
+      final hasProfile = ref.read(hasProfileProvider);
 
       final isOnLogin = state.matchedLocation == AppRoutes.login;
       final isOnRegister = state.matchedLocation == AppRoutes.register;

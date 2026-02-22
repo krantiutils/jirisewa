@@ -51,11 +51,11 @@ class ConnectIPSService {
     final txnDate = _formatDate(DateTime.now());
 
     final effectiveSuccessUrl = successUrl ??
-        '$_deepLinkScheme://payment/success?gateway=connectips'
-            '${orderId != null ? '&orderId=$orderId' : ''}';
+        '$_deepLinkScheme://payment/connectips/success'
+            '${orderId != null ? '?orderId=$orderId' : ''}';
     final effectiveFailureUrl = failureUrl ??
-        '$_deepLinkScheme://payment/failure?gateway=connectips'
-            '${orderId != null ? '&orderId=$orderId' : ''}';
+        '$_deepLinkScheme://payment/connectips/failure'
+            '${orderId != null ? '?orderId=$orderId' : ''}';
 
     return {
       'MERCHANTID': merchantId,

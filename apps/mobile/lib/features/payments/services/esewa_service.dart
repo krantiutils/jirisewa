@@ -62,11 +62,11 @@ class EsewaService {
         generateSignature(totalAmount, transactionUuid, productCode);
 
     final effectiveSuccessUrl = successUrl ??
-        '$_deepLinkScheme://payment/success?gateway=esewa'
-            '${orderId != null ? '&orderId=$orderId' : ''}';
+        '$_deepLinkScheme://payment/esewa/success'
+            '${orderId != null ? '?orderId=$orderId' : ''}';
     final effectiveFailureUrl = failureUrl ??
-        '$_deepLinkScheme://payment/failure?gateway=esewa'
-            '${orderId != null ? '&orderId=$orderId' : ''}';
+        '$_deepLinkScheme://payment/esewa/failure'
+            '${orderId != null ? '?orderId=$orderId' : ''}';
 
     return {
       'amount': amount.toString(),

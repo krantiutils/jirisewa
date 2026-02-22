@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:go_router/go_router.dart';
+
 import 'package:jirisewa_mobile/core/constants/map_constants.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
@@ -270,6 +272,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 ],
               ),
             ),
+
+            // -- Action buttons based on order status --
+            const SizedBox(height: 24),
+            ..._buildActions(order, status),
           ],
         ),
       ),
@@ -398,6 +404,150 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildActions(Map<String, dynamic> order, String status) {
+    final widgets = <Widget>[];
+
+    // Track order button for in-transit orders
+    if (status == 'in_transit' || status == 'picked_up') {
+      final tripId = order['rider_trip_id'] as String?;
+      if (tripId != null) {
+        widgets.add(
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/tracking/${widget.orderId}'),
+              icon: const Icon(Icons.map_outlined, size: 18),
+              label: const Text('Track Order'),
+            ),
+          ),
+        );
+        widgets.add(const SizedBox(height: 8));
+      }
+    }
+
+    // Confirm delivery for in-transit orders
+    if (status == 'in_transit') {
+      widgets.add(
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _confirmDelivery(),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.secondary,
+            ),
+            icon: const Icon(Icons.check_circle_outline, size: 18),
+            label: const Text('Confirm Delivery'),
+          ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 8));
+    }
+
+    // Cancel order for pending/matched orders
+    if (status == 'pending' || status == 'matched') {
+      widgets.add(
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _cancelOrder(),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
+            ),
+            icon: const Icon(Icons.cancel_outlined, size: 18),
+            label: const Text('Cancel Order'),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
+  Future<void> _cancelOrder() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Order'),
+        content: const Text('Are you sure you want to cancel this order?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final repo = ref.read(orderRepositoryProvider);
+    final success = await repo.cancelOrder(widget.orderId);
+
+    if (!mounted) return;
+    if (success) {
+      ref.invalidate(orderDetailProvider(widget.orderId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order cancelled')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not cancel order'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDelivery() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Delivery'),
+        content: const Text(
+          'Confirm that you have received the order? '
+          'This will release payment to the farmers.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Not Yet'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Yes, Received'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final repo = ref.read(orderRepositoryProvider);
+    final success = await repo.confirmDelivery(widget.orderId);
+
+    if (!mounted) return;
+    if (success) {
+      ref.invalidate(orderDetailProvider(widget.orderId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Delivery confirmed!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not confirm delivery'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Widget _badge(String label, Color color) {

@@ -145,6 +145,47 @@ class OrderRepository {
   }
 
   // -------------------------------------------------------------------------
+  // Order actions
+  // -------------------------------------------------------------------------
+
+  /// Cancel a pending or matched order.
+  /// Only updates if the order is in a cancellable state.
+  Future<bool> cancelOrder(String orderId) async {
+    final result = await _client
+        .from('orders')
+        .update({'status': 'cancelled'})
+        .eq('id', orderId)
+        .inFilter('status', ['pending', 'matched'])
+        .select('id');
+    return (result as List).isNotEmpty;
+  }
+
+  /// Consumer confirms delivery. Transitions order to 'delivered'
+  /// and settles farmer payouts.
+  Future<bool> confirmDelivery(String orderId) async {
+    final result = await _client
+        .from('orders')
+        .update({
+          'status': 'delivered',
+          'payment_status': 'settled',
+        })
+        .eq('id', orderId)
+        .eq('status', 'in_transit')
+        .select('id');
+
+    if ((result as List).isEmpty) return false;
+
+    // Settle farmer payouts
+    await _client
+        .from('farmer_payouts')
+        .update({'status': 'settled'})
+        .eq('order_id', orderId)
+        .eq('status', 'pending');
+
+    return true;
+  }
+
+  // -------------------------------------------------------------------------
   // Place order
   // -------------------------------------------------------------------------
 
@@ -287,6 +328,9 @@ class OrderRepository {
         paymentData = {
           'orderId': orderId,
           'transactionUuid': txnUuid,
+          'amount': totalPrice,
+          'deliveryCharge': deliveryFee,
+          'totalAmount': grandTotal,
           'gateway': 'esewa',
         };
       } else if (input.paymentMethod == 'khalti') {
@@ -328,7 +372,10 @@ class OrderRepository {
 
       return PlaceOrderResult(orderId: orderId, paymentData: paymentData);
     } catch (e) {
-      // Clean up partial state on failure
+      // Clean up partial state on failure (including payment transactions)
+      await _client.from('esewa_transactions').delete().eq('order_id', orderId);
+      await _client.from('khalti_transactions').delete().eq('order_id', orderId);
+      await _client.from('connectips_transactions').delete().eq('order_id', orderId);
       await _client.from('farmer_payouts').delete().eq('order_id', orderId);
       await _client.from('order_items').delete().eq('order_id', orderId);
       await _client.from('orders').delete().eq('id', orderId);

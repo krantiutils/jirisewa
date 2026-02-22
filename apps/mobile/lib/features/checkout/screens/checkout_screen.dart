@@ -61,10 +61,11 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
-  void deactivate() {
-    // Reset checkout state when user leaves the screen.
+  void dispose() {
+    // Reset checkout state when the screen is permanently removed.
+    // Using dispose (not deactivate) so overlays/dialogs don't wipe state.
     ref.read(checkoutProvider.notifier).reset();
-    super.deactivate();
+    super.dispose();
   }
 
   @override
