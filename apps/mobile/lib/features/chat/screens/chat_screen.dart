@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:jirisewa_mobile/core/theme.dart';
@@ -169,11 +170,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _isSending = true);
 
     try {
+      // Request location permission and get current position.
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permission denied'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+
+      // Encode coordinates as "lat,lng" in the message content.
+      final content = '${position.latitude},${position.longitude}';
+
       final repo = ref.read(chatRepositoryProvider);
       await repo.sendMessage(
         widget.conversationId,
         profile.id,
-        'Location shared',
+        content,
         messageType: 'location',
       );
     } catch (e) {

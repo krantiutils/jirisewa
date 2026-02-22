@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/chat/models/chat_message.dart';
@@ -126,16 +127,43 @@ class MessageBubble extends StatelessWidget {
         );
 
       case 'location':
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.location_on, color: textColor, size: 20),
-            const SizedBox(width: 6),
-            Text(
-              'Location shared',
-              style: TextStyle(color: textColor, fontSize: 14),
-            ),
-          ],
+        // Content is "lat,lng" — parse and show a tappable map link.
+        final parts = message.content.split(',');
+        final hasCoords = parts.length == 2 &&
+            double.tryParse(parts[0].trim()) != null &&
+            double.tryParse(parts[1].trim()) != null;
+        final label = hasCoords
+            ? '${double.parse(parts[0].trim()).toStringAsFixed(4)}, '
+                '${double.parse(parts[1].trim()).toStringAsFixed(4)}'
+            : 'Location shared';
+        return GestureDetector(
+          onTap: hasCoords
+              ? () {
+                  final lat = parts[0].trim();
+                  final lng = parts[1].trim();
+                  launchUrl(
+                    Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+              : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.location_on, color: textColor, size: 20),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    decoration: hasCoords ? TextDecoration.underline : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
 
       default:

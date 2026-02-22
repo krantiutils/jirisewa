@@ -80,7 +80,8 @@ class CartNotifier extends Notifier<Cart> {
     _persist();
   }
 
-  void clear() {
+  Future<void> clear() async {
+    await _ensureHydrated();
     state = const Cart();
     _persist();
   }
