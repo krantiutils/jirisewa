@@ -34,8 +34,10 @@ import 'package:jirisewa_mobile/features/business/screens/business_dashboard_scr
 import 'package:jirisewa_mobile/features/business/screens/bulk_orders_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/bulk_order_detail_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/farmer_bulk_orders_screen.dart';
+import 'package:jirisewa_mobile/features/earnings/screens/earnings_screen.dart';
 import 'package:jirisewa_mobile/features/orders/screens/order_tracking_screen.dart';
 import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
+import 'package:jirisewa_mobile/features/addresses/screens/addresses_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -63,6 +65,8 @@ abstract final class AppRoutes {
   static const farmerVerification = '/farmer/verification';
   static const farmerSubscriptions = '/farmer/subscriptions';
   static const farmerBulkOrders = '/farmer/bulk-orders';
+  static const earnings = '/earnings';
+  static const addresses = '/addresses';
   static const subscriptions = '/subscriptions';
   static const businessRegister = '/business/register';
   static const businessDashboard = '/business/dashboard';
@@ -295,6 +299,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerBulkOrders,
         builder: (context, state) => const FarmerBulkOrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.earnings,
+        builder: (context, state) => const EarningsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.addresses,
+        builder: (context, state) => const AddressesScreen(),
       ),
       // Order tracking — full-screen map, outside shell (no bottom nav).
       GoRoute(
