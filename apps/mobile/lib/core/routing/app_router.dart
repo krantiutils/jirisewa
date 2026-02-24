@@ -316,6 +316,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.addresses,
         builder: (context, state) => const AddressesScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.accountSettings,
+        builder: (_, __) => const AccountSettingsScreen(),
+      ),
       // Order tracking — full-screen map, outside shell (no bottom nav).
       GoRoute(
         path: AppRoutes.orderTracking,

@@ -275,6 +275,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 const SizedBox(height: 32),
 
+                // Account settings
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: const Text('Account Settings'),
+                  subtitle: const Text('Edit profile, change password'),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () => context.push(AppRoutes.accountSettings),
+                ),
+                const SizedBox(height: 16),
+
                 // Sign out
                 OutlinedButton.icon(
                   onPressed: _signOut,
