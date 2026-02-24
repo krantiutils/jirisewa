@@ -1,43 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
+import { useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { LogIn, User, ShoppingCart } from "lucide-react";
+import { LogIn, User, Bell, LogOut, ChevronDown, MapPin } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 import { ChatBadge } from "@/components/chat/ChatBadge";
 import { CartHeaderLink } from "@/components/cart/CartHeaderLink";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Button } from "@/components/ui/Button";
 
 interface HeaderProps {
   locale: string;
 }
 
 export function Header({ locale }: HeaderProps) {
-  const router = useRouter();
   const params = useParams();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const pathname = usePathname();
+  const { user, profile, loading, signOut } = useAuth();
   const t = useTranslations("nav");
+  const tAddr = useTranslations("addresses");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Check auth state by trying to get session
+  // Close dropdown on click outside
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (res.ok) {
-          const data = await res.json();
-          setIsAuthenticated(!!data.user);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch {
-        setIsAuthenticated(false);
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
       }
     }
-    checkAuth();
-  }, []);
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [menuOpen]);
+
+  const isAuthenticated = !!user;
+  const role = profile?.role;
+
+  // Minimal header for onboarding page
+  if (pathname.includes("/onboarding")) {
+    return (
+      <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
+        <Link
+          href={`/${locale}`}
+          className="text-lg font-bold text-primary"
+        >
+          {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
+        </Link>
+        <LanguageSwitcher />
+      </header>
+    );
+  }
 
   return (
     <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
@@ -57,34 +73,44 @@ export function Header({ locale }: HeaderProps) {
             {t("marketplace")}
           </Link>
 
-          {/* Only for authenticated users */}
+          {/* Orders — all authenticated users */}
           {isAuthenticated && (
-            <>
-              <Link
-                href={`/${locale}/orders`}
-                className="text-gray-600 hover:text-primary transition-colors"
-              >
-                {t("orders")}
-              </Link>
-              <Link
-                href={`/${locale}/customer`}
-                className="text-gray-600 hover:text-primary transition-colors"
-              >
-                Shop
-              </Link>
-              <Link
-                href={`/${locale}/farmer/dashboard`}
-                className="text-gray-600 hover:text-primary transition-colors"
-              >
-                {t("business")}
-              </Link>
-              <Link
-                href={`/${locale}/rider/dashboard`}
-                className="text-gray-600 hover:text-primary transition-colors"
-              >
-                {t("rider")}
-              </Link>
-            </>
+            <Link
+              href={`/${locale}/orders`}
+              className="text-gray-600 hover:text-primary transition-colors"
+            >
+              {t("orders")}
+            </Link>
+          )}
+
+          {/* Customer only */}
+          {isAuthenticated && role === "customer" && (
+            <Link
+              href={`/${locale}/customer`}
+              className="text-gray-600 hover:text-primary transition-colors"
+            >
+              Shop
+            </Link>
+          )}
+
+          {/* Farmer only */}
+          {isAuthenticated && role === "farmer" && (
+            <Link
+              href={`/${locale}/farmer/dashboard`}
+              className="text-gray-600 hover:text-primary transition-colors"
+            >
+              {t("business")}
+            </Link>
+          )}
+
+          {/* Rider only */}
+          {isAuthenticated && role === "rider" && (
+            <Link
+              href={`/${locale}/rider/dashboard`}
+              className="text-gray-600 hover:text-primary transition-colors"
+            >
+              {t("rider")}
+            </Link>
           )}
         </nav>
       </div>
@@ -102,12 +128,66 @@ export function Header({ locale }: HeaderProps) {
         <LanguageSwitcher />
 
         {isAuthenticated ? (
-          <Link
-            href={`/${locale}/notifications`}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white hover:bg-blue-600"
-          >
-            <User className="h-4 w-4" />
-          </Link>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline max-w-[100px] truncate">
+                {profile?.full_name || t("account")}
+              </span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white py-1 shadow-lg z-50">
+                {/* Name + role */}
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {profile?.full_name || user?.email || t("account")}
+                  </p>
+                  {role && (
+                    <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary capitalize">
+                      {role}
+                    </span>
+                  )}
+                </div>
+
+                {/* Notifications link */}
+                <Link
+                  href={`/${locale}/notifications`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Bell className="h-4 w-4 text-gray-400" />
+                  {t("notifications")}
+                </Link>
+
+                {/* Saved Addresses */}
+                <Link
+                  href={`/${locale}/settings/addresses`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  {tAddr("title")}
+                </Link>
+
+                {/* Sign Out */}
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    signOut();
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t("signOut")}
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <Link
             href={`/${locale}/auth/login`}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { TripStatus, OrderItemStatus } from "@jirisewa/shared";
+import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TripStatusBadge } from "@/components/rider/TripStatusBadge";
@@ -28,6 +29,7 @@ import {
   buildStopsFromOrders,
   optimizeTripRoute,
 } from "@/lib/actions/trip-stops";
+import { useGpsTracking } from "@/hooks/useGpsTracking";
 import { usePingSubscription } from "@/lib/hooks/usePingSubscription";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import type { Trip } from "@/lib/types/trip";
@@ -55,6 +57,8 @@ export default function TripDetailPage() {
   const locale = params.locale as string;
   const tripId = params.id as string;
 
+  const { user, loading: authLoading } = useAuth();
+
   const [trip, setTrip] = useState<Trip | null>(null);
   const [matchedOrders, setMatchedOrders] = useState<OrderWithDetails[]>([]);
   const [stops, setStops] = useState<TripStop[]>([]);
@@ -63,6 +67,8 @@ export default function TripDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const { pings, removePing } = usePingSubscription();
+
+  useGpsTracking(tripId, trip?.status === TripStatus.InTransit);
 
   const currentStopIndex = stops.findIndex((s) => !s.completed);
 
@@ -81,6 +87,7 @@ export default function TripDetailPage() {
   }, [tripId]);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     async function load() {
       setLoading(true);
       const result = await getTrip(tripId);
@@ -96,7 +103,7 @@ export default function TripDetailPage() {
     }
 
     load();
-  }, [tripId, loadOrders, loadStops]);
+  }, [tripId, loadOrders, loadStops, authLoading, user]);
 
   const handleStart = useCallback(async () => {
     setActionLoading(true);
@@ -183,6 +190,14 @@ export default function TripDetailPage() {
     [loadStops],
   );
 
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
+
+  if (authLoading || !user) return null;
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted">
@@ -237,6 +252,13 @@ export default function TripDetailPage() {
         {error && (
           <div className="mb-4 rounded-md border-2 border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {trip.status === TripStatus.InTransit && (
+          <div className="mb-4 flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">
+            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            Location sharing active
           </div>
         )}
 

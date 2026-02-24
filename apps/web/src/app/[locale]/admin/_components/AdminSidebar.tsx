@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   AlertTriangle,
   UserCheck,
+  Wallet,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -21,6 +22,7 @@ const navItems = [
   { key: "orders", href: "/orders", icon: ShoppingCart },
   { key: "disputes", href: "/disputes", icon: AlertTriangle },
   { key: "farmers", href: "/farmers", icon: UserCheck },
+  { key: "payouts", href: "/payouts", icon: Wallet },
 ] as const;
 
 export function AdminSidebar({ locale }: AdminSidebarProps) {

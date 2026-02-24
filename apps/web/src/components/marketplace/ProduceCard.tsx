@@ -8,9 +8,10 @@ import type { Locale } from "@/lib/i18n";
 
 interface ProduceCardProps {
   listing: ProduceListingWithDetails;
+  etaMinutes?: number;
 }
 
-export function ProduceCard({ listing }: ProduceCardProps) {
+export function ProduceCard({ listing, etaMinutes }: ProduceCardProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("marketplace");
 
@@ -37,12 +38,17 @@ export function ProduceCard({ listing }: ProduceCardProps) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-4xl text-gray-300">
-            🌿
+            {listing.category.icon || "🌿"}
           </div>
         )}
         <Badge color="secondary" className="absolute left-3 top-3">
           {categoryName}
         </Badge>
+        {etaMinutes != null && (
+          <span className="absolute top-2 right-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-gray-700 shadow-sm">
+            ~{etaMinutes} min
+          </span>
+        )}
       </div>
 
       {/* Details */}
@@ -52,7 +58,7 @@ export function ProduceCard({ listing }: ProduceCardProps) {
           <h3 className="text-lg font-bold leading-tight text-foreground">{name}</h3>
           <span className="shrink-0 text-lg font-extrabold text-primary">
             रु {listing.price_per_kg}
-            <span className="text-sm font-medium text-gray-500">{t("perKg")}</span>
+            <span className="text-sm font-medium text-gray-500">/{listing.unit || "kg"}</span>
           </span>
         </div>
 
@@ -93,7 +99,7 @@ export function ProduceCard({ listing }: ProduceCardProps) {
               })}
             </span>
           )}
-          <span>{t("available", { qty: listing.available_qty_kg })}</span>
+          <span>{listing.available_qty_kg} {listing.unit || "kg"}</span>
         </div>
       </div>
     </Link>

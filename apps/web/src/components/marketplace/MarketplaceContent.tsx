@@ -6,6 +6,8 @@ import { SlidersHorizontal, SearchX, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui";
 import { ProduceCard } from "./ProduceCard";
 import { FilterSidebar, type FilterState } from "./FilterSidebar";
+import { getBatchDeliveryETAs } from "@/lib/actions/delivery-eta";
+import { listAddresses } from "@/lib/actions/addresses";
 import type { ProduceCategory, ProduceListingWithDetails, MunicipalitySearchResult } from "@/lib/supabase/types";
 
 interface MarketplaceContentProps {
@@ -47,6 +49,8 @@ export function MarketplaceContent({
     ...INITIAL_FILTERS,
     category_id: initialCategoryId ?? "",
   });
+
+  const [etas, setEtas] = useState<Record<string, number>>({});
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -140,6 +144,40 @@ export function MarketplaceContent({
     fetchListings(filters, nextPage, true);
   }, [page, filters, fetchListings]);
 
+  // Fetch delivery ETAs when listings change
+  useEffect(() => {
+    if (listings.length === 0) {
+      setEtas({});
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchETAs() {
+      // Get user's default address
+      const addrResult = await listAddresses();
+      if (cancelled) return;
+      const defaultAddr = addrResult.data?.find((a) => a.isDefault);
+      if (!defaultAddr) return;
+
+      const listingIds = listings.map((l) => l.id);
+      const etaResult = await getBatchDeliveryETAs({
+        listingIds,
+        deliveryLat: defaultAddr.lat,
+        deliveryLng: defaultAddr.lng,
+      });
+      if (cancelled) return;
+      if (etaResult.data) {
+        setEtas(etaResult.data);
+      }
+    }
+
+    fetchETAs();
+    return () => {
+      cancelled = true;
+    };
+  }, [listings]);
+
   const hasMore = listings.length < total;
 
   return (
@@ -186,7 +224,7 @@ export function MarketplaceContent({
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {listings.map((listing) => (
-                <ProduceCard key={listing.id} listing={listing} />
+                <ProduceCard key={listing.id} listing={listing} etaMinutes={etas[listing.id]} />
               ))}
             </div>
 

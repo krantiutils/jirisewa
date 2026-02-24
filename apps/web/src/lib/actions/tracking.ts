@@ -1,6 +1,6 @@
 "use server";
 
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 import { parseGeoPoint, parseRouteToLatLng } from "@/lib/types/trip";
 
@@ -151,5 +151,61 @@ export async function getTripRouteData(
   } catch (err) {
     console.error("getTripRouteData unexpected error:", err);
     return { error: "Failed to get trip route data" };
+  }
+}
+
+/**
+ * Log the rider's current location for a trip.
+ * Called from the rider's device while a trip is in transit.
+ */
+export async function logRiderLocation(
+  tripId: string,
+  lat: number,
+  lng: number,
+  speedKmh?: number,
+): Promise<ActionResult> {
+  // Validate tripId format
+  if (!UUID_RE.test(tripId)) {
+    return { error: "Invalid trip ID" };
+  }
+
+  // Validate lat/lng are finite numbers
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { error: "Invalid coordinates" };
+  }
+
+  if (speedKmh !== undefined && !Number.isFinite(speedKmh)) {
+    return { error: "Invalid speed value" };
+  }
+
+  try {
+    // Get authenticated rider
+    const authClient = await createClient();
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return { error: "Not authenticated" };
+    }
+
+    const supabase = createServiceRoleClient();
+
+    const { error } = await supabase.from("rider_location_log").insert({
+      rider_id: user.id,
+      trip_id: tripId,
+      location: `POINT(${lng} ${lat})`,
+      speed_kmh: speedKmh ?? null,
+    });
+
+    if (error) {
+      console.error("logRiderLocation error:", error);
+      return { error: error.message };
+    }
+
+    return {};
+  } catch (err) {
+    console.error("logRiderLocation unexpected error:", err);
+    return { error: "Failed to log rider location" };
   }
 }
