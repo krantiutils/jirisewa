@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { TripStatus } from "@jirisewa/shared";
+import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getTrip } from "@/lib/actions/trips";
@@ -29,6 +30,8 @@ export default function TripPlanPage() {
   const params = useParams();
   const locale = params.locale as string;
   const tripId = params.id as string;
+
+  const { user, loading: authLoading } = useAuth();
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [stops, setStops] = useState<TripStop[]>([]);
@@ -55,13 +58,14 @@ export default function TripPlanPage() {
   }, [tripId]);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     async function loadAll() {
       setLoading(true);
       await reload();
       setLoading(false);
     }
     loadAll();
-  }, [reload]);
+  }, [reload, authLoading, user]);
 
   const handleOptimize = useCallback(async () => {
     setOptimizing(true);
@@ -86,6 +90,14 @@ export default function TripPlanPage() {
     await reload();
     setOptimizing(false);
   }, [tripId, stops.length, orders.length, reload]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
+
+  if (authLoading || !user) return null;
 
   if (loading) {
     return (

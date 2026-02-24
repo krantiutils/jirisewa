@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useTranslations, useFormatter } from "next-intl";
 import {
   ArrowLeft,
   MapPin,
@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   XCircle,
   Package,
+  MessageCircle,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { OrderStatus, OrderItemStatus } from "@jirisewa/shared";
@@ -32,6 +33,7 @@ import {
 import { retryEsewaPayment, retryKhaltiPayment, retryConnectIPSPayment } from "@/lib/actions/payments";
 import type { ReorderItemAvailability } from "@/lib/helpers/orders";
 import { useCart } from "@/lib/cart";
+import { useAuth } from "@/components/AuthProvider";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { OrderChatButton } from "@/components/chat/OrderChatButton";
 import { Button } from "@/components/ui/Button";
@@ -75,9 +77,12 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("orders");
+  const intlFormat = useFormatter();
   const esewaFormRef = useRef<HTMLFormElement>(null);
   const connectipsFormRef = useRef<HTMLFormElement>(null);
   const { addItem, clearCart } = useCart();
+
+  const { user, loading: authLoading } = useAuth();
 
   const [order, setOrder] = useState<OrderWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,6 +119,7 @@ export default function OrderDetailPage() {
   const [reorderError, setReorderError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     async function load() {
       setLoading(true);
       const result = await getOrder(orderId);
@@ -125,7 +131,15 @@ export default function OrderDetailPage() {
       setLoading(false);
     }
     load();
-  }, [orderId]);
+  }, [orderId, authLoading, user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
+
+  if (authLoading || !user) return null;
 
   const handleCancel = async () => {
     setActionLoading(true);
@@ -265,16 +279,13 @@ export default function OrderDetailPage() {
   const isDelivered = order.status === OrderStatus.Delivered;
   const isTerminal = isDelivered || isCancelled || order.status === OrderStatus.Disputed;
 
-  const dateStr = new Date(order.created_at).toLocaleDateString(
-    locale === "ne" ? "ne-NP" : "en-US",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    },
-  );
+  const dateStr = intlFormat.dateTime(new Date(order.created_at), {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   const availableCount = reorderItems?.filter((i) => i.available).length ?? 0;
   const unavailableCount = reorderItems
@@ -581,34 +592,41 @@ export default function OrderDetailPage() {
           </section>
         )}
 
-        {/* Quick-access chat buttons */}
+        {/* Communication section */}
         {order.status !== OrderStatus.Cancelled && (
-          <section className="mt-6 space-y-2">
-            {order.rider && (
-              <OrderChatButton
-                orderId={order.id}
-                otherUserId={order.rider.id}
-                otherUserName={order.rider.name}
-                otherUserRole="rider"
-              />
-            )}
-            {/* Chat with each farmer */}
-            {Array.from(
-              new Map(
-                order.items.map((item) => [
-                  item.farmer?.id ?? item.farmer_id,
-                  item.farmer ?? { id: item.farmer_id, name: "Farmer", avatar_url: null },
-                ]),
-              ),
-            ).map(([farmerId, farmer]) => (
-              <OrderChatButton
-                key={farmerId}
-                orderId={order.id}
-                otherUserId={farmerId}
-                otherUserName={farmer.name}
-                otherUserRole="farmer"
-              />
-            ))}
+          <section className="mt-6 rounded-lg bg-white p-4">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              <MessageCircle className="h-4 w-4" />
+              {t("communication")}
+            </h2>
+            <div className="space-y-2">
+              {order.rider && order.rider.id !== user.id && (
+                <OrderChatButton
+                  orderId={order.id}
+                  otherUserId={order.rider.id}
+                  otherUserName={order.rider.name}
+                  otherUserRole="rider"
+                />
+              )}
+              {/* Chat with each farmer (skip self) */}
+              {Array.from(
+                new Map(
+                  order.items.map((item) => [
+                    item.farmer?.id ?? item.farmer_id,
+                    item.farmer ?? { id: item.farmer_id, name: "Farmer", avatar_url: null },
+                  ]),
+                ),
+              ).filter(([farmerId]) => farmerId !== user.id)
+              .map(([farmerId, farmer]) => (
+                <OrderChatButton
+                  key={farmerId}
+                  orderId={order.id}
+                  otherUserId={farmerId}
+                  otherUserName={farmer.name}
+                  otherUserRole="farmer"
+                />
+              ))}
+            </div>
           </section>
         )}
 

@@ -10,7 +10,8 @@ import {
   MAX_PINGS_PER_ORDER,
   OSRM_BASE_URL,
 } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
+import { parseEwkbPoint } from "@/lib/geo-utils";
 import type { ActionResult } from "@/lib/types/action";
 import type {
   OrderPingRow,
@@ -21,8 +22,11 @@ import type {
 } from "@/lib/types/ping";
 import { parseOrderPing } from "@/lib/types/ping";
 
-// TODO: Replace hardcoded rider ID with authenticated user once auth is implemented
-const DEMO_RIDER_ID = "00000000-0000-0000-0000-000000000000";
+async function getAuthRiderId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 /**
  * Find eligible riders for an order and create pings.
@@ -86,12 +90,12 @@ export async function findAndPingRiders(
     for (const item of items ?? []) {
       totalWeightKg += Number(item.quantity_kg);
       if (item.pickup_location) {
-        const loc = item.pickup_location as { type: string; coordinates: [number, number] };
-        if (loc.type === "Point" && Array.isArray(loc.coordinates)) {
+        const pt = parseEwkbPoint(item.pickup_location as string);
+        if (pt) {
           const farmer = Array.isArray(item.farmer) ? item.farmer[0] : item.farmer;
           pickupLocations.push({
-            lng: loc.coordinates[0],
-            lat: loc.coordinates[1],
+            lng: pt.lng,
+            lat: pt.lat,
             farmerName: farmer?.name ?? "Unknown",
           });
         }
@@ -99,17 +103,12 @@ export async function findAndPingRiders(
     }
 
     // Build delivery location snapshot
-    const deliveryLoc = order.delivery_location as { type: string; coordinates: [number, number] } | null;
-    let deliverySnapshot: { lat: number; lng: number; address?: string };
-    if (deliveryLoc && deliveryLoc.type === "Point" && Array.isArray(deliveryLoc.coordinates)) {
-      deliverySnapshot = {
-        lng: deliveryLoc.coordinates[0],
-        lat: deliveryLoc.coordinates[1],
-        address: order.delivery_address,
-      };
-    } else {
-      deliverySnapshot = { lat: 0, lng: 0, address: order.delivery_address };
-    }
+    const deliveryPt = order.delivery_location
+      ? parseEwkbPoint(order.delivery_location as string)
+      : null;
+    const deliverySnapshot = deliveryPt
+      ? { lat: deliveryPt.lat, lng: deliveryPt.lng, address: order.delivery_address }
+      : { lat: 0, lng: 0, address: order.delivery_address };
 
     // Estimated earnings = delivery fee (rider's cut)
     const estimatedEarnings = Number(order.delivery_fee ?? 0);
@@ -167,7 +166,10 @@ export async function acceptPing(
       return { error: "Ping not found" };
     }
 
-    if (ping.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (ping.rider_id !== riderId) {
       return { error: "You can only accept your own pings" };
     }
 
@@ -348,7 +350,10 @@ export async function declinePing(
       return { error: "Ping not found" };
     }
 
-    if (ping.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (ping.rider_id !== riderId) {
       return { error: "You can only decline your own pings" };
     }
 
@@ -382,12 +387,15 @@ export async function declinePing(
  */
 export async function listPendingPings(): Promise<ActionResult<OrderPing[]>> {
   try {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
       .from("order_pings")
       .select("*")
-      .eq("rider_id", DEMO_RIDER_ID)
+      .eq("rider_id", riderId)
       .eq("status", PingStatus.Pending)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false });
@@ -445,20 +453,14 @@ async function recalculateRouteWithStops(
     .single();
 
   // Parse current position
-  let currentPos: { lat: number; lng: number } | null = null;
-  if (latestLoc?.location) {
-    const loc = latestLoc.location as { type: string; coordinates: [number, number] };
-    if (loc.type === "Point" && Array.isArray(loc.coordinates)) {
-      currentPos = { lng: loc.coordinates[0], lat: loc.coordinates[1] };
-    }
-  }
+  const currentPos = latestLoc?.location
+    ? parseEwkbPoint(latestLoc.location as string)
+    : null;
 
   // Parse trip destination
-  const dest = trip.destination as { type: string; coordinates: [number, number] } | null;
-  let destPos: { lat: number; lng: number } | null = null;
-  if (dest && dest.type === "Point" && Array.isArray(dest.coordinates)) {
-    destPos = { lng: dest.coordinates[0], lat: dest.coordinates[1] };
-  }
+  const destPos = trip.destination
+    ? parseEwkbPoint(trip.destination as string)
+    : null;
 
   if (!destPos) {
     console.error("recalculateRoute: no destination found");

@@ -4,14 +4,18 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Button, Input } from "@/components/ui";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { PhotoUpload } from "./PhotoUpload";
-import { createListing, updateListing } from "../actions";
+import { createListing, updateListing, uploadProducePhoto } from "../actions";
 import type { ListingFormData } from "../actions";
 import type { Tables } from "@/lib/supabase/types";
 import type { ListingWithCategory } from "../actions";
 import type { Locale } from "@/lib/i18n";
+import { Info } from "lucide-react";
 
 type Category = Tables<"produce_categories">;
+
+const UNIT_OPTIONS = ["kg", "piece", "dozen", "bundle", "liter", "bhari"] as const;
 
 interface ListingFormProps {
   categories: Category[];
@@ -36,19 +40,31 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
   const [availableQtyKg, setAvailableQtyKg] = useState(
     listing?.available_qty_kg?.toString() ?? "",
   );
+  const [unit, setUnit] = useState(listing?.unit ?? "kg");
   const [freshnessDate, setFreshnessDate] = useState(
     listing?.freshness_date ?? "",
   );
   const [photos, setPhotos] = useState<string[]>(listing?.photos ?? []);
 
-  // When category changes, auto-populate names from category if fields are empty
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+
+  // When category changes, auto-populate names and unit from category
   function handleCategoryChange(id: string) {
     setCategoryId(id);
     const cat = categories.find((c) => c.id === id);
     if (cat) {
       if (!nameEn) setNameEn(cat.name_en);
       if (!nameNe) setNameNe(cat.name_ne);
+      if (cat.default_unit) setUnit(cat.default_unit);
     }
+  }
+
+  async function handleImageUpload(file: File): Promise<string> {
+    const fd = new FormData();
+    fd.append("file", file);
+    const result = await uploadProducePhoto(fd);
+    if (!result.success) throw new Error(result.error);
+    return result.data.url;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -83,6 +99,7 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
       description: description.trim(),
       price_per_kg: price,
       available_qty_kg: qty,
+      unit,
       freshness_date: freshnessDate,
       photos,
     };
@@ -104,6 +121,25 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
   const categoryName = (cat: Category) =>
     locale === "ne" ? cat.name_ne : cat.name_en;
 
+  const groupName = (cat: Category) =>
+    locale === "ne" ? cat.group_ne : cat.group_en;
+
+  // Group categories by their group_en/group_ne for <optgroup>
+  const groupedCategories = categories.reduce<Record<string, Category[]>>((acc, cat) => {
+    const group = groupName(cat);
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(cat);
+    return acc;
+  }, {});
+
+  const unitLabel = (u: string) => {
+    try {
+      return t(`form.units.${u}`);
+    } catch {
+      return u;
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Category */}
@@ -118,10 +154,14 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
           required
         >
           <option value="">{t("form.selectCategory")}</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon} {categoryName(cat)}
-            </option>
+          {Object.entries(groupedCategories).map(([group, cats]) => (
+            <optgroup key={group} label={group}>
+              {cats.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {categoryName(cat)}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
@@ -157,19 +197,36 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
         <label className="mb-2 block text-sm font-medium text-foreground">
           {t("form.description")}
         </label>
-        <textarea
+        <RichTextEditor
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={setDescription}
           placeholder={t("form.descriptionPlaceholder")}
-          rows={3}
-          className="w-full rounded-md border-2 border-transparent bg-gray-100 px-4 py-3 text-foreground transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none"
+          onImageUpload={handleImageUpload}
         />
       </div>
 
-      {/* Price per kg */}
+      {/* Unit selector */}
       <div>
         <label className="mb-2 block text-sm font-medium text-foreground">
-          {t("form.pricePerKg")}
+          {t("form.unit")}
+        </label>
+        <select
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+          className="w-full rounded-md border-2 border-transparent bg-gray-100 px-4 h-14 text-foreground transition-all duration-200 focus:border-primary focus:bg-white focus:outline-none"
+        >
+          {UNIT_OPTIONS.map((u) => (
+            <option key={u} value={u}>
+              {unitLabel(u)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Price per unit */}
+      <div>
+        <label className="mb-2 block text-sm font-medium text-foreground">
+          {t("form.pricePerUnit", { unit: unitLabel(unit) })}
         </label>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
@@ -186,6 +243,19 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
             required
           />
         </div>
+        {/* Kalimati price suggestion */}
+        {selectedCategory?.price_min != null && selectedCategory?.price_max != null && (
+          <div className="mt-2 flex items-start gap-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-700">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span>
+              {t("form.kalimatiHint", {
+                min: selectedCategory.price_min,
+                max: selectedCategory.price_max,
+                unit: unitLabel(selectedCategory.default_unit),
+              })}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Available quantity */}
@@ -204,7 +274,7 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
             required
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
-            kg
+            {unitLabel(unit)}
           </span>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -12,6 +12,7 @@ import { fetchRoute } from "@/lib/map";
 import type { LatLng } from "@/lib/map";
 import type { CreateTripInput } from "@/lib/types/trip";
 import { VehicleType } from "@jirisewa/shared";
+import { useAuth } from "@/components/AuthProvider";
 
 const LocationPicker = dynamic(
   () => import("@/components/map/LocationPicker"),
@@ -25,15 +26,27 @@ const TripRouteMap = dynamic(
 
 type Step = "origin" | "destination" | "details" | "review";
 
+/** Parse EWKB hex point (from PostGIS geography) into lat/lng */
+function parseEwkbPoint(hex: string | null | undefined): LatLng | null {
+  if (!hex || hex.length < 50) return null;
+  const bytes = new Uint8Array(hex.match(/.{2}/g)!.map(b => parseInt(b, 16)));
+  const view = new DataView(bytes.buffer);
+  const lng = view.getFloat64(9, true);
+  const lat = view.getFloat64(17, true);
+  return { lat, lng };
+}
+
 export default function NewTripPage() {
   const t = useTranslations("rider");
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
+  const { user, loading: authLoading, profile } = useAuth();
 
   const [step, setStep] = useState<Step>("origin");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const defaultsApplied = useRef(false);
 
   // Form state
   const [origin, setOrigin] = useState<LatLng | null>(null);
@@ -44,6 +57,37 @@ export default function NewTripPage() {
   const [departureTime, setDepartureTime] = useState("");
   const [capacityKg, setCapacityKg] = useState("");
   const [vehicleType, setVehicleType] = useState<VehicleType>(VehicleType.Bike);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
+
+  // Pre-fill from profile (rider onboarding data)
+  useEffect(() => {
+    if (!profile || defaultsApplied.current) return;
+    defaultsApplied.current = true;
+
+    if (profile.vehicle_type) {
+      const vt = profile.vehicle_type as VehicleType;
+      if (Object.values(VehicleType).includes(vt)) {
+        setVehicleType(vt);
+      }
+    }
+
+    const originPt = parseEwkbPoint(profile.fixed_route_origin);
+    if (originPt && profile.fixed_route_origin_name) {
+      setOrigin(originPt);
+      setOriginName(profile.fixed_route_origin_name);
+    }
+
+    const destPt = parseEwkbPoint(profile.fixed_route_destination);
+    if (destPt && profile.fixed_route_destination_name) {
+      setDestination(destPt);
+      setDestinationName(profile.fixed_route_destination_name);
+    }
+  }, [profile]);
 
   // Route state
   const [routeCoords, setRouteCoords] = useState<[number, number][] | null>(
@@ -174,6 +218,8 @@ export default function NewTripPage() {
     }
     return `${mins}m`;
   };
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="min-h-screen bg-muted">

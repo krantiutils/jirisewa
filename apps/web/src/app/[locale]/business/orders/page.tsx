@@ -13,6 +13,7 @@ import {
   Calendar,
   X,
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 import {
   listBulkOrders,
   getBusinessProfile,
@@ -50,6 +51,13 @@ function BusinessOrdersPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("business");
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
 
   const [orders, setOrders] = useState<BulkOrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +77,7 @@ function BusinessOrdersPageInner() {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     async function load() {
       const [profileResult, ordersResult] = await Promise.all([
         getBusinessProfile(),
@@ -84,7 +93,7 @@ function BusinessOrdersPageInner() {
       setLoading(false);
     }
     load();
-  }, [locale, router]);
+  }, [authLoading, user, locale, router]);
 
   const searchProduce = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -124,6 +133,8 @@ function BusinessOrdersPageInner() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, searchProduce]);
+
+  if (authLoading || !user) return null;
 
   const addItem = (item: NewOrderItem) => {
     const existing = newItems.find((i) => i.listingId === item.listingId);

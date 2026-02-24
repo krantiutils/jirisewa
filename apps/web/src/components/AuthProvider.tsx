@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
-import { useRouter } from "@/i18n/navigation";
+
 
 interface UserProfile {
   id: string;
@@ -20,6 +20,12 @@ interface UserProfile {
   avatar_url: string | null;
   role: string | null;
   onboarding_completed: boolean;
+  vehicle_type?: string | null;
+  fixed_route_origin?: string | null;       // EWKB hex
+  fixed_route_origin_name?: string | null;
+  fixed_route_destination?: string | null;   // EWKB hex
+  fixed_route_destination_name?: string | null;
+  bio?: string | null;
 }
 
 interface AuthState {
@@ -32,6 +38,8 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   signInWithOtp: (phone: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithPassword: (email: string, password: string) => Promise<{ error: Error | null }>;
   verifyOtp: (
     phone: string,
     token: string,
@@ -49,7 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile: null,
     loading: true,
   });
-  const router = useRouter();
   const supabase = createClient();
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -99,23 +106,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) {
         profile = await fetchProfile(user.id);
 
-        // Redirect to onboarding if profile exists but onboarding not completed
-        if (profile && !profile.onboarding_completed) {
-          router.replace("/onboarding");
-        }
-        // Redirect to appropriate dashboard if onboarding is complete
-        else if (profile?.onboarding_completed) {
-          const currentPath = window.location.pathname;
-          const isAuthPage = currentPath.includes("/auth/") || currentPath === "/login" || currentPath === "/register";
+        const currentPath = window.location.pathname;
+        const isAuthPage = currentPath.includes("/auth/") || currentPath === "/login" || currentPath === "/register";
 
+        // Extract locale from path (e.g. "/ne/auth/login" → "ne")
+        const localeMatch = currentPath.match(/^\/([a-z]{2})\//);
+        const locale = localeMatch ? localeMatch[1] : "en";
+
+        if (!profile) {
+          // New signup — profile trigger hasn't fired yet. Redirect to onboarding.
           if (isAuthPage) {
-            const dashboardMap: Record<string, string> = {
-              farmer: "/farmer/dashboard",
-              rider: "/rider/dashboard",
-              customer: "/customer",
-            };
-            router.replace(dashboardMap[profile.role || "customer"] || "/customer");
+            window.location.href = `/${locale}/onboarding`;
+            return;
           }
+        } else if (!profile.onboarding_completed) {
+          // Profile exists but onboarding not completed
+          window.location.href = `/${locale}/onboarding`;
+          return;
+        } else if (isAuthPage) {
+          // Onboarding complete — redirect away from auth pages
+          const dashboardMap: Record<string, string> = {
+            farmer: "/farmer/dashboard",
+            rider: "/rider/dashboard",
+            customer: "/marketplace",
+          };
+          window.location.href = `/${locale}${dashboardMap[profile.role || "customer"] || "/marketplace"}`;
+          return;
         }
       }
 
@@ -123,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, fetchProfile, router]);
+  }, [supabase, fetchProfile]);
 
   const signInWithOtp = useCallback(
     async (phone: string) => {
@@ -165,11 +181,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [supabase],
   );
 
+  const signUpWithEmail = useCallback(
+    async (email: string, password: string) => {
+      const { error } = await supabase.auth.signUp({ email, password });
+      return { error: error ? new Error(error.message) : null };
+    },
+    [supabase],
+  );
+
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error: error ? new Error(error.message) : null };
+    },
+    [supabase],
+  );
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setState({ session: null, user: null, profile: null, loading: false });
-    router.replace("/");
-  }, [supabase, router]);
+    // Hard reload to ensure server-side session cookies are cleared
+    window.location.href = "/";
+  }, [supabase]);
 
   const refreshProfile = useCallback(async () => {
     if (state.user) {
@@ -180,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, signInWithOtp, signInWithGoogle, verifyOtp, signOut, refreshProfile }}
+      value={{ ...state, signInWithOtp, signInWithGoogle, signUpWithEmail, signInWithPassword, verifyOtp, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

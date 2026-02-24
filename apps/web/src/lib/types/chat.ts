@@ -20,7 +20,7 @@ export interface ChatConversation {
   /** Most recent message in the conversation */
   last_message?: {
     content: string;
-    message_type: "text" | "image" | "location";
+    message_type: "text" | "image" | "location" | "audio";
     created_at: string;
     sender_id: string;
   };
@@ -33,7 +33,7 @@ export interface ChatMessage {
   conversation_id: string;
   sender_id: string;
   content: string;
-  message_type: "text" | "image" | "location";
+  message_type: "text" | "image" | "location" | "audio";
   read_at: string | null;
   created_at: string;
   /** Joined sender info */

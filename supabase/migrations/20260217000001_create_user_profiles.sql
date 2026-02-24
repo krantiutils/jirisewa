@@ -12,7 +12,7 @@ create table public.user_profiles (
 );
 
 -- Enable RLS
-alter table public.user_profiles enable row level policy;
+alter table public.user_profiles enable row level security;
 
 -- Create policy: Users can view their own profile
 create policy "Users can view own profile"

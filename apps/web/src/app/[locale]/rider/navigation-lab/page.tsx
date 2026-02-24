@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useAuth } from "@/components/AuthProvider";
 import { StopType } from "@jirisewa/shared";
 import type { OrderPing } from "@/lib/types/ping";
 import type { TripStop } from "@/lib/types/trip-stop";
@@ -102,6 +105,18 @@ const SAMPLE_ROUTE: [number, number][] = [
 ];
 
 export default function RiderNavigationLabPage() {
+  const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
+
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
+  if (authLoading || !user) return null;
+
   return (
     <main className="min-h-screen bg-muted" data-testid="rider-navigation-lab">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">

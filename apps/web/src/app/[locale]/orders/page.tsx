@@ -3,17 +3,38 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
-import { Package, Search, Filter, X } from "lucide-react";
+import { useTranslations, useFormatter } from "next-intl";
+import { Package, Search, Filter, X, MapIcon, ListIcon, MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
 import { OrderStatus } from "@jirisewa/shared";
 import { listOrders } from "@/lib/actions/orders";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { parseGeoPoint } from "@/lib/types/trip";
 import type { OrderWithDetails } from "@/lib/types/order";
 import type { Locale } from "@/lib/i18n";
 
+const OrdersMapView = dynamic(() => import("@/components/orders/OrdersMapView"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[400px] items-center justify-center rounded-lg bg-gray-100">
+      <p className="text-sm text-gray-500">Loading map...</p>
+    </div>
+  ),
+});
+
 type TabKey = "active" | "completed";
+type ViewMode = "list" | "map";
+
+function parseDeliveryLocation(value: unknown): { lat: number; lng: number } | null {
+  if (!value || typeof value !== "string") return null;
+  try {
+    return parseGeoPoint(value);
+  } catch {
+    return null;
+  }
+}
 
 const ACTIVE_STATUSES = new Set([
   OrderStatus.Pending,
@@ -37,6 +58,7 @@ export default function OrdersPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("active");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [allOrders, setAllOrders] = useState<OrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +110,7 @@ export default function OrdersPage() {
     }
 
     load();
-  }, []);
+  }, [authChecked, isAuthenticated]);
 
   const hasActiveFilters = statusFilter || farmerSearch || dateFrom || dateTo;
 
@@ -179,17 +201,40 @@ export default function OrdersPage() {
       <div className="mx-auto max-w-2xl px-4 py-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              showFilters || hasActiveFilters
-                ? "bg-primary text-white"
-                : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            <Filter className="h-4 w-4" />
-            {t("filters")}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Map / List toggle */}
+            <div className="flex rounded-md bg-white p-0.5">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === "list" ? "bg-primary text-white" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <ListIcon className="h-3.5 w-3.5" />
+                {t("listView")}
+              </button>
+              <button
+                onClick={() => setViewMode("map")}
+                className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  viewMode === "map" ? "bg-primary text-white" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <MapIcon className="h-3.5 w-3.5" />
+                {t("mapView")}
+              </button>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                showFilters || hasActiveFilters
+                  ? "bg-primary text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              {t("filters")}
+            </button>
+          </div>
         </div>
 
         {/* Filters panel */}
@@ -324,6 +369,24 @@ export default function OrdersPage() {
               )
             )}
           </div>
+        ) : viewMode === "map" ? (
+          <div className="mt-4">
+            <OrdersMapView
+              orders={orders.map((o) => {
+                const pt = parseDeliveryLocation(o.delivery_location);
+                return {
+                  id: o.id,
+                  deliveryAddress: o.delivery_address ?? "",
+                  lat: pt?.lat ?? 0,
+                  lng: pt?.lng ?? 0,
+                  status: o.status,
+                  itemCount: o.items.length,
+                  totalPrice: Number(o.total_price),
+                };
+              }).filter((o) => o.lat !== 0 && o.lng !== 0)}
+              onSelect={(id) => router.push(`/${locale}/orders/${id}`)}
+            />
+          </div>
         ) : (
           <div className="mt-4 space-y-3">
             {orders.map((order) => (
@@ -351,6 +414,7 @@ function OrderCard({
   onClick: () => void;
 }) {
   const t = useTranslations("orders");
+  const format = useFormatter();
   const firstItem = order.items[0];
   const itemCount = order.items.length;
   const firstItemName =
@@ -358,10 +422,12 @@ function OrderCard({
       ? firstItem?.listing?.name_ne
       : firstItem?.listing?.name_en;
 
-  const dateStr = new Date(order.created_at).toLocaleDateString(
-    locale === "ne" ? "ne-NP" : "en-US",
-    { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" },
-  );
+  const dateStr = format.dateTime(new Date(order.created_at), {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <Card onClick={onClick} className="border-2 border-border cursor-pointer">

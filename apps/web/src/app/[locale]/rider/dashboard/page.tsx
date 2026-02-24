@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { TripStatus } from "@jirisewa/shared";
-import { DollarSign } from "lucide-react";
+import { DollarSign, MapIcon, ListIcon, MapPin, Package, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TripStatusBadge } from "@/components/rider/TripStatusBadge";
@@ -94,6 +94,7 @@ export default function RiderDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState<string | null>(null);
+  const [browseView, setBrowseView] = useState<"map" | "list">("list");
   const { pings, removePing } = usePingSubscription();
 
   const isAuthenticated = !!user;
@@ -161,17 +162,18 @@ export default function RiderDashboard() {
   const handleAcceptOrder = useCallback(
     async (orderId: string) => {
       setAccepting(orderId);
-      // Use rider's profile route or defaults
-      const origin = profile?.fixed_route_origin_name
-        ? { lat: 0, lng: 0, name: profile.fixed_route_origin_name }
+      // Parse actual coordinates from profile's EWKB geography columns
+      const originPt = parseEwkbPoint(profile?.fixed_route_origin);
+      const destPt = parseEwkbPoint(profile?.fixed_route_destination);
+
+      const origin = originPt
+        ? { lat: originPt.lat, lng: originPt.lng, name: profile?.fixed_route_origin_name || "Origin" }
         : { lat: 27.7172, lng: 85.3240, name: "Kathmandu" };
-      const dest = profile?.fixed_route_destination_name
-        ? { lat: 0, lng: 0, name: profile.fixed_route_destination_name }
+      const dest = destPt
+        ? { lat: destPt.lat, lng: destPt.lng, name: profile?.fixed_route_destination_name || "Destination" }
         : { lat: 27.6, lng: 85.5, name: "Delivery" };
 
-      const vehicleType = profile?.vehicle_type || "bike";
-
-      const result = await acceptOrderDirect(orderId, origin, dest, vehicleType, 50);
+      const result = await acceptOrderDirect(orderId, origin, dest, 50);
       setAccepting(null);
 
       if (result.error) {
@@ -264,9 +266,33 @@ export default function RiderDashboard() {
           />
           )}
 
-        {/* Browse Orders — map view */}
+        {/* Browse Orders — map/list toggle */}
         {activeTab === "browse" && (
           <>
+            {/* View toggle */}
+            <div className="mb-4 flex justify-end">
+              <div className="flex rounded-md bg-white p-0.5">
+                <button
+                  onClick={() => setBrowseView("map")}
+                  className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    browseView === "map" ? "bg-primary text-white" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <MapIcon className="h-3.5 w-3.5" />
+                  {t("dashboard.mapView")}
+                </button>
+                <button
+                  onClick={() => setBrowseView("list")}
+                  className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    browseView === "list" ? "bg-primary text-white" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <ListIcon className="h-3.5 w-3.5" />
+                  {t("dashboard.listView")}
+                </button>
+              </div>
+            </div>
+
             {loading ? (
               <div className="py-12 text-center text-gray-500">
                 {t("loading")}
@@ -275,7 +301,7 @@ export default function RiderDashboard() {
               <div className="py-12 text-center">
                 <p className="text-gray-500">{t("dashboard.noAvailableOrders")}</p>
               </div>
-            ) : (
+            ) : browseView === "map" ? (
               <AvailableOrdersMap
                 orders={availableOrders}
                 onAccept={handleAcceptOrder}
@@ -294,6 +320,17 @@ export default function RiderDashboard() {
                   return null;
                 })()}
               />
+            ) : (
+              <div className="space-y-3">
+                {availableOrders.map((order) => (
+                  <AvailableOrderCard
+                    key={order.id}
+                    order={order}
+                    onAccept={handleAcceptOrder}
+                    accepting={accepting}
+                  />
+                ))}
+              </div>
             )}
           </>
         )}
@@ -329,5 +366,65 @@ export default function RiderDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+function AvailableOrderCard({
+  order,
+  onAccept,
+  accepting,
+}: {
+  order: AvailableOrder;
+  onAccept: (orderId: string) => void;
+  accepting: string | null;
+}) {
+  const t = useTranslations("rider");
+
+  return (
+    <Card className="border-2 border-border cursor-default hover:scale-100">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+          <MapPin className="h-5 w-5 text-red-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="truncate font-semibold text-foreground">
+            {order.deliveryAddress}
+          </p>
+          <div className="mt-1 text-sm text-gray-600">
+            {order.items.slice(0, 3).map((item, i) => (
+              <p key={i} className="truncate">
+                {item.nameEn} — {item.quantityKg} kg
+                <span className="text-gray-400"> ({item.farmerName})</span>
+              </p>
+            ))}
+            {order.items.length > 3 && (
+              <p className="text-gray-400">+{order.items.length - 3} more</p>
+            )}
+          </div>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-gray-500">
+              {t("dashboard.orderWeight")}: {order.totalWeightKg} kg
+            </span>
+            <span className="font-semibold text-emerald-600">
+              NPR {order.deliveryFee.toFixed(0)}
+            </span>
+          </div>
+        </div>
+      </div>
+      <Button
+        className="mt-3 w-full"
+        onClick={() => onAccept(order.id)}
+        disabled={accepting !== null}
+      >
+        {accepting === order.id ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {t("dashboard.accepting")}
+          </>
+        ) : (
+          t("dashboard.acceptOrder")
+        )}
+      </Button>
+    </Card>
   );
 }

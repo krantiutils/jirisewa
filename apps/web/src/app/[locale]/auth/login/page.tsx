@@ -2,19 +2,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { isValidNepalPhone, toE164, normalizePhone } from "@jirisewa/shared";
 import { Button, Input, Card } from "@/components/ui";
-import { LogOut } from "lucide-react";
+import { Phone, Mail } from "lucide-react";
 
 type Step = "phone" | "otp";
+type AuthTab = "phone" | "email";
+type EmailMode = "signin" | "signup";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
-  const router = useRouter();
-  const { signInWithOtp, signInWithGoogle, verifyOtp, user } = useAuth();
+  const { signInWithOtp, signInWithGoogle, signUpWithEmail, signInWithPassword, verifyOtp, user, loading: authLoading } = useAuth();
 
+  const [authTab, setAuthTab] = useState<AuthTab>("phone");
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -23,13 +24,21 @@ export default function LoginPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [verifyAttempts, setVerifyAttempts] = useState(0);
 
-  // Redirect if already logged in
+  // Email state
+  const [emailMode, setEmailMode] = useState<EmailMode>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Redirect if already logged in (wait for AuthProvider to settle)
+  // AuthProvider's onAuthStateChange handles post-login redirects via hard navigation,
+  // so this is only needed if user lands on /auth/login while already authenticated.
   useEffect(() => {
-    if (user) {
-      // Let AuthProvider handle the redirect based on profile
-      router.replace("/onboarding");
+    if (!authLoading && user) {
+      const locale = window.location.pathname.match(/^\/([a-z]{2})\//)?.[1] || "en";
+      window.location.href = `/${locale}/onboarding`;
     }
-  }, [user, router]);
+  }, [authLoading, user]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -80,8 +89,6 @@ export default function LoginPage() {
       setError(t("verifyError"));
       return;
     }
-
-    // Auth state change will trigger redirect via useEffect
   }, [otp, phone, verifyOtp, verifyAttempts, t]);
 
   const handleResend = useCallback(async () => {
@@ -123,6 +130,46 @@ export default function LoginPage() {
       setError(googleError.message);
     }
   }, [signInWithGoogle]);
+
+  const handleEmailSubmit = useCallback(async () => {
+    if (!email || !password) {
+      setError(t("emailRequired"));
+      return;
+    }
+
+    if (emailMode === "signup") {
+      if (password.length < 6) {
+        setError(t("passwordTooShort"));
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError(t("passwordMismatch"));
+        return;
+      }
+    }
+
+    setError("");
+    setLoading(true);
+
+    if (emailMode === "signup") {
+      const { error: signUpError } = await signUpWithEmail(email, password);
+      setLoading(false);
+      if (signUpError) {
+        setError(signUpError.message);
+      } else {
+        // Redirect immediately — don't wait for onAuthStateChange
+        const locale = window.location.pathname.match(/^\/([a-z]{2})\//)?.[1] || "en";
+        window.location.href = `/${locale}/onboarding`;
+        return;
+      }
+    } else {
+      const { error: signInError } = await signInWithPassword(email, password);
+      setLoading(false);
+      if (signInError) {
+        setError(t("emailSignInError"));
+      }
+    }
+  }, [email, password, confirmPassword, emailMode, signUpWithEmail, signInWithPassword, t]);
 
   return (
     <div className="flex min-h-[calc(100vh-57px)] flex-col items-center justify-center p-6">
@@ -166,51 +213,184 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-200" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">or continue with phone</span>
+                <span className="bg-white px-2 text-gray-500">{t("orContinueWith")}</span>
               </div>
             </div>
 
-            <div className="mt-6">
-              <label
-                htmlFor="phone"
-                className="mb-1.5 block text-sm font-medium text-foreground"
+            {/* Phone / Email Tab Toggle */}
+            <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
+              <button
+                type="button"
+                onClick={() => { setAuthTab("phone"); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                  authTab === "phone"
+                    ? "bg-white text-foreground"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
-                {t("phoneLabel")}
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="flex h-14 items-center rounded-md bg-gray-100 px-3 text-sm font-medium text-gray-600">
-                  +977
-                </span>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder={t("phonePlaceholder")}
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
-                    setError("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSendOtp();
-                  }}
-                  autoFocus
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-gray-400">{t("phoneHint")}</p>
+                <Phone className="h-4 w-4" />
+                {t("phoneTab")}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthTab("email"); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                  authTab === "email"
+                    ? "bg-white text-foreground"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Mail className="h-4 w-4" />
+                {t("emailTab")}
+              </button>
             </div>
 
-            {error && (
-              <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
-            )}
+            {authTab === "phone" ? (
+              <>
+                <div>
+                  <label
+                    htmlFor="phone"
+                    className="mb-1.5 block text-sm font-medium text-foreground"
+                  >
+                    {t("phoneLabel")}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-14 items-center rounded-md bg-gray-100 px-3 text-sm font-medium text-gray-600">
+                      +977
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder={t("phonePlaceholder")}
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                        setError("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSendOtp();
+                      }}
+                      autoFocus
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-400">{t("phoneHint")}</p>
+                </div>
 
-            <Button
-              className="mt-6 w-full"
-              onClick={handleSendOtp}
-              disabled={loading || phone.length < 10}
-            >
-              {loading ? t("sending") : t("sendOtp")}
-            </Button>
+                {error && (
+                  <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
+                )}
+
+                <Button
+                  className="mt-6 w-full"
+                  onClick={handleSendOtp}
+                  disabled={loading || phone.length < 10}
+                >
+                  {loading ? t("sending") : t("sendOtp")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="mb-1.5 block text-sm font-medium text-foreground"
+                    >
+                      {t("emailLabel")}
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder={t("emailPlaceholder")}
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="mb-1.5 block text-sm font-medium text-foreground"
+                    >
+                      {t("passwordLabel")}
+                    </label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder={t("passwordPlaceholder")}
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && emailMode === "signin") handleEmailSubmit();
+                      }}
+                    />
+                  </div>
+
+                  {emailMode === "signup" && (
+                    <div>
+                      <label
+                        htmlFor="confirmPassword"
+                        className="mb-1.5 block text-sm font-medium text-foreground"
+                      >
+                        {t("confirmPasswordLabel")}
+                      </label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        placeholder={t("confirmPasswordPlaceholder")}
+                        value={confirmPassword}
+                        onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleEmailSubmit();
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {error && (
+                  <p className="mt-3 text-sm font-medium text-red-600">{error}</p>
+                )}
+
+                <Button
+                  className="mt-6 w-full"
+                  onClick={handleEmailSubmit}
+                  disabled={loading || !email || !password}
+                >
+                  {loading
+                    ? (emailMode === "signup" ? t("signingUp") : t("signingIn"))
+                    : (emailMode === "signup" ? t("signUp") : t("signIn"))}
+                </Button>
+
+                <p className="mt-4 text-center text-sm text-gray-500">
+                  {emailMode === "signin" ? (
+                    <>
+                      {t("noAccount")}{" "}
+                      <button
+                        type="button"
+                        onClick={() => { setEmailMode("signup"); setError(""); }}
+                        className="font-medium text-primary hover:text-blue-700"
+                      >
+                        {t("signUp")}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {t("hasAccount")}{" "}
+                      <button
+                        type="button"
+                        onClick={() => { setEmailMode("signin"); setError(""); }}
+                        className="font-medium text-primary hover:text-blue-700"
+                      >
+                        {t("signIn")}
+                      </button>
+                    </>
+                  )}
+                </p>
+              </>
+            )}
           </>
         ) : (
           <>

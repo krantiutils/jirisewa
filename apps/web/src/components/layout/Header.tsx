@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { LogIn, User, Bell, LogOut, ChevronDown, MapPin } from "lucide-react";
+import { LogIn, User, Bell, LogOut, ChevronDown, MapPin, Settings } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { ChatBadge } from "@/components/chat/ChatBadge";
 import { CartHeaderLink } from "@/components/cart/CartHeaderLink";
@@ -21,6 +21,7 @@ export function Header({ locale }: HeaderProps) {
   const { user, profile, loading, signOut } = useAuth();
   const t = useTranslations("nav");
   const tAddr = useTranslations("addresses");
+  const tAcct = useTranslations("account");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -65,51 +66,51 @@ export function Header({ locale }: HeaderProps) {
           {locale === "ne" ? "जिरीसेवा" : "JiriSewa"}
         </Link>
         <nav className="hidden items-center gap-4 text-sm sm:flex">
-          {/* Available to everyone */}
-          <Link
-            href={`/${locale}/marketplace`}
-            className="text-gray-600 hover:text-primary transition-colors"
-          >
-            {t("marketplace")}
-          </Link>
+          {/* Marketplace — customers + unauthenticated */}
+          {(!isAuthenticated || role === "customer") && (
+            <Link
+              href={`/${locale}/marketplace`}
+              className="text-gray-600 hover:text-primary transition-colors"
+            >
+              {t("marketplace")}
+            </Link>
+          )}
 
-          {/* Orders — all authenticated users */}
-          {isAuthenticated && (
+          {/* Customer orders */}
+          {isAuthenticated && role === "customer" && (
             <Link
               href={`/${locale}/orders`}
               className="text-gray-600 hover:text-primary transition-colors"
             >
-              {t("orders")}
+              {t("myOrders")}
             </Link>
           )}
 
-          {/* Customer only */}
-          {isAuthenticated && role === "customer" && (
-            <Link
-              href={`/${locale}/customer`}
-              className="text-gray-600 hover:text-primary transition-colors"
-            >
-              Shop
-            </Link>
-          )}
-
-          {/* Farmer only */}
+          {/* Farmer dashboard + orders */}
           {isAuthenticated && role === "farmer" && (
-            <Link
-              href={`/${locale}/farmer/dashboard`}
-              className="text-gray-600 hover:text-primary transition-colors"
-            >
-              {t("business")}
-            </Link>
+            <>
+              <Link
+                href={`/${locale}/farmer/dashboard`}
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                {t("myDashboard")}
+              </Link>
+              <Link
+                href={`/${locale}/farmer/orders`}
+                className="text-gray-600 hover:text-primary transition-colors"
+              >
+                {t("myOrders")}
+              </Link>
+            </>
           )}
 
-          {/* Rider only */}
+          {/* Rider dashboard */}
           {isAuthenticated && role === "rider" && (
             <Link
               href={`/${locale}/rider/dashboard`}
               className="text-gray-600 hover:text-primary transition-colors"
             >
-              {t("rider")}
+              {t("myDashboard")}
             </Link>
           )}
         </nav>
@@ -123,8 +124,10 @@ export function Header({ locale }: HeaderProps) {
           </>
         )}
 
-        {/* Cart available to everyone */}
-        <CartHeaderLink locale={locale} />
+        {/* Cart — customers + unauthenticated */}
+        {(!isAuthenticated || role === "customer") && (
+          <CartHeaderLink locale={locale} />
+        )}
         <LanguageSwitcher />
 
         {isAuthenticated ? (
@@ -162,6 +165,16 @@ export function Header({ locale }: HeaderProps) {
                 >
                   <Bell className="h-4 w-4 text-gray-400" />
                   {t("notifications")}
+                </Link>
+
+                {/* Account Settings */}
+                <Link
+                  href={`/${locale}/settings/account`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-gray-400" />
+                  {tAcct("title")}
                 </Link>
 
                 {/* Saved Addresses */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -17,7 +17,9 @@ interface ListingCardProps {
 export function ListingCard({ listing }: ListingCardProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("farmer");
-  const [toggling, setToggling] = useState(false);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [optimisticActive, setOptimisticActive] = useOptimistic(listing.is_active);
 
   const name = locale === "ne" ? listing.name_ne : listing.name_en;
   const categoryName = listing.produce_categories
@@ -26,16 +28,16 @@ export function ListingCard({ listing }: ListingCardProps) {
       : listing.produce_categories.name_en
     : "";
 
-  const [toggleError, setToggleError] = useState<string | null>(null);
-
-  async function handleToggle() {
-    setToggling(true);
+  function handleToggle() {
     setToggleError(null);
-    const result = await toggleListingActive(listing.id, !listing.is_active);
-    if (!result.success) {
-      setToggleError(result.error);
-    }
-    setToggling(false);
+    const newActive = !optimisticActive;
+    startTransition(async () => {
+      setOptimisticActive(newActive);
+      const result = await toggleListingActive(listing.id, newActive);
+      if (!result.success) {
+        setToggleError(result.error);
+      }
+    });
   }
 
   const photo = listing.photos.length > 0 ? listing.photos[0] : null;
@@ -51,6 +53,7 @@ export function ListingCard({ listing }: ListingCardProps) {
             width={80}
             height={80}
             className="h-full w-full object-cover"
+            unoptimized
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
@@ -64,8 +67,8 @@ export function ListingCard({ listing }: ListingCardProps) {
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-foreground">{name}</h3>
-            <Badge color={listing.is_active ? "secondary" : "accent"}>
-              {listing.is_active ? t("listing.active") : t("listing.inactive")}
+            <Badge color={optimisticActive ? "secondary" : "accent"}>
+              {optimisticActive ? t("listing.active") : t("listing.inactive")}
             </Badge>
           </div>
           <p className="text-sm text-gray-500">
@@ -74,10 +77,10 @@ export function ListingCard({ listing }: ListingCardProps) {
         </div>
         <div className="flex items-center gap-4 text-sm">
           <span className="font-medium text-primary">
-            NPR {listing.price_per_kg}/kg
+            NPR {listing.price_per_kg}/{listing.unit || "kg"}
           </span>
           <span className="text-gray-500">
-            {listing.available_qty_kg} kg {t("listing.available")}
+            {listing.available_qty_kg} {listing.unit || "kg"} {t("listing.available")}
           </span>
         </div>
       </div>
@@ -94,15 +97,15 @@ export function ListingCard({ listing }: ListingCardProps) {
         <button
           type="button"
           onClick={handleToggle}
-          disabled={toggling}
+          disabled={isPending}
           className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted transition-colors hover:bg-gray-200 disabled:opacity-50"
           aria-label={
-            listing.is_active
+            optimisticActive
               ? t("listing.deactivate")
               : t("listing.activate")
           }
         >
-          {listing.is_active ? (
+          {optimisticActive ? (
             <ToggleRight className="h-5 w-5 text-secondary" />
           ) : (
             <ToggleLeft className="h-5 w-5 text-gray-400" />

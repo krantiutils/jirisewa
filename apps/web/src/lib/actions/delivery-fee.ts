@@ -17,9 +17,24 @@ interface GeoJsonPoint {
   coordinates: [number, number]; // [lng, lat]
 }
 
+function parseEwkbHexPoint(hex: string): { lat: number; lng: number } | null {
+  // EWKB Point with SRID: 01 01000020 E6100000 <lng:8bytes> <lat:8bytes> = 50 hex chars
+  if (hex.length < 50) return null;
+  const buf = Buffer.from(hex, "hex");
+  // Skip: 1 byte endian + 4 bytes type + 4 bytes SRID = 9 bytes offset
+  const lng = buf.readDoubleLE(9);
+  const lat = buf.readDoubleLE(17);
+  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+  return { lat, lng };
+}
+
 function parseGeoJsonPoint(
   value: unknown,
 ): { lat: number; lng: number } | null {
+  // Handle EWKB hex string returned by Supabase for geography columns
+  if (typeof value === "string" && /^[0-9a-fA-F]+$/.test(value)) {
+    return parseEwkbHexPoint(value);
+  }
   if (!value || typeof value !== "object") return null;
   const geo = value as GeoJsonPoint;
   if (
@@ -132,8 +147,11 @@ export async function calculateDeliveryFee(
       }
     }
 
+    // If no listing has a valid location set, fall back to base + weight fee only
+    // (distance component will be 0). This handles farmers who haven't set their location.
     if (!hasValidRoute) {
-      return { error: "Could not calculate route distance. Please verify locations." };
+      hasValidRoute = true;
+      maxDistanceMeters = 0;
     }
 
     const distanceKm = maxDistanceMeters / 1000;

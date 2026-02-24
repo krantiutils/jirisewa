@@ -78,7 +78,7 @@ export interface UpdateTripInput {
 
 /**
  * Parse a PostGIS geography point string to GeoPoint.
- * Supabase returns geography as WKT: "POINT(lng lat)" or as GeoJSON.
+ * Supabase returns geography as EWKB hex, WKT, or GeoJSON depending on context.
  */
 export function parseGeoPoint(value: string): GeoPoint {
   // Handle GeoJSON format: {"type":"Point","coordinates":[lng,lat]}
@@ -88,9 +88,20 @@ export function parseGeoPoint(value: string): GeoPoint {
   }
 
   // Handle WKT: POINT(lng lat)
-  const match = value.match(/POINT\(([^ ]+) ([^ ]+)\)/);
-  if (match) {
-    return { lat: parseFloat(match[2]), lng: parseFloat(match[1]) };
+  const wktMatch = value.match(/POINT\(([^ ]+) ([^ ]+)\)/);
+  if (wktMatch) {
+    return { lat: parseFloat(wktMatch[2]), lng: parseFloat(wktMatch[1]) };
+  }
+
+  // Handle EWKB hex: e.g. "0101000020E6100000..." (Point with SRID 4326)
+  if (/^[0-9a-fA-F]+$/.test(value) && value.length >= 50) {
+    const buf = Buffer.from(value, "hex");
+    // EWKB Point with SRID: 1 byte endian + 4 bytes type + 4 bytes SRID = 9 bytes offset
+    const lng = buf.readDoubleLE(9);
+    const lat = buf.readDoubleLE(17);
+    if (Number.isFinite(lng) && Number.isFinite(lat)) {
+      return { lat, lng };
+    }
   }
 
   throw new Error(`Cannot parse geography point: ${value}`);
@@ -98,7 +109,7 @@ export function parseGeoPoint(value: string): GeoPoint {
 
 /**
  * Parse a PostGIS LineString to [lat, lng] coordinate pairs for Leaflet.
- * Supabase returns geography as WKT or GeoJSON.
+ * Supabase returns geography as EWKB hex, WKT, or GeoJSON.
  */
 export function parseRouteToLatLng(
   value: string | null,
@@ -116,12 +127,32 @@ export function parseRouteToLatLng(
   }
 
   // Handle WKT: LINESTRING(lng1 lat1, lng2 lat2, ...)
-  const match = value.match(/LINESTRING\((.+)\)/);
-  if (match) {
-    return match[1].split(",").map((pair) => {
+  const wktMatch = value.match(/LINESTRING\((.+)\)/);
+  if (wktMatch) {
+    return wktMatch[1].split(",").map((pair) => {
       const [lng, lat] = pair.trim().split(" ").map(Number);
       return [lat, lng] as [number, number];
     });
+  }
+
+  // Handle EWKB hex for LineString
+  if (/^[0-9a-fA-F]+$/.test(value) && value.length >= 50) {
+    try {
+      const buf = Buffer.from(value, "hex");
+      // EWKB LineString with SRID: 1 endian + 4 type + 4 SRID + 4 numPoints = 13 bytes header
+      const numPoints = buf.readUInt32LE(9); // at offset 9 (after endian+type+SRID)
+      const coords: [number, number][] = [];
+      let offset = 13;
+      for (let i = 0; i < numPoints; i++) {
+        const lng = buf.readDoubleLE(offset);
+        const lat = buf.readDoubleLE(offset + 8);
+        coords.push([lat, lng]);
+        offset += 16;
+      }
+      return coords.length > 0 ? coords : null;
+    } catch {
+      return null;
+    }
   }
 
   return null;

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { use } from "react";
 import { fetchProduceById } from "@/lib/queries/produce";
 import { ProduceDetail } from "@/components/marketplace/ProduceDetail";
+import { stripHTML } from "@/lib/sanitize";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -21,12 +22,12 @@ export async function generateMetadata({
 
   const name = locale === "ne" ? listing.name_ne : listing.name_en;
   const farmerName = listing.farmer.name;
-  const description = listing.description ?? t("shareTitle", { name, farmer: farmerName });
+  const description = listing.description ? stripHTML(listing.description) : t("shareTitle", { name, farmer: farmerName });
   const photo = listing.photos?.[0];
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://jirisewa.com";
 
   return {
-    title: `${name} — NPR ${listing.price_per_kg}/kg`,
+    title: `${name} — NPR ${listing.price_per_kg}/${listing.unit || "kg"}`,
     description,
     openGraph: {
       title: t("shareTitle", { name, farmer: farmerName }),

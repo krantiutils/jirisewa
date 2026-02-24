@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Building2, Loader2 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 import { createBusinessProfile, getBusinessProfile } from "@/lib/actions/business";
 import { Button } from "@/components/ui/Button";
 import type { Locale } from "@/lib/i18n";
@@ -15,6 +16,13 @@ export default function BusinessRegisterPage() {
   const locale = params.locale as Locale;
   const router = useRouter();
   const t = useTranslations("business");
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
 
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState<typeof BUSINESS_TYPES[number]>("restaurant");
@@ -27,6 +35,7 @@ export default function BusinessRegisterPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     async function checkExisting() {
       const result = await getBusinessProfile();
       if (result.data) {
@@ -35,7 +44,9 @@ export default function BusinessRegisterPage() {
       setLoading(false);
     }
     checkExisting();
-  }, [locale, router]);
+  }, [authLoading, user, locale, router]);
+
+  if (authLoading || !user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

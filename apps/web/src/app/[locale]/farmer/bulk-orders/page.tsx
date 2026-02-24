@@ -12,6 +12,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 import {
   listFarmerBulkOrders,
   quoteBulkOrderItem,
@@ -34,10 +35,17 @@ export default function FarmerBulkOrdersPage() {
   const locale = params.locale as Locale;
   const router = useRouter();
   const t = useTranslations("business");
+  const { user, loading: authLoading } = useAuth();
 
   const [orders, setOrders] = useState<BulkOrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
 
   useEffect(() => {
     async function load() {
@@ -64,6 +72,8 @@ export default function FarmerBulkOrdersPage() {
       setOrders(reload.data ?? []);
     }
   };
+
+  if (authLoading || !user) return null;
 
   if (loading) {
     return (
@@ -109,9 +119,8 @@ export default function FarmerBulkOrdersPage() {
               );
 
               // Only show items for the current farmer
-              const DEMO_FARMER_ID = "00000000-0000-0000-0000-000000000002";
               const myItems = order.items.filter(
-                (i) => i.farmer_id === DEMO_FARMER_ID,
+                (i) => i.farmer_id === user?.id,
               );
 
               return (

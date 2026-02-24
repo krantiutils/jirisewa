@@ -1,11 +1,14 @@
 "use server";
 
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 import type { ChatConversation, ChatMessage } from "@/lib/types/chat";
 
-// TODO: Replace hardcoded user ID with authenticated user once auth is wired
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 /**
  * Get or create a conversation between the current user and another user for an order.
@@ -16,8 +19,10 @@ export async function getOrCreateConversation(
   otherUserId: string,
 ): Promise<ActionResult<{ conversationId: string }>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     // Sort participant IDs for consistent storage (prevents duplicate conversations)
     const participantIds = [currentUserId, otherUserId].sort();
@@ -122,7 +127,7 @@ export async function addRiderToConversation(
         .from("chat_messages")
         .insert({
           conversation_id: existing.id,
-          sender_id: "system", // Special ID for system messages
+          sender_id: riderId,
           content: `${rider.name} (${rider.role}) joined the conversation`,
           message_type: "text",
           read_at: new Date().toISOString(), // Auto-mark as read
@@ -142,11 +147,13 @@ export async function addRiderToConversation(
 export async function sendMessage(
   conversationId: string,
   content: string,
-  messageType: "text" | "image" | "location" = "text",
+  messageType: "text" | "image" | "location" | "audio" = "text",
 ): Promise<ActionResult<ChatMessage>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     // Verify the user is a participant
     const { data: conversation, error: convError } = await supabase
@@ -191,8 +198,10 @@ export async function sendMessage(
  */
 export async function listConversations(): Promise<ActionResult<ChatConversation[]>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     // Get all conversations where user is a participant
     const { data: conversations, error: convError } = await supabase
@@ -304,8 +313,10 @@ export async function getMessages(
   beforeId?: string,
 ): Promise<ActionResult<ChatMessage[]>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     // Verify the user is a participant
     const { data: conversation, error: convError } = await supabase
@@ -363,8 +374,10 @@ export async function markConversationRead(
   conversationId: string,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     const { error } = await supabase
       .from("chat_messages")
@@ -390,8 +403,10 @@ export async function markConversationRead(
  */
 export async function getTotalUnreadCount(): Promise<ActionResult<number>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     // Get all conversation IDs where the user is a participant
     const { data: conversations } = await supabase
@@ -431,6 +446,9 @@ export async function uploadChatImage(
   formData: FormData,
 ): Promise<ActionResult<{ url: string }>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
     const file = formData.get("file") as File | null;
 
@@ -439,7 +457,7 @@ export async function uploadChatImage(
     }
 
     const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${DEMO_CONSUMER_ID}/${Date.now()}.${ext}`;
+    const path = `${currentUserId}/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("chat-images")
@@ -465,6 +483,49 @@ export async function uploadChatImage(
 }
 
 /**
+ * Upload a chat audio recording to Supabase Storage.
+ */
+export async function uploadChatAudio(
+  formData: FormData,
+): Promise<ActionResult<{ url: string }>> {
+  try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
+    const supabase = createServiceRoleClient();
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+      return { error: "No file provided" };
+    }
+
+    const ext = file.name.split(".").pop() ?? "webm";
+    const path = `${currentUserId}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("chat-audio")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("uploadChatAudio error:", uploadError);
+      return { error: uploadError.message };
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("chat-audio")
+      .getPublicUrl(path);
+
+    return { data: { url: urlData.publicUrl } };
+  } catch (err) {
+    console.error("uploadChatAudio unexpected error:", err);
+    return { error: "Failed to upload audio" };
+  }
+}
+
+/**
  * Get conversation details (for the conversation page header).
  */
 export async function getConversationDetails(
@@ -474,8 +535,10 @@ export async function getConversationDetails(
   orderId: string;
 }>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const currentUserId = DEMO_CONSUMER_ID;
 
     const { data: conv, error: convError } = await supabase
       .from("chat_conversations")

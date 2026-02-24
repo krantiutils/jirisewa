@@ -1,11 +1,14 @@
 "use server";
 
 import { NotificationCategory } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 
-// TODO: Replace hardcoded user IDs with authenticated user once auth is wired
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 interface NotificationRow {
   id: string;
@@ -32,13 +35,16 @@ export async function registerDeviceToken(
   deviceName?: string,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from("user_devices")
       .upsert(
         {
-          user_id: DEMO_CONSUMER_ID,
+          user_id: currentUserId,
           fcm_token: fcmToken,
           platform,
           device_name: deviceName ?? null,
@@ -63,12 +69,15 @@ export async function unregisterDeviceToken(
   fcmToken: string,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from("user_devices")
       .update({ is_active: false })
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .eq("fcm_token", fcmToken);
 
     if (error) {
@@ -90,6 +99,9 @@ export async function listNotifications(
   offset = 0,
 ): Promise<ActionResult<NotificationRow[]>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     // Clamp inputs to prevent abuse
     const safeLimit = Math.max(1, Math.min(limit, 100));
     const safeOffset = Math.max(0, offset);
@@ -99,7 +111,7 @@ export async function listNotifications(
     const { data, error } = await supabase
       .from("notifications")
       .select("id, category, title_en, title_ne, body_en, body_ne, data, read, created_at")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .order("created_at", { ascending: false })
       .range(safeOffset, safeOffset + safeLimit - 1);
 
@@ -117,12 +129,15 @@ export async function listNotifications(
 
 export async function getUnreadCount(): Promise<ActionResult<number>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { count, error } = await supabase
       .from("notifications")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .eq("read", false);
 
     if (error) {
@@ -141,13 +156,16 @@ export async function markNotificationRead(
   notificationId: string,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from("notifications")
       .update({ read: true })
       .eq("id", notificationId)
-      .eq("user_id", DEMO_CONSUMER_ID);
+      .eq("user_id", currentUserId);
 
     if (error) {
       console.error("markNotificationRead error:", error);
@@ -163,12 +181,15 @@ export async function markNotificationRead(
 
 export async function markAllNotificationsRead(): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from("notifications")
       .update({ read: true })
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .eq("read", false);
 
     if (error) {
@@ -189,12 +210,15 @@ export async function getNotificationPreferences(): Promise<
   ActionResult<NotificationPreference[]>
 > {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
       .from("notification_preferences")
       .select("category, enabled")
-      .eq("user_id", DEMO_CONSUMER_ID);
+      .eq("user_id", currentUserId);
 
     if (error) {
       console.error("getNotificationPreferences error:", error);
@@ -223,13 +247,16 @@ export async function updateNotificationPreference(
   enabled: boolean,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { error } = await supabase
       .from("notification_preferences")
       .upsert(
         {
-          user_id: DEMO_CONSUMER_ID,
+          user_id: currentUserId,
           category,
           enabled,
         },

@@ -1,7 +1,8 @@
 "use server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sanitizeHTML } from "@/lib/sanitize";
 import type { Tables } from "@/lib/supabase/types";
 
 export type ListingFormData = {
@@ -11,6 +12,7 @@ export type ListingFormData = {
   description: string;
   price_per_kg: number;
   available_qty_kg: number;
+  unit: string;
   freshness_date: string;
   photos: string[];
 };
@@ -37,6 +39,7 @@ async function getAuthenticatedFarmer() {
     return { supabase, user: null, error: "Not authenticated" } as const;
   }
 
+  // Check user_roles first, then fall back to user_profiles
   const { data: userRole } = await supabase
     .from("user_roles")
     .select("role")
@@ -45,7 +48,17 @@ async function getAuthenticatedFarmer() {
     .single();
 
   if (!userRole) {
-    return { supabase, user: null, error: "Not a farmer" } as const;
+    // Fallback: check user_profiles (new auth system)
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("role")
+      .eq("id", user.id)
+      .eq("role", "farmer")
+      .single();
+
+    if (!profile) {
+      return { supabase, user: null, error: "Not a farmer" } as const;
+    }
   }
 
   return { supabase, user, error: null } as const;
@@ -79,7 +92,8 @@ export async function getFarmerListings(): Promise<
     .from("produce_listings")
     .select("*, produce_categories(name_en, name_ne, icon)")
     .eq("farmer_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
 
   if (error) {
     return { success: false, error: error.message };
@@ -118,6 +132,36 @@ export async function createListing(
     return { success: false, error: authError };
   }
 
+  // Ensure farmer exists in `users` table (FK: produce_listings.farmer_id → users.id).
+  // For email-only signups the onboarding upsert may have silently failed.
+  {
+    const serviceClient = createServiceRoleClient();
+    const authClient = await createClient();
+    const { data: { user: authUser } } = await authClient.auth.getUser();
+    const farmerName =
+      authUser?.user_metadata?.full_name || authUser?.email || "Farmer";
+    const farmerPhone = authUser?.phone || authUser?.user_metadata?.phone || authUser?.email || user.id;
+
+    const { data: prof } = await serviceClient
+      .from("user_profiles")
+      .select("full_name, phone, role")
+      .eq("id", user.id)
+      .single();
+
+    const name = prof?.full_name || farmerName;
+    const phone = prof?.phone || farmerPhone;
+
+    const { error: upsertErr } = await serviceClient
+      .from("users")
+      .upsert(
+        { id: user.id, name, phone, role: "farmer" } as Record<string, unknown>,
+        { onConflict: "id" },
+      );
+    if (upsertErr) {
+      console.error("createListing: users upsert failed:", upsertErr);
+    }
+  }
+
   // Get farmer's location from their profile to use as listing location
   const { data: profile } = await supabase
     .from("users")
@@ -132,9 +176,10 @@ export async function createListing(
       category_id: formData.category_id,
       name_en: formData.name_en,
       name_ne: formData.name_ne,
-      description: formData.description || null,
+      description: formData.description ? sanitizeHTML(formData.description) : null,
       price_per_kg: formData.price_per_kg,
       available_qty_kg: formData.available_qty_kg,
+      unit: formData.unit || "kg",
       freshness_date: formData.freshness_date || null,
       photos: formData.photos,
       location: profile?.location ?? null,
@@ -165,11 +210,12 @@ export async function updateListing(
   if (formData.name_en !== undefined) updateData.name_en = formData.name_en;
   if (formData.name_ne !== undefined) updateData.name_ne = formData.name_ne;
   if (formData.description !== undefined)
-    updateData.description = formData.description || null;
+    updateData.description = formData.description ? sanitizeHTML(formData.description) : null;
   if (formData.price_per_kg !== undefined)
     updateData.price_per_kg = formData.price_per_kg;
   if (formData.available_qty_kg !== undefined)
     updateData.available_qty_kg = formData.available_qty_kg;
+  if (formData.unit !== undefined) updateData.unit = formData.unit;
   if (formData.freshness_date !== undefined)
     updateData.freshness_date = formData.freshness_date || null;
   if (formData.photos !== undefined) updateData.photos = formData.photos;
@@ -246,7 +292,8 @@ export async function getFarmerDashboardData(): Promise<
       .from("produce_listings")
       .select("*, produce_categories(name_en, name_ne, icon)")
       .eq("farmer_id", user.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true }),
     supabase
       .from("order_items")
       .select("subtotal, order_id, orders(status, created_at)")
@@ -304,8 +351,8 @@ export async function uploadProducePhoto(
     return { success: false, error: "No file provided" };
   }
 
-  if (file.size > 1048576) {
-    return { success: false, error: "File too large (max 1MB)" };
+  if (file.size > 5242880) {
+    return { success: false, error: "File too large (max 5MB)" };
   }
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];

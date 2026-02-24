@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.css";
+import "react-leaflet-cluster/dist/assets/MarkerCluster.Default.css";
 import {
   MAP_TILE_URL,
   MAP_ATTRIBUTION,
@@ -11,6 +13,7 @@ import {
   MAP_DEFAULT_ZOOM,
   NEPAL_BOUNDS,
 } from "@jirisewa/shared";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import { defaultMarkerIcon } from "@/lib/leaflet-icons";
 
 export interface ProduceListing {
@@ -55,35 +58,38 @@ export default function ProduceMap({
         center={[mapCenter.lat, mapCenter.lng]}
         zoom={mapZoom}
         maxBounds={bounds}
-        maxBoundsViscosity={1.0}
+        maxBoundsViscosity={0.7}
         minZoom={7}
+        maxZoom={19}
         style={{ height: "100%", width: "100%" }}
       >
-        <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} />
-        {listings.map((listing) => (
-          <Marker
-            key={listing.id}
-            position={[listing.lat, listing.lng]}
-            icon={defaultMarkerIcon}
-            eventHandlers={
-              onMarkerClick
-                ? {
-                    click: () => onMarkerClick(listing.id),
-                  }
-                : undefined
-            }
-          >
-            <Popup>
-              <div className="font-sans">
-                <p className="font-semibold text-sm">{listing.name}</p>
-                <p className="text-xs text-gray-600">
-                  NPR {listing.pricePerKg}/kg
-                </p>
-                <p className="text-xs text-gray-500">{listing.farmerName}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        <TileLayer url={MAP_TILE_URL} attribution={MAP_ATTRIBUTION} maxZoom={19} />
+        <MarkerClusterGroup chunkedLoading>
+          {listings.map((listing) => (
+            <Marker
+              key={listing.id}
+              position={[listing.lat, listing.lng]}
+              icon={defaultMarkerIcon}
+              eventHandlers={
+                onMarkerClick
+                  ? {
+                      click: () => onMarkerClick(listing.id),
+                    }
+                  : undefined
+              }
+            >
+              <Popup>
+                <div className="font-sans">
+                  <p className="font-semibold text-sm">{listing.name}</p>
+                  <p className="text-xs text-gray-600">
+                    NPR {listing.pricePerKg}/kg
+                  </p>
+                  <p className="text-xs text-gray-500">{listing.farmerName}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );

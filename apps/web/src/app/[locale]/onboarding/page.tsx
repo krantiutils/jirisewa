@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { createClient } from "@/lib/supabase/client";
+import { completeOnboarding } from "@/lib/actions/onboarding";
 import { Card } from "@/components/ui";
 import {
   Sprout,
@@ -12,9 +12,26 @@ import {
   User,
   ArrowRight,
   Check,
+  Bike,
+  Car,
+  Truck,
+  Bus,
+  CircleHelp,
 } from "lucide-react";
+import { LocationSearchInput } from "@/components/map/LocationSearchInput";
 
 type UserRole = "customer" | "farmer" | "rider";
+type VehicleType = "bike" | "car" | "truck" | "bus" | "other";
+
+const VEHICLE_ICONS: Record<VehicleType, typeof Bike> = {
+  bike: Bike,
+  car: Car,
+  truck: Truck,
+  bus: Bus,
+  other: CircleHelp,
+};
+const VEHICLE_TYPES: VehicleType[] = ["bike", "car", "truck", "bus", "other"];
+const FIXED_ROUTE_VEHICLES: VehicleType[] = ["bus", "truck"];
 
 const ROLE_CONFIG: Record<
   UserRole,
@@ -52,70 +69,68 @@ const ROLE_CONFIG: Record<
 export default function OnboardingPage() {
   const t = useTranslations("onboarding");
   const router = useRouter();
-  const { user } = useAuth();
-  const supabase = createClient();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkingProfile, setCheckingProfile] = useState(true);
+
+  // Rider-specific state
+  const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
+  const [fixedRouteOrigin, setFixedRouteOrigin] = useState<{ lat: number; lng: number; name: string } | null>(null);
+  const [fixedRouteDest, setFixedRouteDest] = useState<{ lat: number; lng: number; name: string } | null>(null);
 
   useEffect(() => {
-    // Check if user already has a profile with completed onboarding
-    const checkProfile = async () => {
-      if (!user) {
-        router.replace("/auth/login");
-        return;
-      }
+    // Wait for auth to settle before checking anything
+    if (authLoading) return;
 
-      const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("onboarding_completed, role")
-        .eq("id", user.id)
-        .single();
+    if (!user) {
+      router.replace("/auth/login");
+      return;
+    }
 
-      setCheckingProfile(false);
-
-      if (profile?.onboarding_completed) {
-        // Redirect to the appropriate dashboard
-        const dashboardMap: Record<string, string> = {
-          farmer: "/farmer/dashboard",
-          rider: "/rider/dashboard",
-          customer: "/customer",
-        };
-        router.replace(dashboardMap[profile.role] || "/customer");
-      }
-    };
-
-    checkProfile();
-  }, [user, router, supabase]);
+    // If profile exists and onboarding is done, redirect to dashboard
+    if (profile?.onboarding_completed) {
+      const dashboardMap: Record<string, string> = {
+        farmer: "/farmer/dashboard",
+        rider: "/rider/dashboard",
+        customer: "/customer",
+      };
+      router.replace(dashboardMap[profile.role || "customer"] || "/customer");
+    }
+  }, [authLoading, user, profile, router]);
 
   const handleContinue = async () => {
     if (!selectedRole || !user) return;
 
     setLoading(true);
 
-    const { error } = await supabase
-      .from("user_profiles")
-      .update({ role: selectedRole, onboarding_completed: true })
-      .eq("id", user.id);
+    const result = await completeOnboarding({
+      role: selectedRole,
+      fullName: fullName.trim() || undefined,
+      vehicleType: selectedRole === "rider" ? (vehicleType ?? undefined) : undefined,
+      fixedRouteOrigin:
+        selectedRole === "rider" && vehicleType && FIXED_ROUTE_VEHICLES.includes(vehicleType)
+          ? fixedRouteOrigin
+          : null,
+      fixedRouteDest:
+        selectedRole === "rider" && vehicleType && FIXED_ROUTE_VEHICLES.includes(vehicleType)
+          ? fixedRouteDest
+          : null,
+    });
 
-    if (error) {
-      console.error("Error updating profile:", error);
+    if (result.error) {
+      console.error("Onboarding error:", result.error);
       setLoading(false);
       return;
     }
 
-    // Redirect to appropriate dashboard
-    const dashboardMap: Record<UserRole, string> = {
-      farmer: "/farmer/dashboard",
-      rider: "/rider/dashboard",
-      customer: "/customer",
-    };
-
-    router.replace(dashboardMap[selectedRole]);
+    // Refresh the AuthProvider profile so downstream pages see the update
+    await refreshProfile();
+    router.replace(result.data!.dashboard);
   };
 
-  if (checkingProfile) {
+  if (authLoading || (!user && !authLoading)) {
     return (
       <div className="flex min-h-[calc(100vh-57px)] items-center justify-center">
         <div className="text-center">
@@ -135,6 +150,24 @@ export default function OnboardingPage() {
             {t("heading")}
           </h1>
           <p className="mt-3 text-lg text-gray-600">{t("subheading")}</p>
+        </div>
+
+        {/* Name input */}
+        <div className="mx-auto mb-8 max-w-md">
+          <label
+            htmlFor="fullName"
+            className="mb-2 block text-sm font-medium text-gray-700"
+          >
+            {t("nameLabel")}
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder={t("namePlaceholder")}
+            className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
+          />
         </div>
 
         {/* Role Selection */}
@@ -191,6 +224,74 @@ export default function OnboardingPage() {
             );
           })}
         </div>
+
+        {/* Rider-specific options */}
+        {selectedRole === "rider" && (
+          <div className="mx-auto mt-8 max-w-md space-y-6">
+            {/* Vehicle Type */}
+            <div>
+              <label className="mb-3 block text-sm font-medium text-gray-700">
+                {t("vehicleType")}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {VEHICLE_TYPES.map((vt) => {
+                  const VIcon = VEHICLE_ICONS[vt];
+                  const isSelected = vehicleType === vt;
+                  return (
+                    <button
+                      key={vt}
+                      type="button"
+                      onClick={() => setVehicleType(vt)}
+                      className={`flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
+                        isSelected
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      }`}
+                    >
+                      <VIcon className="h-4 w-4" />
+                      {t(`vehicleTypes.${vt}`)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fixed Route — shown for bus/truck */}
+            {vehicleType && FIXED_ROUTE_VEHICLES.includes(vehicleType) && (
+              <div className="rounded-lg border-2 border-gray-200 bg-gray-50 p-4">
+                <h4 className="text-sm font-semibold text-gray-900">
+                  {t("fixedRouteTitle")}
+                </h4>
+                <p className="mt-1 text-xs text-gray-500">
+                  {t("fixedRouteHint")}
+                </p>
+
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      {t("routeOrigin")}
+                    </label>
+                    <LocationSearchInput
+                      value={fixedRouteOrigin?.name}
+                      placeholder={t("routeOriginPlaceholder")}
+                      onChange={setFixedRouteOrigin}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      {t("routeDestination")}
+                    </label>
+                    <LocationSearchInput
+                      value={fixedRouteDest?.name}
+                      placeholder={t("routeDestinationPlaceholder")}
+                      onChange={setFixedRouteDest}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Continue Button */}
         <div className="mt-10 flex justify-center">

@@ -281,7 +281,7 @@ export default function CheckoutPage() {
                               <p className="truncate text-sm font-semibold">{name}</p>
                               <p className="text-xs text-gray-500">
                                 {!isMultiFarmer && `${item.farmerName} · `}
-                                {item.quantityKg} kg &times; NPR {item.pricePerKg}
+                                {item.quantityKg} {item.unit || "kg"} &times; NPR {item.pricePerKg}
                               </p>
                             </div>
                             <span className="text-sm font-bold">

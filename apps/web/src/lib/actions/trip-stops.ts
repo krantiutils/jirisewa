@@ -1,7 +1,7 @@
 "use server";
 
 import { StopType } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 import type {
   TripStop,
@@ -12,7 +12,11 @@ import { parseTripStop } from "@/lib/types/trip-stop";
 import { optimizeRoute, type RouteStop } from "@/lib/route-optimizer";
 import type { OptimizedRoute } from "@/lib/types/trip-stop";
 
-const DEMO_RIDER_ID = "00000000-0000-0000-0000-000000000000";
+async function getAuthRiderId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 function pointToWkt(lat: number, lng: number): string {
   return `POINT(${lng} ${lat})`;
@@ -135,7 +139,10 @@ export async function optimizeTripRoute(
       return { error: "Trip not found" };
     }
 
-    if (trip.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (trip.rider_id !== riderId) {
       return { error: "You can only optimize your own trips" };
     }
 
