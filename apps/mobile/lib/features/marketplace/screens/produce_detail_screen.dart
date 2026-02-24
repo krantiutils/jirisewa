@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/cart/models/cart.dart';
 import 'package:jirisewa_mobile/features/cart/providers/cart_provider.dart';
-import 'package:jirisewa_mobile/features/marketplace/providers/produce_detail_provider.dart';
+import 'package:jirisewa_mobile/features/marketplace/providers/produce_detail_provider.dart'
+    show produceDetailProvider, farmerBioProvider;
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:go_router/go_router.dart';
 
@@ -88,6 +89,11 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
     final farmerName = farmer?['name'] as String? ?? 'Unknown Farmer';
     final farmerRating = (farmer?['rating_avg'] as num?)?.toDouble();
     final farmerRatingCount = (farmer?['rating_count'] as num?)?.toInt() ?? 0;
+    final farmerId = (farmer?['id'] as String?) ?? (listing['farmer_id'] as String? ?? '');
+    final farmerBioAsync = farmerId.isNotEmpty
+        ? ref.watch(farmerBioProvider(farmerId))
+        : const AsyncValue<String?>.data(null);
+    final farmerBio = farmerBioAsync.valueOrNull;
 
     final category = listing['produce_categories'] as Map<String, dynamic>?;
     final categoryName = category?['name_en'] as String?;
@@ -203,6 +209,7 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
                         farmerName,
                         farmerRating,
                         farmerRatingCount,
+                        farmerBio,
                       ),
                     ],
                   ),
@@ -325,6 +332,7 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
     String farmerName,
     double? rating,
     int ratingCount,
+    String? bio,
   ) {
     final initial =
         farmerName.isNotEmpty ? farmerName[0].toUpperCase() : '?';
@@ -335,70 +343,88 @@ class _ProduceDetailScreenState extends ConsumerState<ProduceDetailScreen> {
         color: AppColors.muted,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary.withAlpha(30),
-            child: Text(
-              initial,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  farmerName,
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: AppColors.primary.withAlpha(30),
+                child: Text(
+                  initial,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (rating != null) ...[
-                      const Icon(Icons.star, size: 16, color: AppColors.accent),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    Text(
+                      farmerName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '($ratingCount)',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ] else
-                      Text(
-                        'No ratings yet',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
-                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (rating != null) ...[
+                          const Icon(Icons.star, size: 16, color: AppColors.accent),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '($ratingCount)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ] else
+                          Text(
+                            'No ratings yet',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: Colors.grey,
+              ),
+            ],
+          ),
+          if (bio != null && bio.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              bio,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+                height: 1.4,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const Icon(
-            Icons.chevron_right,
-            color: Colors.grey,
-          ),
+          ],
         ],
       ),
     );
