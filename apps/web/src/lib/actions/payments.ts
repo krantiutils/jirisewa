@@ -1,13 +1,17 @@
 "use server";
 
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import { buildPaymentFormData, generateTransactionUuid } from "@/lib/esewa";
 import { initiatePayment as initiateKhaltiPayment, generatePurchaseOrderId, toPaisa as khaltiToPaisa } from "@/lib/khalti";
 import { buildPaymentFormData as buildConnectIPSFormData, generateTxnId, generateReferenceId, toPaisa as connectipsToPaisa } from "@/lib/connectips";
 import type { ActionResult } from "@/lib/types/action";
 import type { EsewaPaymentFormData, KhaltiPaymentData, ConnectIPSPaymentFormData } from "@/lib/types/order";
 
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 /**
  * Validate order for retry payment. Returns the order data or an error.
@@ -16,6 +20,11 @@ async function validateOrderForRetry(
   orderId: string,
   expectedMethod: string,
 ) {
+  const currentUserId = await getAuthUserId();
+  if (!currentUserId) {
+    return { error: "Not authenticated" as const };
+  }
+
   const supabase = createServiceRoleClient();
 
   const { data: order, error: orderError } = await supabase
@@ -28,7 +37,7 @@ async function validateOrderForRetry(
     return { error: "Order not found" as const };
   }
 
-  if (order.consumer_id !== DEMO_CONSUMER_ID) {
+  if (order.consumer_id !== currentUserId) {
     return { error: "You can only pay for your own orders" as const };
   }
 

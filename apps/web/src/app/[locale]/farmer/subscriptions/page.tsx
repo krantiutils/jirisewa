@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import { Package, Plus, Users, Calendar, Pause, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -42,7 +43,9 @@ const DAYS_NE = [
 export default function FarmerSubscriptionsPage() {
   const params = useParams();
   const locale = params.locale as Locale;
+  const router = useRouter();
   const t = useTranslations("farmerSubscriptions");
+  const { user, loading: authLoading } = useAuth();
 
   const [plans, setPlans] = useState<SubscriptionPlanWithFarmer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +77,12 @@ export default function FarmerSubscriptionsPage() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load
@@ -159,6 +168,8 @@ export default function FarmerSubscriptionsPage() {
   }
 
   const dayNames = locale === "ne" ? DAYS_NE : DAYS;
+
+  if (authLoading || !user) return null;
 
   return (
     <main className="min-h-screen bg-muted">

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations, useFormatter } from "next-intl";
 import { Star, MapPin, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui";
 import type { ProduceListingWithDetails } from "@/lib/supabase/types";
@@ -14,6 +14,7 @@ interface ProduceCardProps {
 export function ProduceCard({ listing, etaMinutes }: ProduceCardProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("marketplace");
+  const format = useFormatter();
 
   const name = locale === "ne" ? listing.name_ne : listing.name_en;
   const categoryName =
@@ -92,10 +93,10 @@ export function ProduceCard({ listing, etaMinutes }: ProduceCardProps) {
           {listing.freshness_date && (
             <span>
               {t("harvestedOn", {
-                date: new Date(listing.freshness_date).toLocaleDateString(
-                  locale === "ne" ? "ne-NP" : "en-US",
-                  { month: "short", day: "numeric" },
-                ),
+                date: format.dateTime(new Date(listing.freshness_date), {
+                  month: "short",
+                  day: "numeric",
+                }),
               })}
             </span>
           )}

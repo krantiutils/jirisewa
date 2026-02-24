@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { requireAuth } from "@/lib/auth/require-auth";
 import {
   ArrowLeft,
   TrendingUp,
@@ -28,6 +29,7 @@ export default async function FarmerAnalyticsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  await requireAuth(locale);
 
   const resolvedSearchParams = await searchParams;
   const days = Math.min(

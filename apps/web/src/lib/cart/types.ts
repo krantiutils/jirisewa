@@ -7,6 +7,7 @@ export interface CartItem {
   nameNe: string;
   farmerName: string;
   photo: string | null;
+  unit?: string;
 }
 
 export interface Cart {

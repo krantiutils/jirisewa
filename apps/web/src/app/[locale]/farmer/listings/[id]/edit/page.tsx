@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { requireAuth } from "@/lib/auth/require-auth";
 import { getCategories, getFarmerListing } from "../../../actions";
 import { ListingForm } from "../../../_components/ListingForm";
 
@@ -11,6 +12,7 @@ export default async function EditListingPage({
 }) {
   const { locale, id } = await params;
   setRequestLocale(locale);
+  await requireAuth(locale);
 
   const t = await getTranslations("farmer");
 

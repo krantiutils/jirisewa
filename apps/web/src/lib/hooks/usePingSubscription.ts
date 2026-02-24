@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 import { listPendingPings } from "@/lib/actions/pings";
 import type { OrderPing, OrderPingRow } from "@/lib/types/ping";
 import { parseOrderPing } from "@/lib/types/ping";
-
-// TODO: Replace hardcoded rider ID with authenticated user once auth is implemented
-const DEMO_RIDER_ID = "00000000-0000-0000-0000-000000000000";
 
 interface UsePingSubscriptionReturn {
   pings: OrderPing[];
@@ -25,6 +23,7 @@ interface UsePingSubscriptionReturn {
  * - Client-side countdown timer removes expired pings from state
  */
 export function usePingSubscription(): UsePingSubscriptionReturn {
+  const { user } = useAuth();
   const [pings, setPings] = useState<OrderPing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +35,8 @@ export function usePingSubscription(): UsePingSubscriptionReturn {
 
   // Load initial pings
   useEffect(() => {
+    if (!user?.id) return;
+
     async function loadInitial() {
       setLoading(true);
       const result = await listPendingPings();
@@ -48,11 +49,14 @@ export function usePingSubscription(): UsePingSubscriptionReturn {
     }
 
     loadInitial();
-  }, []);
+  }, [user?.id]);
 
   // Subscribe to realtime changes
   useEffect(() => {
+    if (!user?.id) return;
+
     const supabase = createClient();
+    const riderId = user.id;
 
     const channel = supabase
       .channel("order-pings-realtime")
@@ -62,7 +66,7 @@ export function usePingSubscription(): UsePingSubscriptionReturn {
           event: "INSERT",
           schema: "public",
           table: "order_pings",
-          filter: `rider_id=eq.${DEMO_RIDER_ID}`,
+          filter: `rider_id=eq.${riderId}`,
         },
         (payload) => {
           const newPing = parseOrderPing(payload.new as OrderPingRow);
@@ -82,7 +86,7 @@ export function usePingSubscription(): UsePingSubscriptionReturn {
           event: "UPDATE",
           schema: "public",
           table: "order_pings",
-          filter: `rider_id=eq.${DEMO_RIDER_ID}`,
+          filter: `rider_id=eq.${riderId}`,
         },
         (payload) => {
           const updated = parseOrderPing(payload.new as OrderPingRow);
@@ -97,7 +101,7 @@ export function usePingSubscription(): UsePingSubscriptionReturn {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   // Client-side countdown timer: remove expired pings every second
   useEffect(() => {

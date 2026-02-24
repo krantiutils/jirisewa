@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 import { getBusinessProfile, listBulkOrders } from "@/lib/actions/business";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -32,12 +33,20 @@ export default function BusinessDashboardPage() {
   const locale = params.locale as Locale;
   const router = useRouter();
   const t = useTranslations("business");
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/${locale}/auth/login`);
+    }
+  }, [authLoading, user, router, locale]);
 
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [orders, setOrders] = useState<BulkOrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading || !user) return;
     async function load() {
       const [profileResult, ordersResult] = await Promise.all([
         getBusinessProfile(),
@@ -54,7 +63,9 @@ export default function BusinessDashboardPage() {
       setLoading(false);
     }
     load();
-  }, [locale, router]);
+  }, [authLoading, user, locale, router]);
+
+  if (authLoading || !user) return null;
 
   if (loading) {
     return (

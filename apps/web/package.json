@@ -20,7 +20,15 @@
     "@jirisewa/shared": "workspace:*",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tiptap/extension-image": "^3.20.0",
+    "@tiptap/extension-link": "^3.20.0",
+    "@tiptap/extension-placeholder": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
+    "@tiptap/react": "^3.20.0",
+    "@tiptap/starter-kit": "^3.20.0",
     "firebase": "^12.9.0",
+    "isomorphic-dompurify": "^2.36.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
@@ -28,6 +36,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-leaflet": "^5.0.0",
+    "react-leaflet-cluster": "^4.0.0",
     "recharts": "^3.7.0"
   },
   "devDependencies": {

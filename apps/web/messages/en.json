@@ -17,7 +17,9 @@
     "register": "Register",
     "account": "Account",
     "notifications": "Notifications",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "myDashboard": "My Dashboard",
+    "myOrders": "My Orders"
   },
   "home": {
     "title": "JiriSewa",
@@ -173,7 +175,11 @@
     "notFound": "Product not found",
     "notFoundHint": "This product may have been removed or is no longer available.",
     "shareTitle": "{name} \u2014 Fresh from {farmer} on JiriSewa",
-    "photos": "Photos"
+    "photos": "Photos",
+    "buyNow": "Buy Now",
+    "farmerStory": "Farmer's Story",
+    "readMore": "Read more",
+    "bioPlaceholder": "Tell customers about your farm, your story, and how you grow your produce..."
   },
   "cart": {
     "title": "Shopping Cart",
@@ -231,6 +237,9 @@
     "loading": "Loading...",
     "noOrders": "No orders yet",
     "noFilterResults": "No orders match your filters",
+    "mapView": "Map",
+    "listView": "List",
+    "viewOrder": "View Order",
     "browseMarketplace": "Browse Marketplace",
     "moreItems": "more",
     "totalItems": "{count, plural, one {# item} other {# items}}",
@@ -264,6 +273,7 @@
     "fromFarmer": "from {farmer}",
     "deliveryAddress": "Delivery Address",
     "riderInfo": "Rider Information",
+    "communication": "Communication",
     "subtotal": "Subtotal",
     "deliveryFee": "Delivery Fee",
     "baseFee": "Base Fee",
@@ -370,7 +380,13 @@
       "earnings": "Total Earnings",
       "myListings": "My Listings",
       "noListings": "You haven't listed any produce yet.",
-      "addFirstListing": "Add Your First Listing"
+      "addFirstListing": "Add Your First Listing",
+      "pending": "pending",
+      "viewAll": "View All",
+      "viewInsights": "View insights",
+      "newListing": "New Listing",
+      "addProduce": "Add produce",
+      "create": "Create"
     },
     "newListing": {
       "title": "Add New Listing"
@@ -500,7 +516,9 @@
       "acceptOrder": "Accept Order",
       "accepting": "Accepting...",
       "orderWeight": "Weight",
-      "orderEarnings": "Earnings"
+      "orderEarnings": "Earnings",
+      "mapView": "Map",
+      "listView": "List"
     },
     "tripForm": {
       "title": "Post a Trip",
@@ -563,7 +581,8 @@
       "deliveryStop": "Delivery",
       "eta": "ETA",
       "markArrived": "Arrived",
-      "arrived": "Done"
+      "arrived": "Done",
+      "awaitingFarmerConfirmation": "Awaiting farmer confirmation"
     },
     "tripPlan": {
       "title": "Trip Route Planner",
@@ -1002,6 +1021,10 @@
     "typeMessage": "Type a message...",
     "send": "Send",
     "sendImage": "Send image",
+    "audio": "Voice message",
+    "recording": "Recording...",
+    "recordVoice": "Record voice message",
+    "stopRecording": "Stop recording",
     "today": "Today",
     "yesterday": "Yesterday",
     "online": "Online",
@@ -1174,6 +1197,35 @@
     "empty": "No saved addresses yet",
     "emptyHint": "Add your frequently used delivery locations for faster checkout"
   },
+  "account": {
+    "title": "Account Settings",
+    "profileSection": "Profile Information",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Your full name",
+    "phone": "Phone Number",
+    "phonePlaceholder": "98XXXXXXXX",
+    "saveProfile": "Save Changes",
+    "saving": "Saving...",
+    "profileUpdated": "Profile updated successfully",
+    "passwordSection": "Change Password",
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Re-enter new password",
+    "changePassword": "Change Password",
+    "changing": "Changing...",
+    "passwordChanged": "Password changed successfully",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "accountInfo": "Account Information",
+    "email": "Email",
+    "role": "Role",
+    "memberSince": "Member Since",
+    "bio": "About Your Farm",
+    "bioPlaceholder": "Tell customers about your farm, your story, and how you grow your produce..."
+  },
   "earnings": {
     "title": "Earnings",
     "totalEarned": "Total Earned",
@@ -1205,5 +1257,19 @@
       "disputed": "Disputed"
     },
     "backToDashboard": "Back to Dashboard"
+  },
+  "farmerOrders": {
+    "title": "My Orders",
+    "backToDashboard": "Back to Dashboard",
+    "noOrders": "No orders yet",
+    "customer": "Customer",
+    "rider": "Rider",
+    "confirmPickup": "Confirm Pickup",
+    "confirming": "Confirming...",
+    "markUnavailable": "Unavailable",
+    "tabs": {
+      "active": "Active",
+      "completed": "Completed"
+    }
   }
 }

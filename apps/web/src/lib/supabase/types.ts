@@ -114,6 +114,11 @@ export type Database = {
           name_ne: string;
           icon: string | null;
           sort_order: number;
+          default_unit: string;
+          price_min: number | null;
+          price_max: number | null;
+          group_en: string;
+          group_ne: string;
         };
         Insert: {
           id?: string;
@@ -121,6 +126,11 @@ export type Database = {
           name_ne: string;
           icon?: string | null;
           sort_order?: number;
+          default_unit?: string;
+          price_min?: number | null;
+          price_max?: number | null;
+          group_en?: string;
+          group_ne?: string;
         };
         Update: {
           id?: string;
@@ -128,6 +138,11 @@ export type Database = {
           name_ne?: string;
           icon?: string | null;
           sort_order?: number;
+          default_unit?: string;
+          price_min?: number | null;
+          price_max?: number | null;
+          group_en?: string;
+          group_ne?: string;
         };
         Relationships: [];
       };
@@ -141,6 +156,7 @@ export type Database = {
           description: string | null;
           price_per_kg: number;
           available_qty_kg: number;
+          unit: string;
           freshness_date: string | null;
           location: unknown | null;
           photos: string[];
@@ -158,6 +174,7 @@ export type Database = {
           description?: string | null;
           price_per_kg: number;
           available_qty_kg: number;
+          unit?: string;
           freshness_date?: string | null;
           location?: unknown | null;
           photos?: string[];
@@ -175,6 +192,7 @@ export type Database = {
           description?: string | null;
           price_per_kg?: number;
           available_qty_kg?: number;
+          unit?: string;
           freshness_date?: string | null;
           location?: unknown | null;
           photos?: string[];
@@ -1637,7 +1655,7 @@ export type ProduceCategory = Database["public"]["Tables"]["produce_categories"]
 export type User = Database["public"]["Tables"]["users"]["Row"];
 
 export interface ProduceListingWithDetails extends ProduceListing {
-  farmer: Pick<User, "id" | "name" | "avatar_url" | "rating_avg" | "rating_count">;
+  farmer: Pick<User, "id" | "name" | "avatar_url" | "rating_avg" | "rating_count"> & { bio?: string | null };
   category: Pick<ProduceCategory, "id" | "name_en" | "name_ne" | "icon">;
   distance_km?: number;
   farmer_verified?: boolean;

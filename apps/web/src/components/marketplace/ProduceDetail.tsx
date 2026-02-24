@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations, useFormatter } from "next-intl";
+import { Link, useRouter } from "@/i18n/navigation";
 import {
   ArrowLeft,
   Star,
@@ -14,8 +14,10 @@ import {
   Minus,
   User,
   ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
+import { SafeHTML } from "@/components/ui/SafeHTML";
 import { useCart } from "@/lib/cart";
 import type { ProduceListingWithDetails } from "@/lib/supabase/types";
 import type { Locale } from "@/lib/i18n";
@@ -28,10 +30,13 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("produce");
   const mt = useTranslations("marketplace");
-  const { addItem } = useCart();
+  const format = useFormatter();
+  const router = useRouter();
+  const { addItem, clearCart } = useCart();
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   const name = locale === "ne" ? listing.name_ne : listing.name_en;
   const categoryName =
@@ -71,7 +76,7 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-6xl text-gray-300">
-                  🌿
+                  {listing.category.icon || "🌿"}
                 </div>
               )}
               <Badge color="secondary" className="absolute left-4 top-4">
@@ -114,7 +119,7 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                 {name}
               </h1>
               <p className="mt-2 text-3xl font-extrabold text-primary">
-                {t("pricePerKg", { price: listing.price_per_kg })}
+                NPR {listing.price_per_kg}/{listing.unit || "kg"}
               </p>
             </div>
 
@@ -124,16 +129,17 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                 <div className="flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-sm">
                   <Calendar className="h-4 w-4 text-secondary" />
                   {t("harvestedOn", {
-                    date: new Date(listing.freshness_date).toLocaleDateString(
-                      locale === "ne" ? "ne-NP" : "en-US",
-                      { year: "numeric", month: "long", day: "numeric" },
-                    ),
+                    date: format.dateTime(new Date(listing.freshness_date), {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }),
                   })}
                 </div>
               )}
               <div className="flex items-center gap-1.5 rounded-md bg-white px-3 py-2 text-sm">
                 <Weight className="h-4 w-4 text-accent" />
-                {t("availableQty", { qty: listing.available_qty_kg })}
+                {listing.available_qty_kg} {listing.unit || "kg"}
               </div>
             </div>
 
@@ -143,14 +149,14 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">
                   {t("description")}
                 </h2>
-                <p className="mt-2 leading-relaxed text-gray-700">{listing.description}</p>
+                <SafeHTML html={listing.description} className="mt-2" />
               </div>
             )}
 
             {/* Quantity selector + Add to cart */}
             <div className="rounded-lg bg-white p-6">
               <label className="mb-3 block text-sm font-semibold uppercase tracking-wider text-gray-500">
-                {t("quantity")}
+                {t("quantity")} ({listing.unit || "kg"})
               </label>
               <div className="flex items-center gap-4">
                 <div className="flex items-center rounded-md border-2 border-gray-200">
@@ -188,6 +194,7 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                     nameNe: listing.name_ne,
                     farmerName: listing.farmer.name,
                     photo: listing.photos[0] ?? null,
+                    unit: listing.unit || "kg",
                   });
                   setAdded(true);
                   setTimeout(() => setAdded(false), 2000);
@@ -195,6 +202,29 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 {added ? t("addedToCart") : t("addToCart")}
+              </Button>
+
+              <Button
+                variant="secondary"
+                className="mt-2 w-full h-14 text-base"
+                onClick={() => {
+                  clearCart();
+                  addItem({
+                    listingId: listing.id,
+                    farmerId: listing.farmer_id,
+                    quantityKg: quantity,
+                    pricePerKg: listing.price_per_kg,
+                    nameEn: listing.name_en,
+                    nameNe: listing.name_ne,
+                    farmerName: listing.farmer.name,
+                    photo: listing.photos[0] ?? null,
+                    unit: listing.unit || "kg",
+                  });
+                  router.push("/checkout");
+                }}
+              >
+                <Zap className="mr-2 h-5 w-5" />
+                {t("buyNow")}
               </Button>
             </div>
 
@@ -238,6 +268,28 @@ export function ProduceDetail({ listing }: ProduceDetailProps) {
                   )}
                 </div>
               </div>
+
+              {/* Farmer bio / story */}
+              {listing.farmer.bio && (
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-500">
+                    {t("farmerStory")}
+                  </h3>
+                  <p className={`text-sm text-gray-700 leading-relaxed ${
+                    !bioExpanded ? "line-clamp-3" : ""
+                  }`}>
+                    {listing.farmer.bio}
+                  </p>
+                  {listing.farmer.bio.length > 150 && (
+                    <button
+                      onClick={() => setBioExpanded((v) => !v)}
+                      className="mt-1 text-xs font-medium text-primary hover:underline"
+                    >
+                      {bioExpanded ? "" : t("readMore")}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

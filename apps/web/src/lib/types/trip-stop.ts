@@ -70,10 +70,18 @@ export function parseTripStop(row: TripStopRow): TripStop {
     if (row.location.startsWith("{")) {
       const parsed = JSON.parse(row.location);
       location = { lat: parsed.coordinates[1], lng: parsed.coordinates[0] };
-    } else {
+    } else if (row.location.startsWith("POINT")) {
       const match = row.location.match(/POINT\(([^ ]+) ([^ ]+)\)/);
       if (match) {
         location = { lat: parseFloat(match[2]), lng: parseFloat(match[1]) };
+      }
+    } else if (/^[0-9a-fA-F]+$/.test(row.location) && row.location.length >= 50) {
+      // EWKB hex Point with SRID
+      const buf = Buffer.from(row.location, "hex");
+      const lng = buf.readDoubleLE(9);
+      const lat = buf.readDoubleLE(17);
+      if (Number.isFinite(lng) && Number.isFinite(lat)) {
+        location = { lat, lng };
       }
     }
   } else {

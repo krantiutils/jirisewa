@@ -18,8 +18,6 @@ import {
 } from "@/lib/actions/trips";
 import {
   listOrdersByTrip,
-  confirmPickup,
-  confirmFarmerPickup,
   markItemsUnavailable,
   startDelivery,
 } from "@/lib/actions/orders";
@@ -489,11 +487,7 @@ export default function TripDetailPage() {
                     setActionLoading(true);
                     setError(null);
                     let result;
-                    if (action === "pickup" && farmerId) {
-                      result = await confirmFarmerPickup(order.id, farmerId);
-                    } else if (action === "pickup") {
-                      result = await confirmPickup(order.id);
-                    } else if (action === "unavailable" && farmerId) {
+                    if (action === "unavailable" && farmerId) {
                       result = await markItemsUnavailable(order.id, farmerId);
                     } else if (action === "deliver") {
                       result = await startDelivery(order.id);
@@ -571,7 +565,7 @@ function MatchedOrderCard({
   order: OrderWithDetails;
   locale: string;
   onAction: (
-    action: "pickup" | "deliver" | "unavailable",
+    action: "deliver" | "unavailable",
     farmerId?: string,
   ) => Promise<void>;
   disabled: boolean;
@@ -666,15 +660,10 @@ function MatchedOrderCard({
                   {itemNames} &middot; {groupKg} kg
                 </p>
                 {isPending && (
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      variant="primary"
-                      className="h-8 flex-1 text-xs"
-                      onClick={() => onAction("pickup", farmerId)}
-                      disabled={disabled}
-                    >
-                      {t("tripDetail.confirmPickup")}
-                    </Button>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-amber-600">
+                      {t("tripDetail.awaitingFarmerConfirmation")}
+                    </span>
                     <Button
                       variant="outline"
                       className="h-8 text-xs border-red-300 text-red-600 hover:bg-red-50"
@@ -699,14 +688,19 @@ function MatchedOrderCard({
               .filter(Boolean)
               .join(", ")}
           </p>
-          <Button
-            variant="primary"
-            className="h-9 w-full text-xs"
-            onClick={() => onAction("pickup", sortedGroups[0]?.[0])}
-            disabled={disabled}
-          >
-            {t("tripDetail.confirmPickup")}
-          </Button>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-amber-600">
+              {t("tripDetail.awaitingFarmerConfirmation")}
+            </span>
+            <Button
+              variant="outline"
+              className="h-8 text-xs border-red-300 text-red-600 hover:bg-red-50"
+              onClick={() => onAction("unavailable", sortedGroups[0]?.[0])}
+              disabled={disabled}
+            >
+              {t("tripDetail.markUnavailable")}
+            </Button>
+          </div>
         </div>
       ) : null}
 

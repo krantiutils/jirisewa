@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { Upload, X, Loader2 } from "lucide-react";
 import { uploadProducePhoto } from "../actions";
+import { compressImage } from "@/lib/compress-image";
 
 const MAX_PHOTOS = 5;
 
@@ -33,10 +34,10 @@ export function PhotoUpload({ photos, onChange }: PhotoUploadProps) {
     const filesToUpload = Array.from(files).slice(0, remaining);
     const newUrls: string[] = [];
 
-    for (const file of filesToUpload) {
+    for (let file of filesToUpload) {
+      // Auto-compress large images
       if (file.size > 1048576) {
-        setError(`${file.name} is too large (max 1MB). Compress before uploading.`);
-        continue;
+        file = await compressImage(file);
       }
 
       const fd = new FormData();
@@ -77,6 +78,7 @@ export function PhotoUpload({ photos, onChange }: PhotoUploadProps) {
               alt={`Photo ${i + 1}`}
               fill
               className="object-cover"
+              unoptimized
             />
             <button
               type="button"

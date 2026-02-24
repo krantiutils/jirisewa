@@ -2,7 +2,7 @@ import { setRequestLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui";
-import { Plus, Package, ShoppingCart, Wallet, BarChart3, DollarSign } from "lucide-react";
+import { Plus, Package, BarChart3, DollarSign, ClipboardList } from "lucide-react";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getFarmerDashboardData } from "../actions";
 import { getVerificationStatus } from "../verification-actions";
@@ -20,6 +20,7 @@ export default async function FarmerDashboardPage({
 
   const t = await getTranslations("farmer");
   const tEarnings = await getTranslations("earnings");
+  const tFarmerOrders = await getTranslations("farmerOrders");
   const result = await getFarmerDashboardData();
 
   if (!result.success) {
@@ -57,78 +58,93 @@ export default async function FarmerDashboardPage({
       </div>
 
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">
           {t("dashboard.title")}
         </h1>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/farmer/earnings"
-            className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 h-14 font-semibold text-amber-700 transition-all duration-200 hover:bg-amber-100 hover:scale-105"
-          >
-            <DollarSign className="h-5 w-5" />
-            {tEarnings("title")}
-          </Link>
-          <Link
-            href="/farmer/analytics"
-            className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 h-14 font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-100 hover:scale-105"
-          >
-            <BarChart3 className="h-5 w-5" />
-            {t("analytics.title")}
-          </Link>
-          <Link
-            href="/farmer/listings/new"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-6 h-14 font-semibold text-white transition-all duration-200 hover:bg-blue-600 hover:scale-105"
-          >
-            <Plus className="h-5 w-5" />
-            {t("dashboard.addListing")}
-          </Link>
-        </div>
       </div>
 
-      {/* Stats */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg bg-white p-6">
+      {/* Quick-access cards */}
+      <div className="mb-8 grid grid-cols-2 gap-4">
+        <Link
+          href="/farmer/orders"
+          className="group rounded-lg bg-white p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+        >
           <div className="flex items-center gap-3">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Package className="h-6 w-6 text-blue-600" />
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-blue-100">
+              <ClipboardList className="h-5 w-5 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("dashboard.activeListings")}</p>
-              <p className="text-2xl font-bold text-foreground">
-                {activeListings.length}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-500">{tFarmerOrders("title")}</p>
+              <p className="text-xl font-bold text-foreground">
+                {pendingOrderCount} {t("dashboard.pending")}
               </p>
             </div>
           </div>
-        </div>
+          <p className="mt-3 text-xs font-medium text-primary group-hover:underline">
+            {t("dashboard.viewAll")} &rarr;
+          </p>
+        </Link>
 
-        <div className="rounded-lg bg-white p-6">
+        <Link
+          href="/farmer/earnings"
+          className="group rounded-lg bg-white p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+        >
           <div className="flex items-center gap-3">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-              <ShoppingCart className="h-6 w-6 text-amber-600" />
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-amber-100">
+              <DollarSign className="h-5 w-5 text-amber-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("dashboard.pendingOrders")}</p>
-              <p className="text-2xl font-bold text-foreground">
-                {pendingOrderCount}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg bg-white p-6">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-              <Wallet className="h-6 w-6 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">{t("dashboard.earnings")}</p>
-              <p className="text-2xl font-bold text-foreground">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-500">{tEarnings("title")}</p>
+              <p className="text-xl font-bold text-foreground">
                 NPR {totalEarnings.toLocaleString()}
               </p>
             </div>
           </div>
-        </div>
+          <p className="mt-3 text-xs font-medium text-primary group-hover:underline">
+            {t("dashboard.viewAll")} &rarr;
+          </p>
+        </Link>
+
+        <Link
+          href="/farmer/analytics"
+          className="group rounded-lg bg-white p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100">
+              <BarChart3 className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-500">{t("analytics.title")}</p>
+              <p className="text-xl font-bold text-foreground">
+                {t("dashboard.viewInsights")}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs font-medium text-primary group-hover:underline">
+            {t("dashboard.viewAll")} &rarr;
+          </p>
+        </Link>
+
+        <Link
+          href="/farmer/listings/new"
+          className="group rounded-lg bg-primary/5 border-2 border-dashed border-primary/30 p-5 transition-all duration-200 hover:scale-[1.02] hover:border-primary hover:bg-primary/10"
+        >
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+              <Plus className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-500">{t("dashboard.newListing")}</p>
+              <p className="text-xl font-bold text-foreground">
+                {t("dashboard.addProduce")}
+              </p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs font-medium text-primary group-hover:underline">
+            {t("dashboard.create")} &rarr;
+          </p>
+        </Link>
       </div>
 
       {/* Listings */}

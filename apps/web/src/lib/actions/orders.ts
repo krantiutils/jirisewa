@@ -1,7 +1,7 @@
 "use server";
 
 import { OrderStatus, OrderItemStatus, PaymentStatus, PayoutStatus, PingStatus } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import { buildPaymentFormData as buildEsewaFormData, generateTransactionUuid } from "@/lib/esewa";
 import { initiatePayment as initiateKhaltiPayment, generatePurchaseOrderId, toPaisa as khaltiToPaisa } from "@/lib/khalti";
 import { buildPaymentFormData as buildConnectIPSFormData, generateTxnId, generateReferenceId, toPaisa as connectipsToPaisa } from "@/lib/connectips";
@@ -22,9 +22,17 @@ import {
   notifyRiderDeliveryConfirmed,
 } from "@/lib/actions/notifications";
 
-// TODO: Replace hardcoded consumer ID with authenticated user once auth is implemented
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
-const DEMO_RIDER_ID = "00000000-0000-0000-0000-000000000000";
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
+async function getAuthRiderId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 function pointToWkt(lng: number, lat: number): string {
   return `POINT(${lng} ${lat})`;
@@ -62,7 +70,43 @@ export async function placeOrder(
       return { error: "Invalid delivery address" };
     }
 
+    const consumerId = await getAuthUserId();
+    if (!consumerId) {
+      return { error: "Not authenticated" };
+    }
+
     const supabase = createServiceRoleClient();
+
+    // Ensure consumer exists in `users` table (FK: orders.consumer_id → users.id).
+    // For email-only signups the onboarding upsert may have silently failed.
+    {
+      const authClient = await createClient();
+      const { data: { user: authUser } } = await authClient.auth.getUser();
+      const consumerName =
+        authUser?.user_metadata?.full_name || authUser?.email || "User";
+      const consumerPhone = authUser?.phone || authUser?.user_metadata?.phone || authUser?.email || consumerId;
+
+      // Also try to pull name from user_profiles (more up-to-date)
+      const { data: prof } = await supabase
+        .from("user_profiles")
+        .select("full_name, phone, role")
+        .eq("id", consumerId)
+        .single();
+
+      const name = prof?.full_name || consumerName;
+      const phone = prof?.phone || consumerPhone;
+      const role = prof?.role === "customer" ? "consumer" : (prof?.role || "consumer");
+
+      const { error: upsertErr } = await supabase
+        .from("users")
+        .upsert(
+          { id: consumerId, name, phone, role } as Record<string, unknown>,
+          { onConflict: "id" },
+        );
+      if (upsertErr) {
+        console.error("placeOrder: users upsert failed:", upsertErr);
+      }
+    }
 
     // Fetch listings to verify prices, availability, and get locations
     const listingIds = input.items.map((i) => i.listingId);
@@ -133,7 +177,7 @@ export async function placeOrder(
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
-        consumer_id: DEMO_CONSUMER_ID,
+        consumer_id: consumerId,
         status: OrderStatus.Pending,
         delivery_address: input.deliveryAddress,
         delivery_location: pointToWkt(input.deliveryLng, input.deliveryLat),
@@ -415,11 +459,11 @@ export async function placeOrder(
 }
 
 // ---------------------------------------------------------------------------
-// Per-farmer pickup confirmation (rider action)
+// Per-farmer pickup confirmation (farmer action)
 // ---------------------------------------------------------------------------
 
 /**
- * Rider confirms pickup of items from a specific farmer within an order.
+ * Farmer confirms that the rider collected their items for this order.
  *
  * Updates all order_items for this (order, farmer) to pickup_status = 'picked_up'.
  * When ALL farmers' items are picked up (or unavailable), the order transitions
@@ -430,9 +474,17 @@ export async function confirmFarmerPickup(
   farmerId: string,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
+    // Only the farmer themselves can confirm pickup of their items
+    if (currentUserId !== farmerId) {
+      return { error: "Only the farmer can confirm pickup of their items" };
+    }
+
     const supabase = createServiceRoleClient();
 
-    // Verify order exists and rider is assigned
+    // Verify order exists
     const { data: order, error: fetchError } = await supabase
       .from("orders")
       .select("status, rider_id")
@@ -441,10 +493,6 @@ export async function confirmFarmerPickup(
 
     if (fetchError) {
       return { error: "Order not found" };
-    }
-
-    if (order.rider_id !== DEMO_RIDER_ID) {
-      return { error: "You are not assigned to this order" };
     }
 
     if (order.status !== OrderStatus.Matched && order.status !== OrderStatus.PickedUp) {
@@ -540,6 +588,9 @@ export async function markItemsUnavailable(
   farmerId: string,
 ): Promise<ActionResult> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     // Verify order
@@ -553,10 +604,10 @@ export async function markItemsUnavailable(
       return { error: "Order not found" };
     }
 
-    // Only rider or the farmer themselves can mark items unavailable
-    const isRider = order.rider_id === DEMO_RIDER_ID;
-    // TODO: check if current user is the farmer when auth is implemented
-    if (!isRider) {
+    // Only the assigned rider or the farmer themselves can mark items unavailable
+    const isRider = order.rider_id === currentUserId;
+    const isFarmer = currentUserId === farmerId;
+    if (!isRider && !isFarmer) {
       return { error: "Not authorized to mark items unavailable" };
     }
 
@@ -680,6 +731,11 @@ export async function listOrders(
   statusFilter?: OrderStatus,
 ): Promise<ActionResult<OrderWithDetails[]>> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) {
+      return { error: "Not authenticated" };
+    }
+
     const supabase = createServiceRoleClient();
 
     let query = supabase
@@ -695,7 +751,7 @@ export async function listOrders(
         farmerPayouts:farmer_payouts(*)
       `,
       )
-      .eq("consumer_id", DEMO_CONSUMER_ID)
+      .eq("consumer_id", consumerId)
       .is("parent_order_id", null)
       .order("created_at", { ascending: false });
 
@@ -792,6 +848,11 @@ export async function cancelOrder(
   orderId: string,
 ): Promise<ActionResult> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) {
+      return { error: "Not authenticated" };
+    }
+
     const supabase = createServiceRoleClient();
 
     const { data: existing, error: fetchError } = await supabase
@@ -804,7 +865,7 @@ export async function cancelOrder(
       return { error: "Order not found" };
     }
 
-    if (existing.consumer_id !== DEMO_CONSUMER_ID) {
+    if (existing.consumer_id !== consumerId) {
       return { error: "You can only cancel your own orders" };
     }
 
@@ -907,6 +968,11 @@ export async function confirmDelivery(
   orderId: string,
 ): Promise<ActionResult> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) {
+      return { error: "Not authenticated" };
+    }
+
     const supabase = createServiceRoleClient();
 
     const { data: existing, error: fetchError } = await supabase
@@ -919,7 +985,7 @@ export async function confirmDelivery(
       return { error: "Order not found" };
     }
 
-    if (existing.consumer_id !== DEMO_CONSUMER_ID) {
+    if (existing.consumer_id !== consumerId) {
       return { error: "You can only confirm your own orders" };
     }
 
@@ -1026,6 +1092,9 @@ export async function confirmPickup(
   orderId: string,
 ): Promise<ActionResult> {
   try {
+    const currentRiderId = await getAuthRiderId();
+    if (!currentRiderId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { data: existing, error: fetchError } = await supabase
@@ -1038,7 +1107,7 @@ export async function confirmPickup(
       return { error: "Order not found" };
     }
 
-    if (existing.rider_id !== DEMO_RIDER_ID) {
+    if (existing.rider_id !== currentRiderId) {
       return { error: "You are not assigned to this order" };
     }
 
@@ -1088,6 +1157,9 @@ export async function startDelivery(
   orderId: string,
 ): Promise<ActionResult> {
   try {
+    const currentRiderId = await getAuthRiderId();
+    if (!currentRiderId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { data: existing, error: fetchError } = await supabase
@@ -1100,7 +1172,7 @@ export async function startDelivery(
       return { error: "Order not found" };
     }
 
-    if (existing.rider_id !== DEMO_RIDER_ID) {
+    if (existing.rider_id !== currentRiderId) {
       return { error: "You are not assigned to this order" };
     }
 
@@ -1229,6 +1301,11 @@ export async function checkReorderAvailability(
   orderId: string,
 ): Promise<ActionResult<ReorderItemAvailability[]>> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) {
+      return { error: "Not authenticated" };
+    }
+
     const supabase = createServiceRoleClient();
 
     const { data: order, error: orderError } = await supabase
@@ -1242,7 +1319,7 @@ export async function checkReorderAvailability(
       return { error: "Order not found" };
     }
 
-    if (order.consumer_id !== DEMO_CONSUMER_ID) {
+    if (order.consumer_id !== consumerId) {
       return { error: "You can only reorder your own orders" };
     }
 

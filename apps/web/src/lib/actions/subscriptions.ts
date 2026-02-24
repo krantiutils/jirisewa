@@ -1,12 +1,14 @@
 "use server";
 
 import { SubscriptionStatus } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 
-// TODO: Replace hardcoded consumer ID with authenticated user once auth is implemented
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
-const DEMO_FARMER_ID = "00000000-0000-0000-0000-000000000002";
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -92,8 +94,10 @@ export async function getFarmerSubscriptionPlans(): Promise<
   ActionResult<SubscriptionPlanWithFarmer[]>
 > {
   try {
+    const farmerId = await getAuthUserId();
+    if (!farmerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const farmerId = DEMO_FARMER_ID;
 
     const { data: plans, error } = await supabase
       .from("subscription_plans")
@@ -177,8 +181,10 @@ export async function createSubscriptionPlan(
       return { error: "Invalid delivery day (0=Sunday, 6=Saturday)" };
     }
 
+    const farmerId = await getAuthUserId();
+    if (!farmerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const farmerId = DEMO_FARMER_ID;
 
     const { data, error } = await supabase
       .from("subscription_plans")
@@ -214,8 +220,10 @@ export async function toggleSubscriptionPlan(
   isActive: boolean,
 ): Promise<ActionResult<void>> {
   try {
+    const farmerId = await getAuthUserId();
+    if (!farmerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const farmerId = DEMO_FARMER_ID;
 
     const { error } = await supabase
       .from("subscription_plans")
@@ -314,8 +322,10 @@ export async function getMySubscriptions(): Promise<
   ActionResult<SubscriptionWithPlan[]>
 > {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const consumerId = DEMO_CONSUMER_ID;
 
     const { data: subs, error } = await supabase
       .from("subscriptions")
@@ -405,8 +415,10 @@ export async function subscribeToPlan(
   paymentMethod: "cash" | "esewa" | "khalti",
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const consumerId = DEMO_CONSUMER_ID;
 
     // Verify plan exists and is active
     const { data: plan, error: planError } = await supabase
@@ -482,8 +494,10 @@ export async function pauseSubscription(
   subscriptionId: string,
 ): Promise<ActionResult<void>> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const consumerId = DEMO_CONSUMER_ID;
 
     const { error } = await supabase
       .from("subscriptions")
@@ -511,8 +525,10 @@ export async function resumeSubscription(
   subscriptionId: string,
 ): Promise<ActionResult<void>> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const consumerId = DEMO_CONSUMER_ID;
 
     // Get plan delivery_day to recalculate next delivery
     const { data: sub } = await supabase
@@ -558,8 +574,10 @@ export async function cancelSubscription(
   subscriptionId: string,
 ): Promise<ActionResult<void>> {
   try {
+    const consumerId = await getAuthUserId();
+    if (!consumerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const consumerId = DEMO_CONSUMER_ID;
 
     const { error } = await supabase
       .from("subscriptions")

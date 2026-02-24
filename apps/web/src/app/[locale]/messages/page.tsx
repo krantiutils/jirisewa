@@ -96,6 +96,7 @@ export default function MessagesPage() {
     if (!conv.last_message) return "";
     if (conv.last_message.message_type === "image") return `📷 ${t("image")}`;
     if (conv.last_message.message_type === "location") return `📍 ${t("location")}`;
+    if (conv.last_message.message_type === "audio") return `🎙️ ${t("audio")}`;
     return conv.last_message.content;
   };
 

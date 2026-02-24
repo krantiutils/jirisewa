@@ -104,7 +104,7 @@ export default function CartPage() {
                       {t("fromFarmer", { farmer: item.farmerName })}
                     </p>
                     <p className="text-sm text-gray-500">
-                      NPR {item.pricePerKg}/kg
+                      NPR {item.pricePerKg}/{item.unit || "kg"}
                     </p>
                   </div>
 
@@ -124,7 +124,7 @@ export default function CartPage() {
                         <Minus className="h-3 w-3" />
                       </button>
                       <span className="w-12 text-center text-sm font-semibold">
-                        {item.quantityKg} kg
+                        {item.quantityKg} {item.unit || "kg"}
                       </span>
                       <button
                         onClick={() =>

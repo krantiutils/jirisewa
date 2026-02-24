@@ -1,7 +1,7 @@
 "use server";
 
 import { TripStatus } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type {
   CreateTripInput,
   UpdateTripInput,
@@ -11,8 +11,11 @@ import type {
 } from "@/lib/types/trip";
 import { parseRiderTrip } from "@/lib/types/trip";
 
-// TODO: Replace hardcoded rider ID with authenticated user once auth is implemented
-const DEMO_RIDER_ID = "00000000-0000-0000-0000-000000000000";
+async function getAuthRiderId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 function pointToWkt(point: GeoPoint): string {
   return `POINT(${point.lng} ${point.lat})`;
@@ -31,10 +34,13 @@ export async function createTrip(
   input: CreateTripInput,
 ): Promise<ActionResult<Trip>> {
   try {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const insertData: Record<string, unknown> = {
-      rider_id: DEMO_RIDER_ID,
+      rider_id: riderId,
       origin: pointToWkt(input.origin),
       origin_name: input.originName,
       destination: pointToWkt(input.destination),
@@ -80,10 +86,13 @@ export async function listTrips(
   try {
     const supabase = createServiceRoleClient();
 
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
     let query = supabase
       .from("rider_trips")
       .select("*")
-      .eq("rider_id", DEMO_RIDER_ID)
+      .eq("rider_id", riderId)
       .order("departure_at", { ascending: true });
 
     if (statusFilter) {
@@ -152,7 +161,10 @@ export async function updateTrip(
       return { error: "Only scheduled trips can be edited" };
     }
 
-    if (existing.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (existing.rider_id !== riderId) {
       return { error: "You can only edit your own trips" };
     }
 
@@ -223,7 +235,10 @@ export async function startTrip(
       return { error: "Trip not found" };
     }
 
-    if (existing.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (existing.rider_id !== riderId) {
       return { error: "You can only start your own trips" };
     }
 
@@ -266,7 +281,10 @@ export async function completeTrip(
       return { error: "Trip not found" };
     }
 
-    if (existing.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (existing.rider_id !== riderId) {
       return { error: "You can only complete your own trips" };
     }
 
@@ -309,7 +327,10 @@ export async function cancelTrip(
       return { error: "Trip not found" };
     }
 
-    if (existing.rider_id !== DEMO_RIDER_ID) {
+    const riderId = await getAuthRiderId();
+    if (!riderId) return { error: "Not authenticated" };
+
+    if (existing.rider_id !== riderId) {
       return { error: "You can only cancel your own trips" };
     }
 

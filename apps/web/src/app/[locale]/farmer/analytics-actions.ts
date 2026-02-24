@@ -17,7 +17,7 @@ async function getAuthenticatedFarmer() {
     return { supabase, user: null, error: "Not authenticated" } as const;
   }
 
-  const { data: userRole } = await supabase
+  const { data: userRole, error: roleError } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id)
@@ -136,6 +136,19 @@ export async function getFarmerAnalytics(
       .eq("id", user.id)
       .single(),
   ]);
+
+  const errors = [
+    salesResult.error && `sales: ${salesResult.error.message}`,
+    revenueResult.error && `revenue: ${revenueResult.error.message}`,
+    topProductsResult.error && `topProducts: ${topProductsResult.error.message}`,
+    benchmarkResult.error && `benchmark: ${benchmarkResult.error.message}`,
+    fulfillmentResult.error && `fulfillment: ${fulfillmentResult.error.message}`,
+    ratingResult.error && `rating: ${ratingResult.error.message}`,
+    userResult.error && `user: ${userResult.error.message}`,
+  ].filter(Boolean);
+  if (errors.length > 0) {
+    console.error("[analytics] RPC errors:", errors.join("; "));
+  }
 
   if (salesResult.error) {
     return { success: false, error: salesResult.error.message };

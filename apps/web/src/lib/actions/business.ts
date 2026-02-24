@@ -1,7 +1,7 @@
 "use server";
 
 import { BulkOrderStatus, BulkItemStatus } from "@jirisewa/shared";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/action";
 import type {
   BusinessProfile,
@@ -11,8 +11,11 @@ import type {
   CreateBulkOrderInput,
 } from "@/lib/types/business";
 
-// TODO: Replace with authenticated user when auth is fully implemented
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
+async function getAuthUserId(): Promise<string | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
 
 // ---------------------------------------------------------------------------
 // Business Profile
@@ -20,12 +23,15 @@ const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
 
 export async function getBusinessProfile(): Promise<ActionResult<BusinessProfile | null>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const { data, error } = await supabase
       .from("business_profiles")
       .select("*")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .maybeSingle();
 
     if (error) {
@@ -44,6 +50,9 @@ export async function createBusinessProfile(
   input: CreateBusinessProfileInput,
 ): Promise<ActionResult<BusinessProfile>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     if (!input.business_name || input.business_name.trim().length === 0) {
       return { error: "Business name is required" };
     }
@@ -62,7 +71,7 @@ export async function createBusinessProfile(
     const { data: existing } = await supabase
       .from("business_profiles")
       .select("id")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .maybeSingle();
 
     if (existing) {
@@ -72,7 +81,7 @@ export async function createBusinessProfile(
     const { data, error } = await supabase
       .from("business_profiles")
       .insert({
-        user_id: DEMO_CONSUMER_ID,
+        user_id: currentUserId,
         business_name: input.business_name.trim(),
         business_type: input.business_type,
         registration_number: input.registration_number?.trim() || null,
@@ -99,6 +108,9 @@ export async function updateBusinessProfile(
   input: Partial<CreateBusinessProfileInput>,
 ): Promise<ActionResult<BusinessProfile>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     const updateData: Record<string, unknown> = {};
@@ -112,7 +124,7 @@ export async function updateBusinessProfile(
     const { data, error } = await supabase
       .from("business_profiles")
       .update(updateData)
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .select("*")
       .single();
 
@@ -136,6 +148,9 @@ export async function createBulkOrder(
   input: CreateBulkOrderInput,
 ): Promise<ActionResult<{ orderId: string }>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     if (input.items.length === 0) {
       return { error: "At least one item is required" };
     }
@@ -150,7 +165,7 @@ export async function createBulkOrder(
     const { data: profile, error: profileError } = await supabase
       .from("business_profiles")
       .select("id")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .single();
 
     if (profileError || !profile) {
@@ -263,13 +278,16 @@ export async function listBulkOrders(
   statusFilter?: string,
 ): Promise<ActionResult<BulkOrderWithDetails[]>> {
   try {
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
 
     // Get business profile
     const { data: profile } = await supabase
       .from("business_profiles")
       .select("id")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .maybeSingle();
 
     if (!profile) {
@@ -372,10 +390,13 @@ export async function cancelBulkOrder(
     }
 
     // Verify ownership
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const { data: profile } = await supabase
       .from("business_profiles")
       .select("id")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .single();
 
     if (!profile || order.business_id !== profile.id) {
@@ -421,15 +442,15 @@ export async function cancelBulkOrder(
 
 export async function listFarmerBulkOrders(): Promise<ActionResult<BulkOrderWithDetails[]>> {
   try {
-    const supabase = createServiceRoleClient();
+    const farmerId = await getAuthUserId();
+    if (!farmerId) return { error: "Not authenticated" };
 
-    // For demo, use farmer ID directly
-    const DEMO_FARMER_ID = "00000000-0000-0000-0000-000000000002";
+    const supabase = createServiceRoleClient();
 
     const { data: itemRows, error: itemsError } = await supabase
       .from("bulk_order_items")
       .select("bulk_order_id")
-      .eq("farmer_id", DEMO_FARMER_ID);
+      .eq("farmer_id", farmerId);
 
     if (itemsError) {
       console.error("listFarmerBulkOrders: items error:", itemsError);
@@ -489,8 +510,10 @@ export async function quoteBulkOrderItem(
       return { error: "Quoted price must be greater than 0" };
     }
 
+    const farmerId = await getAuthUserId();
+    if (!farmerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const DEMO_FARMER_ID = "00000000-0000-0000-0000-000000000002";
 
     const { data: item, error: fetchError } = await supabase
       .from("bulk_order_items")
@@ -502,7 +525,7 @@ export async function quoteBulkOrderItem(
       return { error: "Item not found" };
     }
 
-    if (item.farmer_id !== DEMO_FARMER_ID) {
+    if (item.farmer_id !== farmerId) {
       return { error: "Not authorized to quote this item" };
     }
 
@@ -554,8 +577,10 @@ export async function rejectBulkOrderItem(
   farmerNotes?: string,
 ): Promise<ActionResult> {
   try {
+    const farmerId = await getAuthUserId();
+    if (!farmerId) return { error: "Not authenticated" };
+
     const supabase = createServiceRoleClient();
-    const DEMO_FARMER_ID = "00000000-0000-0000-0000-000000000002";
 
     const { data: item, error: fetchError } = await supabase
       .from("bulk_order_items")
@@ -567,7 +592,7 @@ export async function rejectBulkOrderItem(
       return { error: "Item not found" };
     }
 
-    if (item.farmer_id !== DEMO_FARMER_ID) {
+    if (item.farmer_id !== farmerId) {
       return { error: "Not authorized to reject this item" };
     }
 
@@ -630,10 +655,13 @@ export async function acceptBulkOrder(
       return { error: "Bulk order not found" };
     }
 
+    const currentUserId = await getAuthUserId();
+    if (!currentUserId) return { error: "Not authenticated" };
+
     const { data: profile } = await supabase
       .from("business_profiles")
       .select("id")
-      .eq("user_id", DEMO_CONSUMER_ID)
+      .eq("user_id", currentUserId)
       .single();
 
     if (!profile || order.business_id !== profile.id) {

@@ -12,18 +12,20 @@ import {
   Loader2,
   User,
   X,
+  Mic,
+  Square,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 import {
   getConversationDetails,
   getMessages,
   sendMessage,
   markConversationRead,
   uploadChatImage,
+  uploadChatAudio,
 } from "@/lib/actions/chat";
 import type { ChatConversation, ChatMessage } from "@/lib/types/chat";
-
-const DEMO_CONSUMER_ID = "00000000-0000-0000-0000-000000000001";
 
 const ROLE_COLORS: Record<string, string> = {
   consumer: "bg-blue-500",
@@ -37,6 +39,8 @@ export default function ConversationPage() {
     conversationId: string;
   }>();
   const t = useTranslations("chat");
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? "";
 
   const [conversation, setConversation] = useState<ChatConversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -46,11 +50,17 @@ export default function ConversationPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Auto-scroll to latest message
   const scrollToBottom = useCallback(() => {
@@ -59,6 +69,7 @@ export default function ConversationPage() {
 
   // Load conversation and messages
   useEffect(() => {
+    if (!currentUserId) return;
     async function load() {
       const [convResult, msgResult] = await Promise.all([
         getConversationDetails(conversationId),
@@ -77,7 +88,7 @@ export default function ConversationPage() {
       markConversationRead(conversationId);
     }
     load();
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -86,6 +97,7 @@ export default function ConversationPage() {
 
   // Subscribe to realtime new messages
   useEffect(() => {
+    if (!currentUserId) return;
     const supabase = createClient();
     const channel = supabase
       .channel(`chat:${conversationId}`)
@@ -105,7 +117,7 @@ export default function ConversationPage() {
             return [...prev, newMsg];
           });
           // Mark as read if from the other user
-          if (newMsg.sender_id !== DEMO_CONSUMER_ID) {
+          if (newMsg.sender_id !== currentUserId) {
             markConversationRead(conversationId);
           }
         },
@@ -115,7 +127,7 @@ export default function ConversationPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   const handleSend = async () => {
     const text = inputText.trim();
@@ -141,6 +153,12 @@ export default function ConversationPage() {
             setSending(false);
             return;
           }
+          if (sendResult.data) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === sendResult.data!.id)) return prev;
+              return [...prev, sendResult.data!];
+            });
+          }
         }
         setImageFile(null);
         setImagePreview(null);
@@ -151,6 +169,12 @@ export default function ConversationPage() {
         if (sendResult.error) {
           setError(sendResult.error);
         } else {
+          if (sendResult.data) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === sendResult.data!.id)) return prev;
+              return [...prev, sendResult.data!];
+            });
+          }
           setInputText("");
         }
       }
@@ -187,6 +211,94 @@ export default function ConversationPage() {
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Stop all tracks
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+
+        // Clear timer
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        audioChunksRef.current = [];
+
+        if (blob.size === 0) {
+          setRecording(false);
+          setRecordingDuration(0);
+          return;
+        }
+
+        setSending(true);
+        setError(null);
+
+        const file = new File([blob], `voice-${Date.now()}.webm`, {
+          type: "audio/webm",
+        });
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const uploadResult = await uploadChatAudio(formData);
+        if (uploadResult.error) {
+          setError(uploadResult.error);
+          setSending(false);
+          setRecording(false);
+          setRecordingDuration(0);
+          return;
+        }
+
+        if (uploadResult.data) {
+          const sendResult = await sendMessage(
+            conversationId,
+            uploadResult.data.url,
+            "audio",
+          );
+          if (sendResult.error) {
+            setError(sendResult.error);
+          } else if (sendResult.data) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === sendResult.data!.id)) return prev;
+              return [...prev, sendResult.data!];
+            });
+          }
+        }
+
+        setSending(false);
+        setRecording(false);
+        setRecordingDuration(0);
+      };
+
+      recorder.start();
+      setRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((d) => d + 1);
+      }, 1000);
+    } catch {
+      setError("Microphone access denied");
+    }
+  }, [conversationId]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
 
   const formatMessageTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleTimeString(
@@ -341,7 +453,7 @@ export default function ConversationPage() {
 
             {/* Messages in this group */}
             {group.messages.map((msg) => {
-              const isOwn = msg.sender_id === DEMO_CONSUMER_ID;
+              const isOwn = msg.sender_id === currentUserId;
               return (
                 <div
                   key={msg.id}
@@ -369,6 +481,16 @@ export default function ConversationPage() {
                       <div className="flex items-center gap-1">
                         <span>📍</span>
                         <span className="text-sm">{msg.content}</span>
+                      </div>
+                    ) : msg.message_type === "audio" ? (
+                      <div className="flex items-center gap-2">
+                        <Mic size={14} className={isOwn ? "text-white/70" : "text-gray-400"} />
+                        <audio
+                          controls
+                          preload="metadata"
+                          className="h-8 max-w-[220px]"
+                          src={msg.content}
+                        />
                       </div>
                     ) : (
                       <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
@@ -421,43 +543,73 @@ export default function ConversationPage() {
 
       {/* Input */}
       <div className="border-t border-gray-200 px-4 py-3">
-        <div className="flex items-end gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageSelect}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex-shrink-0 rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-primary transition-colors"
-            aria-label={t("sendImage")}
-          >
-            <ImagePlus size={20} />
-          </button>
-          <textarea
-            ref={inputRef}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t("typeMessage")}
-            rows={1}
-            className="flex-1 resize-none rounded-2xl bg-gray-100 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <button
-            onClick={handleSend}
-            disabled={sending || (!inputText.trim() && !imageFile)}
-            className="flex-shrink-0 rounded-full bg-primary p-2.5 text-white transition-all hover:scale-105 hover:bg-blue-600 disabled:opacity-50 disabled:hover:scale-100"
-            aria-label={t("send")}
-          >
-            {sending ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Send size={18} />
-            )}
-          </button>
-        </div>
+        {recording ? (
+          <div className="flex items-center gap-3">
+            <div className="flex flex-1 items-center gap-3 rounded-2xl bg-red-50 px-4 py-2.5">
+              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+              <span className="text-sm font-medium text-red-600">
+                {t("recording")}
+              </span>
+              <span className="text-sm tabular-nums text-red-500">
+                {Math.floor(recordingDuration / 60)}:{String(recordingDuration % 60).padStart(2, "0")}
+              </span>
+            </div>
+            <button
+              onClick={stopRecording}
+              className="flex-shrink-0 rounded-full bg-red-500 p-2.5 text-white transition-all hover:scale-105 hover:bg-red-600"
+              aria-label={t("stopRecording")}
+            >
+              <Square size={18} fill="currentColor" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0 rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-primary transition-colors"
+              aria-label={t("sendImage")}
+              disabled={sending}
+            >
+              <ImagePlus size={20} />
+            </button>
+            <button
+              onClick={startRecording}
+              className="flex-shrink-0 rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-red-500 transition-colors"
+              aria-label={t("recordVoice")}
+              disabled={sending}
+            >
+              <Mic size={20} />
+            </button>
+            <textarea
+              ref={inputRef}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t("typeMessage")}
+              rows={1}
+              className="flex-1 resize-none rounded-2xl bg-gray-100 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <button
+              onClick={handleSend}
+              disabled={sending || (!inputText.trim() && !imageFile)}
+              className="flex-shrink-0 rounded-full bg-primary p-2.5 text-white transition-all hover:scale-105 hover:bg-blue-600 disabled:opacity-50 disabled:hover:scale-100"
+              aria-label={t("send")}
+            >
+              {sending ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

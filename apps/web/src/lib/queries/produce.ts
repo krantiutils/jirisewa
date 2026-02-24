@@ -34,6 +34,7 @@ interface RpcProduceRow {
   description: string | null;
   price_per_kg: number;
   available_qty_kg: number;
+  unit: string;
   freshness_date: string | null;
   location: string | null;
   photos: string[];
@@ -64,6 +65,7 @@ interface JoinedListingRow {
   description: string | null;
   price_per_kg: number;
   available_qty_kg: number;
+  unit: string;
   freshness_date: string | null;
   location: string | null;
   photos: string[];
@@ -163,7 +165,17 @@ async function fetchWithoutLocation(
     query = query.lte("price_per_kg", max_price);
   }
   if (search) {
-    query = query.or(`name_en.ilike.%${search}%,name_ne.ilike.%${search}%`);
+    // Escape PostgREST special characters to prevent filter injection
+    const escaped = search
+      .replace(/\\/g, "\\\\")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_")
+      .replace(/\*/g, "\\*")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/,/g, "\\,")
+      .replace(/\./g, "\\.");
+    query = query.or(`name_en.ilike.%${escaped}%,name_ne.ilike.%${escaped}%`);
   }
 
   switch (sort_by) {
@@ -219,6 +231,7 @@ async function fetchWithoutLocation(
     description: row.description,
     price_per_kg: row.price_per_kg,
     available_qty_kg: row.available_qty_kg,
+    unit: row.unit || "kg",
     freshness_date: row.freshness_date,
     location: row.location,
     photos: row.photos ?? [],
@@ -265,13 +278,22 @@ export async function fetchProduceById(
 
   if (!data) return null;
 
-  // Fetch verified status
-  const { data: roleData } = await supabase
-    .from("user_roles")
-    .select("verified")
-    .eq("user_id", data.farmer_id)
-    .eq("role", "farmer")
-    .single();
+  // Fetch verified status and farmer bio
+  const [{ data: roleData }, { data: profileData }] = await Promise.all([
+    supabase
+      .from("user_roles")
+      .select("verified")
+      .eq("user_id", data.farmer_id)
+      .eq("role", "farmer")
+      .single(),
+    supabase
+      .from("user_profiles")
+      .select("bio")
+      .eq("id", data.farmer_id)
+      .single(),
+  ]);
+
+  const farmer = Array.isArray(data.farmer) ? data.farmer[0] : data.farmer;
 
   return {
     id: data.id,
@@ -282,6 +304,7 @@ export async function fetchProduceById(
     description: data.description,
     price_per_kg: data.price_per_kg,
     available_qty_kg: data.available_qty_kg,
+    unit: data.unit || "kg",
     freshness_date: data.freshness_date,
     location: data.location,
     photos: data.photos ?? [],
@@ -290,7 +313,7 @@ export async function fetchProduceById(
     created_at: data.created_at,
     updated_at: data.updated_at,
     farmer_verified: (roleData as { verified: boolean } | null)?.verified ?? false,
-    farmer: Array.isArray(data.farmer) ? data.farmer[0] : data.farmer,
+    farmer: { ...farmer, bio: (profileData as { bio: string | null } | null)?.bio ?? null },
     category: Array.isArray(data.category) ? data.category[0] : data.category,
   };
 }
@@ -323,6 +346,7 @@ function mapRpcRow(row: RpcProduceRow): ProduceListingWithDetails {
     description: row.description,
     price_per_kg: row.price_per_kg,
     available_qty_kg: row.available_qty_kg,
+    unit: row.unit || "kg",
     freshness_date: row.freshness_date,
     location: row.location,
     photos: row.photos ?? [],
