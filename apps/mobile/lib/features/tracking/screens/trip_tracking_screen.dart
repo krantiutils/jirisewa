@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/providers/supabase_provider.dart';
 import '../../../core/theme.dart';
 import '../../map/widgets/route_map.dart';
 import '../services/location_tracking_service.dart';
@@ -12,7 +13,7 @@ import '../services/location_tracking_service.dart';
 /// Screen shown to riders during an active trip.
 /// Displays the route map with the rider's live position and
 /// controls to manage the trip lifecycle.
-class TripTrackingScreen extends StatefulWidget {
+class TripTrackingScreen extends ConsumerStatefulWidget {
   final String tripId;
   final LatLng origin;
   final LatLng destination;
@@ -33,10 +34,10 @@ class TripTrackingScreen extends StatefulWidget {
   });
 
   @override
-  State<TripTrackingScreen> createState() => _TripTrackingScreenState();
+  ConsumerState<TripTrackingScreen> createState() => _TripTrackingScreenState();
 }
 
-class _TripTrackingScreenState extends State<TripTrackingScreen>
+class _TripTrackingScreenState extends ConsumerState<TripTrackingScreen>
     with WidgetsBindingObserver {
   final LocationTrackingService _tracker = LocationTrackingService();
 
@@ -45,8 +46,6 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
   bool _actionLoading = false;
   String? _error;
   int _broadcastCount = 0;
-
-  SupabaseClient get _supabase => Supabase.instance.client;
 
   @override
   void initState() {
@@ -104,10 +103,21 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     });
 
     try {
-      await _supabase
+      final result = await ref.read(supabaseProvider)
           .from('rider_trips')
           .update({'status': 'in_transit'})
-          .eq('id', widget.tripId);
+          .eq('id', widget.tripId)
+          .eq('status', 'scheduled')
+          .select()
+          .maybeSingle();
+
+      if (result == null) {
+        setState(() {
+          _actionLoading = false;
+          _error = 'Trip cannot be started — it may have already been started or cancelled';
+        });
+        return;
+      }
 
       setState(() {
         _tripStatus = 'in_transit';
@@ -130,10 +140,21 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     });
 
     try {
-      await _supabase
+      final result = await ref.read(supabaseProvider)
           .from('rider_trips')
           .update({'status': 'completed'})
-          .eq('id', widget.tripId);
+          .eq('id', widget.tripId)
+          .eq('status', 'in_transit')
+          .select()
+          .maybeSingle();
+
+      if (result == null) {
+        setState(() {
+          _actionLoading = false;
+          _error = 'Trip cannot be completed — it may not be in transit';
+        });
+        return;
+      }
 
       // Only stop tracking after server confirms success
       _tracker.stop();
@@ -187,10 +208,21 @@ class _TripTrackingScreenState extends State<TripTrackingScreen>
     });
 
     try {
-      await _supabase
+      final result = await ref.read(supabaseProvider)
           .from('rider_trips')
           .update({'status': 'cancelled'})
-          .eq('id', widget.tripId);
+          .eq('id', widget.tripId)
+          .inFilter('status', ['scheduled', 'in_transit'])
+          .select()
+          .maybeSingle();
+
+      if (result == null) {
+        setState(() {
+          _actionLoading = false;
+          _error = 'Trip cannot be cancelled — it may already be completed or cancelled';
+        });
+        return;
+      }
 
       // Only stop tracking after server confirms success
       _tracker.stop();

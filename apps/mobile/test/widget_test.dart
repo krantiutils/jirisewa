@@ -1,6 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:jirisewa_mobile/core/phone_validation.dart';
+import 'package:jirisewa_mobile/features/chat/screens/conversations_screen.dart';
+import 'package:jirisewa_mobile/features/notifications/screens/notifications_screen.dart';
+import 'package:jirisewa_mobile/features/subscriptions/screens/subscription_browse_screen.dart';
+
+import 'helpers/test_app.dart';
 
 void main() {
   group('Phone validation', () {
@@ -33,6 +39,41 @@ void main() {
       expect(normalizePhone('981 234 5678'), '9812345678');
       expect(normalizePhone('981-234-5678'), '9812345678');
       expect(normalizePhone('(981) 234-5678'), '9812345678');
+    });
+  });
+
+  group('Smoke tests', () {
+    testWidgets('ConversationsScreen mounts without crashing',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const ConversationsScreen()),
+      );
+      await tester.pump();
+
+      // Verify the screen rendered (scaffold exists).
+      expect(find.byType(Scaffold), findsWidgets);
+      expect(find.text('Messages'), findsOneWidget);
+    });
+
+    testWidgets('NotificationsScreen mounts without crashing',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const NotificationsScreen()),
+      );
+      await tester.pump();
+
+      expect(find.byType(Scaffold), findsWidgets);
+    });
+
+    testWidgets('SubscriptionBrowseScreen mounts without crashing',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        buildTestApp(child: const SubscriptionBrowseScreen()),
+      );
+      await tester.pump();
+
+      expect(find.byType(Scaffold), findsWidgets);
+      expect(find.text('Subscriptions'), findsOneWidget);
     });
   });
 }

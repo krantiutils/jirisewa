@@ -1,205 +1,92 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:go_router/go_router.dart';
+
 import 'package:jirisewa_mobile/core/constants/map_constants.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/map/widgets/ping_beacon_map.dart';
 import 'package:jirisewa_mobile/features/map/widgets/route_map.dart';
 import 'package:jirisewa_mobile/features/tracking/screens/trip_tracking_screen.dart';
+import 'package:jirisewa_mobile/features/trips/providers/trips_provider.dart';
+import 'package:jirisewa_mobile/features/trips/repositories/trip_repository.dart';
 
 /// Rider workflow screen:
 /// - Trip route/capacity
 /// - Connected orders for each trip
 /// - Jump to live tracking for execution
-class TripsScreen extends StatefulWidget {
+class TripsScreen extends ConsumerStatefulWidget {
   const TripsScreen({super.key});
 
   @override
-  State<TripsScreen> createState() => _TripsScreenState();
+  ConsumerState<TripsScreen> createState() => _TripsScreenState();
 }
 
-class _TripsScreenState extends State<TripsScreen> {
-  bool _loading = true;
-  String? _error;
-  List<Map<String, dynamic>> _trips = [];
-  Map<String, List<Map<String, dynamic>>> _ordersByTripId = {};
-  Map<String, List<Map<String, dynamic>>> _pingsByTripId = {};
+class _TripsScreenState extends ConsumerState<TripsScreen> {
   Set<String> _respondingPingIds = {};
-  List<Map<String, dynamic>> _unassignedOrders = [];
   RealtimeChannel? _pingChannel;
   String? _subscribedRiderId;
 
-  SupabaseClient get _supabase => Supabase.instance.client;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadTrips();
-  }
+  /// Captured reference to the repository so we can clean up the channel in
+  /// [dispose] without reading from [ref] (which is invalid after unmount).
+  TripRepository? _tripRepo;
 
   @override
   void dispose() {
-    if (_pingChannel != null) {
-      _supabase.removeChannel(_pingChannel!);
-    }
+    _cleanupPingSubscription();
     super.dispose();
   }
 
-  Future<void> _loadTrips() async {
-    final session = SessionProvider.of(context);
-    final currentProfile = session.profile;
-    if (!session.isAuthenticated || currentProfile == null) return;
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final tripsResult = await _supabase
-          .from('rider_trips')
-          .select(
-            'id, origin_name, destination_name, departure_at, status, remaining_capacity_kg, available_capacity_kg',
-          )
-          .eq('rider_id', currentProfile.id)
-          .order('departure_at', ascending: false)
-          .limit(20);
-
-      final ordersResult = await _supabase
-          .from('orders')
-          .select('id, rider_trip_id, status, delivery_address, total_price')
-          .eq('rider_id', currentProfile.id)
-          .inFilter('status', ['matched', 'picked_up', 'in_transit', 'pending'])
-          .order('created_at', ascending: false)
-          .limit(40);
-
-      final pingsResult = await _supabase
-          .from('order_pings')
-          .select(
-            'id, trip_id, pickup_locations, delivery_location, estimated_earnings, detour_distance_m, status, expires_at',
-          )
-          .eq('rider_id', currentProfile.id)
-          .eq('status', 'pending')
-          .gt('expires_at', DateTime.now().toIso8601String())
-          .order('created_at', ascending: false)
-          .limit(60);
-
-      final trips = List<Map<String, dynamic>>.from(tripsResult);
-      final orders = List<Map<String, dynamic>>.from(ordersResult);
-      final pings = List<Map<String, dynamic>>.from(pingsResult);
-
-      final byTrip = <String, List<Map<String, dynamic>>>{};
-      final unassigned = <Map<String, dynamic>>[];
-      final pingsByTrip = <String, List<Map<String, dynamic>>>{};
-
-      for (final order in orders) {
-        final tripId = order['rider_trip_id'] as String?;
-        if (tripId == null) {
-          unassigned.add(order);
-          continue;
-        }
-        byTrip.putIfAbsent(tripId, () => []).add(order);
-      }
-
-      for (final ping in pings) {
-        final tripId = ping['trip_id'] as String?;
-        if (tripId == null) continue;
-        pingsByTrip.putIfAbsent(tripId, () => []).add(ping);
-      }
-
-      setState(() {
-        _trips = trips;
-        _ordersByTripId = byTrip;
-        _pingsByTripId = pingsByTrip;
-        _unassignedOrders = unassigned;
-        _loading = false;
-      });
-
-      _subscribeToPings(currentProfile.id);
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load trips: $e';
-        _loading = false;
-      });
+  void _cleanupPingSubscription() {
+    final channel = _pingChannel;
+    _pingChannel = null;
+    _subscribedRiderId = null;
+    if (channel != null) {
+      _tripRepo?.removeChannel(channel);
     }
   }
 
-  void _subscribeToPings(String riderId) {
+  void _maybeSubscribeToPings() {
+    final profile = ref.read(userProfileProvider);
+    if (profile == null) return;
+    final riderId = profile.id;
+
     if (_subscribedRiderId == riderId && _pingChannel != null) return;
 
-    if (_pingChannel != null) {
-      _supabase.removeChannel(_pingChannel!);
-      _pingChannel = null;
-    }
-
+    _cleanupPingSubscription();
     _subscribedRiderId = riderId;
-    _pingChannel = _supabase
-        .channel('mobile-pings-$riderId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'order_pings',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'rider_id',
-            value: riderId,
-          ),
-          callback: (payload) {
-            final row = Map<String, dynamic>.from(payload.newRecord);
-            _upsertPing(row);
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'order_pings',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'rider_id',
-            value: riderId,
-          ),
-          callback: (payload) {
-            final row = Map<String, dynamic>.from(payload.newRecord);
-            _upsertPing(row);
-          },
-        )
-        .subscribe();
-  }
-
-  void _upsertPing(Map<String, dynamic> row) {
-    final tripId = row['trip_id'] as String?;
-    if (tripId == null || !mounted) return;
-
-    final status = row['status'] as String? ?? 'pending';
-    final expiresAt = DateTime.tryParse(row['expires_at'] as String? ?? '');
-    final isActive =
-        status == 'pending' &&
-        (expiresAt == null || expiresAt.isAfter(DateTime.now()));
-
-    setState(() {
-      final list = [
-        ...(_pingsByTripId[tripId] ?? const <Map<String, dynamic>>[]),
-      ];
-      list.removeWhere((item) => item['id'] == row['id']);
-      if (isActive) {
-        list.insert(0, row);
-      }
-      if (list.isEmpty) {
-        _pingsByTripId.remove(tripId);
-      } else {
-        _pingsByTripId[tripId] = list;
-      }
-    });
+    _tripRepo = ref.read(tripRepositoryProvider);
+    _pingChannel = _tripRepo!.subscribeToPings(
+      riderId,
+      onEvent: (_) {
+        // A ping was inserted or updated; invalidate to refetch all data.
+        ref.invalidate(tripsDataProvider);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final tripsDataAsync = ref.watch(tripsDataProvider);
+
+    // Set up the ping subscription when data arrives.
+    ref.listen(tripsDataProvider, (prev, next) {
+      final data = next.valueOrNull;
+      if (data != null) {
+        _maybeSubscribeToPings();
+      }
+    });
+
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push(AppRoutes.tripNew),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,83 +107,32 @@ class _TripsScreenState extends State<TripsScreen> {
                 style: TextStyle(color: Colors.grey[700]),
               ),
             ),
-            if (_unassignedOrders.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.muted,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${_unassignedOrders.length} orders are awaiting trip assignment.',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(_error!),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _loadTrips,
-                            child: const Text('Retry'),
-                          ),
-                        ],
+              child: tripsDataAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : _trips.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.route, size: 48, color: Colors.grey[400]),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No trips yet',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Post a trip to start connecting farmers and customers',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                      const SizedBox(height: 12),
+                      Text('Failed to load trips: $error'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () =>
+                            ref.invalidate(tripsDataProvider),
+                        child: const Text('Retry'),
                       ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadTrips,
-                      child: ListView.builder(
-                        itemCount: _trips.length,
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                        itemBuilder: (ctx, i) => _tripTile(_trips[i]),
-                      ),
-                    ),
+                    ],
+                  ),
+                ),
+                data: (data) => _buildDataContent(data),
+              ),
             ),
           ],
         ),
@@ -304,19 +140,97 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 
-  Widget _tripTile(Map<String, dynamic> trip) {
+  Widget _buildDataContent(TripsData data) {
+    final trips = data.trips;
+    final unassignedOrders = data.unassignedOrders;
+
+    return Column(
+      children: [
+        if (unassignedOrders.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.muted,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${unassignedOrders.length} orders are awaiting trip assignment.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: trips.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.route, size: 48, color: Colors.grey[400]),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No trips yet',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Post a trip to start connecting farmers and customers',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: () =>
+                      ref.refresh(tripsDataProvider.future),
+                  child: ListView.builder(
+                    itemCount: trips.length,
+                    padding:
+                        const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    itemBuilder: (ctx, i) => _tripTile(
+                      trips[i],
+                      data.ordersByTripId,
+                      data.pingsByTripId,
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tripTile(
+    Map<String, dynamic> trip,
+    Map<String, List<Map<String, dynamic>>> ordersByTripId,
+    Map<String, List<Map<String, dynamic>>> pingsByTripId,
+  ) {
     final tripId = trip['id'] as String? ?? '';
     final status = trip['status'] as String? ?? 'scheduled';
-    final remaining = (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
-    final total = (trip['available_capacity_kg'] as num?)?.toDouble() ?? 0;
-    final origin = _coordinatesForPlace(trip['origin_name'] as String?);
-    final destination = _coordinatesForPlace(
-      trip['destination_name'] as String?,
-    );
-    final linkedOrders = _ordersByTripId[tripId] ?? const [];
-    final opportunities = _pingsByTripId[tripId] ?? const [];
+    final remaining =
+        (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
+    final total =
+        (trip['available_capacity_kg'] as num?)?.toDouble() ?? 0;
+    final origin = _parsePointOrFallback(trip['origin']);
+    final destination = _parsePointOrFallback(trip['destination']);
+    final linkedOrders = ordersByTripId[tripId] ?? const [];
+    final opportunities = pingsByTripId[tripId] ?? const [];
 
-    return Card(
+    return GestureDetector(
+      onTap: () => context.push('/trips/$tripId'),
+      child: Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       color: AppColors.muted,
@@ -347,7 +261,7 @@ class _TripsScreenState extends State<TripsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${trip['origin_name'] ?? '?'} → ${trip['destination_name'] ?? '?'}',
+                        '${trip['origin_name'] ?? '?'} \u2192 ${trip['destination_name'] ?? '?'}',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
@@ -458,8 +372,10 @@ class _TripsScreenState extends State<TripsScreen> {
                         ),
                       ),
                       Text(
-                        _formatStatus(order['status'] as String? ?? 'pending'),
-                        style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                        _formatStatus(
+                            order['status'] as String? ?? 'pending'),
+                        style:
+                            TextStyle(fontSize: 11, color: Colors.grey[700]),
                       ),
                     ],
                   ),
@@ -483,6 +399,7 @@ class _TripsScreenState extends State<TripsScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -490,10 +407,8 @@ class _TripsScreenState extends State<TripsScreen> {
     required Map<String, dynamic> trip,
     required List<Map<String, dynamic>> opportunities,
   }) async {
-    final origin = _coordinatesForPlace(trip['origin_name'] as String?);
-    final destination = _coordinatesForPlace(
-      trip['destination_name'] as String?,
-    );
+    final origin = _parsePointOrFallback(trip['origin']);
+    final destination = _parsePointOrFallback(trip['destination']);
     final totalEarnings = opportunities.fold<double>(
       0,
       (sum, row) =>
@@ -514,11 +429,12 @@ class _TripsScreenState extends State<TripsScreen> {
                 children: [
                   const Text(
                     'Farmer Route Beacons',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${opportunities.length} opportunities · potential NPR ${totalEarnings.toStringAsFixed(0)}',
+                    '${opportunities.length} opportunities \u00b7 potential NPR ${totalEarnings.toStringAsFixed(0)}',
                     style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                   ),
                   const SizedBox(height: 10),
@@ -540,25 +456,31 @@ class _TripsScreenState extends State<TripsScreen> {
                       itemBuilder: (context, i) {
                         final opp = opportunities[i];
                         final pingId = opp['id'] as String? ?? '';
-                        final isBusy = _respondingPingIds.contains(pingId);
+                        final isBusy =
+                            _respondingPingIds.contains(pingId);
                         final earning =
-                            (opp['estimated_earnings'] as num?)?.toDouble() ??
-                            0;
+                            (opp['estimated_earnings'] as num?)
+                                    ?.toDouble() ??
+                                0;
                         final detourKm =
-                            ((opp['detour_distance_m'] as num?)?.toDouble() ??
-                                0) /
-                            1000;
-                        final pickups = _pickupNames(opp['pickup_locations']);
+                            ((opp['detour_distance_m'] as num?)
+                                        ?.toDouble() ??
+                                    0) /
+                                1000;
+                        final pickups =
+                            _pickupNames(opp['pickup_locations']);
                         return Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFD1FAE5)),
+                            border: Border.all(
+                                color: const Color(0xFFD1FAE5)),
                           ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
@@ -614,12 +536,13 @@ class _TripsScreenState extends State<TripsScreen> {
                                           ? null
                                           : () => _acceptPing(opp),
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF059669,
-                                        ),
+                                        backgroundColor:
+                                            const Color(0xFF059669),
                                       ),
                                       child: Text(
-                                        isBusy ? 'Working...' : 'Accept',
+                                        isBusy
+                                            ? 'Working...'
+                                            : 'Accept',
                                       ),
                                     ),
                                   ),
@@ -661,15 +584,13 @@ class _TripsScreenState extends State<TripsScreen> {
     });
 
     try {
-      final result = await _supabase.rpc(
-        'accept_order_ping',
-        params: {'p_ping_id': pingId},
-      );
-      final row = _firstRpcRow(result);
+      final repo = ref.read(tripRepositoryProvider);
+      final row = await repo.acceptPing(pingId);
       final ok = row?['success'] == true;
       final message =
           row?['message'] as String? ?? (ok ? 'Ping accepted' : 'Failed');
-      final tripId = row?['trip_id'] as String? ?? ping['trip_id'] as String?;
+      final tripId =
+          row?['trip_id'] as String? ?? ping['trip_id'] as String?;
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -680,7 +601,7 @@ class _TripsScreenState extends State<TripsScreen> {
       );
 
       if (ok && tripId != null) {
-        final routeUpdated = await _recalculateTripRouteFromStops(tripId);
+        final routeUpdated = await repo.recalculateTripRoute(tripId);
         if (mounted && !routeUpdated) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -691,7 +612,7 @@ class _TripsScreenState extends State<TripsScreen> {
           );
         }
       }
-      await _loadTrips();
+      ref.invalidate(tripsDataProvider);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -718,11 +639,8 @@ class _TripsScreenState extends State<TripsScreen> {
     });
 
     try {
-      final result = await _supabase.rpc(
-        'decline_order_ping',
-        params: {'p_ping_id': pingId},
-      );
-      final row = _firstRpcRow(result);
+      final repo = ref.read(tripRepositoryProvider);
+      final row = await repo.declinePing(pingId);
       final ok = row?['success'] == true;
       final message =
           row?['message'] as String? ?? (ok ? 'Ping declined' : 'Failed');
@@ -734,7 +652,7 @@ class _TripsScreenState extends State<TripsScreen> {
           backgroundColor: ok ? AppColors.primary : AppColors.error,
         ),
       );
-      await _loadTrips();
+      ref.invalidate(tripsDataProvider);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -752,172 +670,12 @@ class _TripsScreenState extends State<TripsScreen> {
     }
   }
 
-  Map<String, dynamic>? _firstRpcRow(dynamic result) {
-    if (result is List && result.isNotEmpty && result.first is Map) {
-      return Map<String, dynamic>.from(result.first as Map);
-    }
-    if (result is Map<String, dynamic>) return result;
-    return null;
-  }
-
-  Future<bool> _recalculateTripRouteFromStops(String tripId) async {
-    try {
-      final tripRow = await _supabase
-          .from('rider_trips')
-          .select('id, destination, rider_id')
-          .eq('id', tripId)
-          .maybeSingle();
-      if (tripRow == null) return false;
-
-      final destination = _parsePoint(tripRow['destination']);
-      if (destination == null) return false;
-
-      final stopsData = await _supabase
-          .from('trip_stops')
-          .select('id, location, sequence_order, completed')
-          .eq('trip_id', tripId)
-          .order('sequence_order', ascending: true);
-
-      final activeStops = List<Map<String, dynamic>>.from(stopsData).where((s) {
-        return s['completed'] != true;
-      }).toList();
-      if (activeStops.isEmpty) return false;
-
-      final latestLoc = await _supabase
-          .from('rider_location_log')
-          .select('location')
-          .eq('trip_id', tripId)
-          .order('recorded_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
-
-      LatLng? start = _parsePoint(latestLoc?['location']);
-      start ??= _parsePoint(activeStops.first['location']);
-      if (start == null) return false;
-
-      final stopPoints = <LatLng>[];
-      for (final stop in activeStops) {
-        final point = _parsePoint(stop['location']);
-        if (point != null) stopPoints.add(point);
-      }
-      if (stopPoints.isEmpty) return false;
-
-      final allPoints = <LatLng>[start, ...stopPoints, destination];
-      if (allPoints.length < 2) return false;
-
-      final coords = allPoints
-          .map((p) => '${p.longitude},${p.latitude}')
-          .join(';');
-      final uri = Uri.parse(
-        '$osrmBaseUrl/route/v1/driving/$coords?overview=full&geometries=geojson',
-      );
-      final response = await http.get(uri);
-      if (response.statusCode != 200) return false;
-
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      if (data['code'] != 'Ok') return false;
-      final routes = data['routes'] as List<dynamic>?;
-      if (routes == null || routes.isEmpty) return false;
-      final route = routes.first as Map<String, dynamic>;
-
-      final geometry = route['geometry'] as Map<String, dynamic>;
-      final coordsRaw = geometry['coordinates'] as List<dynamic>;
-      if (coordsRaw.length < 2) return false;
-
-      final lineString = coordsRaw
-          .map((coord) {
-            final pair = coord as List<dynamic>;
-            return '${(pair[0] as num).toDouble()} ${(pair[1] as num).toDouble()}';
-          })
-          .join(',');
-
-      final routeWkt = 'LINESTRING($lineString)';
-      final totalDistanceKm =
-          ((route['distance'] as num?)?.toDouble() ?? 0) / 1000;
-      final durationMinutes =
-          (((route['duration'] as num?)?.toDouble() ?? 0) / 60).round();
-
-      await _supabase
-          .from('rider_trips')
-          .update({
-            'route': routeWkt,
-            'total_distance_km': totalDistanceKm,
-            'estimated_duration_minutes': durationMinutes,
-            'total_stops': activeStops.length,
-          })
-          .eq('id', tripId);
-
-      final legs = (route['legs'] as List<dynamic>? ?? const []);
-      var cumulativeSeconds = 0.0;
-      for (var i = 0; i < activeStops.length; i++) {
-        if (i >= legs.length) break;
-        final leg = legs[i] as Map<String, dynamic>;
-        cumulativeSeconds += (leg['duration'] as num?)?.toDouble() ?? 0;
-        final eta = DateTime.now().add(
-          Duration(seconds: cumulativeSeconds.round()),
-        );
-        await _supabase
-            .from('trip_stops')
-            .update({
-              'sequence_order': i,
-              'estimated_arrival': eta.toIso8601String(),
-            })
-            .eq('id', activeStops[i]['id'] as String);
-      }
-
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  LatLng? _parsePoint(dynamic value) {
-    if (value == null) return null;
-
-    if (value is String) {
-      final trimmed = value.trim();
-      final pointMatch = RegExp(
-        r'^POINT\(([-\d.]+)\s+([-\d.]+)\)$',
-      ).firstMatch(trimmed);
-      if (pointMatch != null) {
-        final lng = double.tryParse(pointMatch.group(1)!);
-        final lat = double.tryParse(pointMatch.group(2)!);
-        if (lat != null && lng != null) return LatLng(lat, lng);
-      }
-      if (trimmed.startsWith('{')) {
-        try {
-          final decoded = json.decode(trimmed);
-          return _parsePoint(decoded);
-        } catch (_) {
-          return null;
-        }
-      }
-    }
-
-    if (value is Map) {
-      if (value['coordinates'] is List) {
-        final coords = value['coordinates'] as List;
-        if (coords.length >= 2) {
-          final lng = (coords[0] as num?)?.toDouble();
-          final lat = (coords[1] as num?)?.toDouble();
-          if (lat != null && lng != null) return LatLng(lat, lng);
-        }
-      }
-      final lat = (value['lat'] as num?)?.toDouble();
-      final lng = (value['lng'] as num?)?.toDouble();
-      if (lat != null && lng != null) return LatLng(lat, lng);
-    }
-    return null;
-  }
-
   void _openTripTracking(
     Map<String, dynamic> trip,
     List<Map<String, dynamic>> linkedOrders,
   ) {
-    final origin = _coordinatesForPlace(trip['origin_name'] as String?);
-    final destination = _coordinatesForPlace(
-      trip['destination_name'] as String?,
-    );
+    final origin = _parsePointOrFallback(trip['origin']);
+    final destination = _parsePointOrFallback(trip['destination']);
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -926,7 +684,8 @@ class _TripsScreenState extends State<TripsScreen> {
           origin: origin,
           destination: destination,
           originName: trip['origin_name'] as String? ?? 'Origin',
-          destinationName: trip['destination_name'] as String? ?? 'Destination',
+          destinationName:
+              trip['destination_name'] as String? ?? 'Destination',
           routeCoordinates: [origin, destination],
           initialStatus: trip['status'] as String? ?? 'scheduled',
         ),
@@ -939,7 +698,8 @@ class _TripsScreenState extends State<TripsScreen> {
         .replaceAll('_', ' ')
         .split(' ')
         .map(
-          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+          (w) =>
+              w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
         )
         .join(' ');
   }
@@ -957,18 +717,8 @@ class _TripsScreenState extends State<TripsScreen> {
     }
   }
 
-  LatLng _coordinatesForPlace(String? placeName) {
-    switch ((placeName ?? '').trim().toLowerCase()) {
-      case 'jiri':
-        return const LatLng(27.6306, 86.2305);
-      case 'charikot':
-        return const LatLng(27.6681, 86.0290);
-      case 'banepa':
-        return const LatLng(27.6298, 85.5215);
-      case 'kathmandu':
-        return const LatLng(27.7172, 85.3240);
-      default:
-        return jiriCenter;
-    }
+  /// Parse a PostGIS point from the trip row, falling back to [jiriCenter].
+  LatLng _parsePointOrFallback(dynamic value) {
+    return TripRepository.parsePoint(value) ?? jiriCenter;
   }
 }

@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:jirisewa_mobile/core/routing/app_router.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/providers/supabase_provider.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
 
 enum UserRole { farmer, consumer, rider }
 
 enum VehicleType { bike, car, truck, bus, other }
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   static const _totalSteps = 3;
 
   int _step = 1;
@@ -34,7 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final Set<UserRole> _roles = {};
   VehicleType _vehicleType = VehicleType.bike;
 
-  SupabaseClient get _supabase => Supabase.instance.client;
+  SupabaseClient get _supabase => ref.read(supabaseProvider);
 
   @override
   void dispose() {
@@ -85,11 +85,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      // 1. Upsert user profile
+      final name = _nameController.text.trim();
+
+      // 1a. Upsert user profile in `users` table (role is NOT NULL in DB)
       await _supabase.from('users').upsert({
         'id': user.id,
         'phone': user.phone ?? '',
-        'name': _nameController.text.trim(),
+        'name': name,
+        'role': _roles.first.name,
         'lang': _lang,
         'address':
             _addressController.text.trim().isEmpty
@@ -99,6 +102,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             _municipalityController.text.trim().isEmpty
                 ? null
                 : _municipalityController.text.trim(),
+      });
+
+      // 1b. Upsert `user_profiles` row for cross-platform compatibility.
+      // The web app uses user_profiles (created via OAuth callback).
+      // Mobile users also need this row so the web app recognises them.
+      await _supabase.from('user_profiles').upsert({
+        'id': user.id,
+        'email': user.email ?? '',
+        'full_name': name,
+        'role': _roles.first.name,
+        'onboarding_completed': true,
       });
 
       // 2. Insert user roles
@@ -124,17 +138,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             return row;
           }).toList();
 
-      await _supabase.from('user_roles').upsert(roleInserts);
+      await _supabase
+          .from('user_roles')
+          .upsert(roleInserts, onConflict: 'user_id,role');
 
       if (!mounted) return;
 
-      // Refresh session service so it picks up the new profile/roles,
-      // then GoRouter redirect navigates to /home.
-      final session = SessionProvider.read(context);
-      await session.refreshProfile();
-
-      if (!mounted) return;
-      context.go(AppRoutes.home);
+      // Refresh the Riverpod session so it picks up the new profile/roles,
+      // then GoRouter redirect navigates to /home automatically.
+      await ref.read(userSessionProvider.notifier).refresh();
     } on PostgrestException catch (e) {
       setState(() {
         _loading = false;

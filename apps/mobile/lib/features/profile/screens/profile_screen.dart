@@ -1,43 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/core/providers/supabase_provider.dart';
 import 'package:jirisewa_mobile/core/models/user_profile.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 
 /// Profile screen: view/edit name, phone, address, language preference, role details.
 /// Includes language switcher (en/ne) and sign out.
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _editing = false;
   bool _saving = false;
   String? _error;
 
-  late TextEditingController _nameController;
-  late TextEditingController _addressController;
-  late TextEditingController _municipalityController;
-  late String _lang;
+  final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _municipalityController = TextEditingController();
+  String _lang = 'ne';
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _resetForm();
-  }
-
-  void _resetForm() {
-    final profile = SessionProvider.of(context).profile;
-    _nameController = TextEditingController(text: profile?.name ?? '');
-    _addressController = TextEditingController(text: profile?.address ?? '');
-    _municipalityController = TextEditingController(text: profile?.municipality ?? '');
-    _lang = profile?.lang ?? 'ne';
-  }
+  bool _controllersPopulated = false;
 
   @override
   void dispose() {
@@ -45,6 +35,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _addressController.dispose();
     _municipalityController.dispose();
     super.dispose();
+  }
+
+  void _populateControllers(UserProfile profile) {
+    if (_controllersPopulated) return;
+    _nameController.text = profile.name;
+    _addressController.text = profile.address ?? '';
+    _municipalityController.text = profile.municipality ?? '';
+    _lang = profile.lang;
+    _controllersPopulated = true;
+  }
+
+  void _resetForm() {
+    final profile = ref.read(userProfileProvider);
+    _nameController.text = profile?.name ?? '';
+    _addressController.text = profile?.address ?? '';
+    _municipalityController.text = profile?.municipality ?? '';
+    _lang = profile?.lang ?? 'ne';
   }
 
   Future<void> _save() async {
@@ -60,13 +67,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      final session = SessionProvider.read(context);
-      await session.updateProfile(
-        name: name,
-        address: _addressController.text.trim(),
-        municipality: _municipalityController.text.trim(),
-        lang: _lang,
-      );
+      final profile = ref.read(userProfileProvider);
+      if (profile == null) {
+        setState(() {
+          _saving = false;
+          _error = 'No profile found';
+        });
+        return;
+      }
+
+      await ref.read(supabaseProvider)
+          .from('users')
+          .update({
+            'name': name,
+            'address': _addressController.text.trim(),
+            'municipality': _municipalityController.text.trim(),
+            'lang': _lang,
+          })
+          .eq('id', profile.id);
+      await ref.read(userSessionProvider.notifier).refresh();
       if (!mounted) return;
       setState(() {
         _saving = false;
@@ -98,20 +117,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    final session = SessionProvider.read(context);
-    await session.signOut();
+    await ref.read(supabaseProvider).auth.signOut();
     if (!mounted) return;
     context.go(AppRoutes.login);
   }
 
   @override
   Widget build(BuildContext context) {
-    final session = SessionProvider.of(context);
-    final profile = session.profile;
+    final profile = ref.watch(userProfileProvider);
+    final activeRole = ref.watch(activeRoleProvider);
+    final roles = ref.watch(userRolesProvider);
 
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    _populateControllers(profile);
 
     return Scaffold(
       body: SafeArea(
@@ -146,13 +167,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     CircleAvatar(
                       radius: 40,
-                      backgroundColor: _roleColor(session.activeRole).withAlpha(50),
+                      backgroundColor: _roleColor(activeRole).withAlpha(50),
                       child: Text(
                         profile.name.isNotEmpty ? profile.name[0].toUpperCase() : '?',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: _roleColor(session.activeRole),
+                          color: _roleColor(activeRole),
                         ),
                       ),
                     ),
@@ -250,7 +271,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...session.roles.map((role) => _roleTile(role, session.activeRole)),
+                ...roles.map((role) => _roleTile(role, activeRole)),
 
                 const SizedBox(height: 32),
 

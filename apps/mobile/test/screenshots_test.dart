@@ -118,6 +118,10 @@ void main() {
     testWidgets('trips screen renders route maps in trip cards', (
       tester,
     ) async {
+      // Clean up Supabase realtime channels after this test to avoid pending
+      // timers from the ping subscription.
+      addTearDown(() => mockClient.removeAllChannels());
+
       await tester.pumpWidget(
         buildTestApp(child: const TripsScreen(), activeRole: 'rider'),
       );

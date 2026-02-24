@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Test user profile for a multi-role user.
 const testUserId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
-/// Mock auth session so [SessionService.isAuthenticated] returns true.
+/// Mock auth session used to simulate an authenticated user in tests.
 final testSession = Session(
   accessToken: 'test-access-token',
   tokenType: 'bearer',

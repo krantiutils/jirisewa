@@ -108,12 +108,13 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    // 1. Upsert user profile
+    // 1. Upsert user profile (role is NOT NULL in DB — use first selected role)
     const { error: userError } = await supabase.from("users").upsert(
       {
         id: user.id,
         phone: user.phone ?? "",
         name: form.name.trim(),
+        role: form.roles[0],
         lang: form.lang,
         address: form.address.trim() || null,
         municipality: form.municipality.trim() || null,

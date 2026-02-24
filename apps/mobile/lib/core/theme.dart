@@ -14,6 +14,13 @@ class AppColors {
 
 ThemeData buildAppTheme() {
   return ThemeData(
+    fontFamily: 'Outfit',
+    cardTheme: const CardThemeData(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+      ),
+    ),
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,

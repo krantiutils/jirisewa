@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:jirisewa_mobile/l10n/app_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
-import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/core/services/push_notification_service.dart';
+import 'package:jirisewa_mobile/core/theme.dart';
+import 'package:jirisewa_mobile/core/providers/locale_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (required before FCM)
   await Firebase.initializeApp();
 
   await Supabase.initialize(
@@ -25,36 +27,35 @@ Future<void> main() async {
     ),
   );
 
-  // Initialize push notification service
   await PushNotificationService.instance.initialize();
 
-  final sessionService = SessionService(Supabase.instance.client);
-
-  runApp(JiriSewaApp(sessionService: sessionService));
+  runApp(const ProviderScope(child: JiriSewaApp()));
 }
 
-class JiriSewaApp extends StatefulWidget {
-  final SessionService sessionService;
-
-  const JiriSewaApp({super.key, required this.sessionService});
+class JiriSewaApp extends ConsumerWidget {
+  const JiriSewaApp({super.key});
 
   @override
-  State<JiriSewaApp> createState() => _JiriSewaAppState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    final localeAsync = ref.watch(localeProvider);
 
-class _JiriSewaAppState extends State<JiriSewaApp> {
-  late final _router = buildRouter(widget.sessionService);
+    // Use the resolved locale, or default to Nepali while loading.
+    final locale = localeAsync.valueOrNull ?? const Locale('ne');
 
-  @override
-  Widget build(BuildContext context) {
-    return SessionProvider(
-      service: widget.sessionService,
-      child: MaterialApp.router(
-        title: 'JiriSewa',
-        theme: buildAppTheme(),
-        routerConfig: _router,
-        debugShowCheckedModeBanner: false,
-      ),
+    return MaterialApp.router(
+      title: 'JiriSewa',
+      theme: buildAppTheme(),
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }

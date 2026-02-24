@@ -1,96 +1,109 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/models/user_profile.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 
-/// Compact bar shown above the bottom nav for users with multiple roles.
-/// Tapping it opens a bottom sheet to switch the active role.
-class RoleSwitcherBar extends StatelessWidget {
+class RoleSwitcherBar extends ConsumerWidget {
   const RoleSwitcherBar({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final session = SessionProvider.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeRole = ref.watch(activeRoleProvider);
+    final roles = ref.watch(userRolesProvider);
 
-    return Material(
-      color: _roleColor(session.activeRole).withAlpha(25),
-      child: InkWell(
-        onTap: () => _showRolePicker(context, session),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: AppColors.border, width: 1),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.muted,
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            _roleLabel(activeRole),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _roleColor(activeRole),
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                _roleIcon(session.activeRole),
-                size: 16,
-                color: _roleColor(session.activeRole),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _showRolePicker(context, ref, activeRole, roles),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 6),
-              Text(
-                _roleLabel(session.activeRole),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: _roleColor(session.activeRole),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Switch',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
+                  Icon(Icons.swap_horiz, size: 14, color: Colors.grey[600]),
+                ],
               ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.swap_horiz,
-                size: 16,
-                color: _roleColor(session.activeRole),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  void _showRolePicker(BuildContext context, SessionService session) {
-    showModalBottomSheet(
+  void _showRolePicker(
+    BuildContext context,
+    WidgetRef ref,
+    String activeRole,
+    List<UserRoleDetails> roles,
+  ) {
+    showModalBottomSheet<void>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) {
+      builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Switch Role',
-                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Choose how you want to use JiriSewa',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                ...session.roles.map((role) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _RoleTile(
-                    role: role.role,
-                    isActive: role.role == session.activeRole,
+                ...['consumer', 'farmer', 'rider'].where((role) {
+                  return roles.any((r) => r.role == role);
+                }).map((role) {
+                  final isActive = role == activeRole;
+                  return ListTile(
+                    leading: Icon(
+                      _roleIcon(role),
+                      color: isActive ? _roleColor(role) : Colors.grey[400],
+                    ),
+                    title: Text(
+                      _roleLabel(role),
+                      style: TextStyle(
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                        color: isActive ? _roleColor(role) : null,
+                      ),
+                    ),
+                    subtitle: Text(_roleDescription(role)),
+                    trailing: isActive
+                        ? Icon(Icons.check_circle, color: _roleColor(role))
+                        : null,
                     onTap: () {
-                      session.switchRole(role.role);
-                      Navigator.of(sheetContext).pop();
+                      ref.read(activeRoleProvider.notifier).switchRole(role);
+                      Navigator.of(ctx).pop();
                     },
-                  ),
-                )),
+                  );
+                }),
               ],
             ),
           ),
@@ -98,113 +111,36 @@ class RoleSwitcherBar extends StatelessWidget {
       },
     );
   }
-}
 
-class _RoleTile extends StatelessWidget {
-  final String role;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _RoleTile({
-    required this.role,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _roleColor(role);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isActive ? color : AppColors.border,
-            width: 2,
-          ),
-          color: isActive ? color.withAlpha(25) : null,
-        ),
-        child: Row(
-          children: [
-            Icon(_roleIcon(role), color: color, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _roleLabel(role),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: isActive ? color : null,
-                    ),
-                  ),
-                  Text(
-                    _roleDescription(role),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isActive ? color : Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isActive)
-              Icon(Icons.check_circle, color: color, size: 24),
-          ],
-        ),
-      ),
-    );
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'rider': return 'Rider';
+      case 'farmer': return 'Farmer';
+      default: return 'Consumer';
+    }
   }
-}
 
-// -- Shared helpers --
-
-String _roleLabel(String role) {
-  switch (role) {
-    case 'farmer':
-      return 'Farmer';
-    case 'rider':
-      return 'Rider';
-    default:
-      return 'Consumer';
+  String _roleDescription(String role) {
+    switch (role) {
+      case 'rider': return 'Deliver produce along your route';
+      case 'farmer': return 'List and sell your produce';
+      default: return 'Browse and buy fresh produce';
+    }
   }
-}
 
-String _roleDescription(String role) {
-  switch (role) {
-    case 'farmer':
-      return 'Manage listings and fulfill orders';
-    case 'rider':
-      return 'Post trips and deliver produce';
-    default:
-      return 'Browse marketplace and order produce';
+  IconData _roleIcon(String role) {
+    switch (role) {
+      case 'rider': return Icons.local_shipping;
+      case 'farmer': return Icons.agriculture;
+      default: return Icons.shopping_bag;
+    }
   }
-}
 
-Color _roleColor(String role) {
-  switch (role) {
-    case 'farmer':
-      return AppColors.secondary;
-    case 'rider':
-      return AppColors.accent;
-    default:
-      return AppColors.primary;
-  }
-}
-
-IconData _roleIcon(String role) {
-  switch (role) {
-    case 'farmer':
-      return Icons.agriculture;
-    case 'rider':
-      return Icons.delivery_dining;
-    default:
-      return Icons.shopping_bag;
+  Color _roleColor(String role) {
+    switch (role) {
+      case 'rider': return AppColors.accent;
+      case 'farmer': return AppColors.secondary;
+      default: return AppColors.primary;
+    }
   }
 }

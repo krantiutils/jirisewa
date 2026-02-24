@@ -1,134 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:jirisewa_mobile/core/constants/map_constants.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
+import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/map/widgets/listings_map.dart';
+import 'package:jirisewa_mobile/features/marketplace/providers/marketplace_provider.dart';
 
-class MarketplaceScreen extends StatefulWidget {
+class MarketplaceScreen extends ConsumerStatefulWidget {
   const MarketplaceScreen({super.key});
 
   @override
-  State<MarketplaceScreen> createState() => _MarketplaceScreenState();
+  ConsumerState<MarketplaceScreen> createState() => _MarketplaceScreenState();
 }
 
-class _MarketplaceScreenState extends State<MarketplaceScreen> {
-  bool _loading = true;
-  String? _error;
-  String _role = 'consumer';
-  String? _userId;
-
-  List<Map<String, dynamic>> _listings = [];
-  List<Map<String, dynamic>> _pendingPickups = [];
-  Map<String, Map<String, dynamic>> _ordersById = {};
-
-  SupabaseClient get _supabase => Supabase.instance.client;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadFlowData();
-  }
-
-  Future<void> _loadFlowData() async {
-    final session = _maybeSession();
-
-    setState(() {
-      _loading = true;
-      _error = null;
-      _role = session?.activeRole ?? 'consumer';
-      _userId = session?.profile?.id;
-    });
-
-    try {
-      if (_role == 'farmer' && _userId != null) {
-        final myListings = await _supabase
-            .from('produce_listings')
-            .select(
-              'id, farmer_id, name_en, name_ne, price_per_kg, available_qty_kg, is_active, municipality, created_at',
-            )
-            .eq('farmer_id', _userId!)
-            .eq('is_active', true)
-            .order('created_at', ascending: false)
-            .limit(20);
-
-        final pending = await _supabase
-            .from('order_items')
-            .select(
-              'id, order_id, listing_id, quantity_kg, subtotal, pickup_confirmed',
-            )
-            .eq('farmer_id', _userId!)
-            .eq('pickup_confirmed', false)
-            .order('id')
-            .limit(20);
-
-        final pendingPickups = List<Map<String, dynamic>>.from(pending);
-        final orderIds = pendingPickups
-            .map((item) => item['order_id'] as String?)
-            .whereType<String>()
-            .toSet()
-            .toList();
-
-        Map<String, Map<String, dynamic>> ordersById = {};
-        if (orderIds.isNotEmpty) {
-          final orders = await _supabase
-              .from('orders')
-              .select('id, status, delivery_address, rider_id, rider_trip_id')
-              .inFilter('id', orderIds);
-
-          for (final row in List<Map<String, dynamic>>.from(orders)) {
-            final id = row['id'] as String?;
-            if (id != null) ordersById[id] = row;
-          }
-        }
-
-        setState(() {
-          _listings = List<Map<String, dynamic>>.from(myListings);
-          _pendingPickups = pendingPickups;
-          _ordersById = ordersById;
-          _loading = false;
-        });
-        return;
-      }
-
-      final listings = await _supabase
-          .from('produce_listings')
-          .select(
-            'id, farmer_id, name_en, name_ne, price_per_kg, available_qty_kg, is_active, municipality, created_at',
-          )
-          .eq('is_active', true)
-          .order('created_at', ascending: false)
-          .limit(30);
-
-      setState(() {
-        _listings = List<Map<String, dynamic>>.from(listings);
-        _pendingPickups = [];
-        _ordersById = {};
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to load marketplace flow: $e';
-        _loading = false;
-      });
-    }
-  }
-
+class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
   @override
   Widget build(BuildContext context) {
-    final markers = _listings.asMap().entries.map((entry) {
-      final index = entry.key;
-      final listing = entry.value;
-      return ProduceListingMarker(
-        id: listing['id'] as String? ?? 'listing-$index',
-        name: listing['name_en'] as String? ?? 'Produce',
-        pricePerKg: (listing['price_per_kg'] as num?)?.toDouble() ?? 0,
-        farmerName: _role == 'farmer' ? 'Your farm' : 'Local farmer',
-        location: _listingLocation(listing, index),
-      );
-    }).toList();
+    final role = ref.watch(activeRoleProvider);
+    final marketplaceAsync = ref.watch(marketplaceDataProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -138,7 +31,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
               child: Text(
-                _role == 'farmer' ? 'Farmer Supply Flow' : 'Marketplace Flow',
+                role == 'farmer' ? 'Farmer Supply Flow' : 'Marketplace Flow',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -146,7 +39,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _flowStrip(),
+              child: _flowStrip(role),
             ),
             const SizedBox(height: 10),
             Padding(
@@ -155,21 +48,38 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
                   height: 220,
-                  child: ListingsMapWidget(
-                    listings: markers,
-                    center: jiriCenter,
-                    zoom: 10.8,
-                    onMarkerTap: (listingId) {
-                      final listing = _listings.firstWhere(
-                        (item) => item['id'] == listingId,
-                        orElse: () => _listings.first,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '${listing['name_en'] ?? 'Produce'} • NPR ${listing['price_per_kg'] ?? 0}/kg',
-                          ),
-                        ),
+                  child: marketplaceAsync.when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, _) => const Center(
+                      child: Icon(Icons.map_outlined,
+                          size: 48, color: Colors.grey),
+                    ),
+                    data: (data) {
+                      final markers =
+                          data.listings.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final listing = entry.value;
+                        return ProduceListingMarker(
+                          id: listing['id'] as String? ?? 'listing-$index',
+                          name: listing['name_en'] as String? ?? 'Produce',
+                          pricePerKg:
+                              (listing['price_per_kg'] as num?)?.toDouble() ??
+                                  0,
+                          farmerName: role == 'farmer'
+                              ? 'Your farm'
+                              : 'Local farmer',
+                          location: _listingLocation(listing, index),
+                        );
+                      }).toList();
+
+                      return ListingsMapWidget(
+                        listings: markers,
+                        center: jiriCenter,
+                        zoom: 10.8,
+                        onMarkerTap: (listingId) {
+                          context.push('${AppRoutes.marketplace}/$listingId');
+                        },
                       );
                     },
                   ),
@@ -178,31 +88,36 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(_error!, textAlign: TextAlign.center),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _loadFlowData,
-                            child: const Text('Retry'),
-                          ),
-                        ],
+              child: marketplaceAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.error,
                       ),
-                    )
-                  : _role == 'farmer'
-                  ? _farmerFlowList()
-                  : _consumerFlowList(),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Failed to load marketplace flow: $error',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () =>
+                            ref.invalidate(marketplaceDataProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+                data: (data) => role == 'farmer'
+                    ? _farmerFlowList(data)
+                    : _consumerFlowList(data),
+              ),
             ),
           ],
         ),
@@ -210,8 +125,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _flowStrip() {
-    final steps = _role == 'farmer'
+  Widget _flowStrip(String role) {
+    final steps = role == 'farmer'
         ? const [
             '1. Post produce',
             '2. Receive requests',
@@ -236,7 +151,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         children: steps
             .map(
               (step) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -256,19 +172,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _consumerFlowList() {
-    if (_listings.isEmpty) {
+  Widget _consumerFlowList(MarketplaceData data) {
+    if (data.listings.isEmpty) {
       return const Center(child: Text('No active produce listings yet.'));
     }
 
     return RefreshIndicator(
-      onRefresh: _loadFlowData,
+      onRefresh: () => ref.refresh(marketplaceDataProvider.future),
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        itemCount: _listings.length,
+        itemCount: data.listings.length,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          final listing = _listings[index];
+          final listing = data.listings[index];
           return Card(
             margin: EdgeInsets.zero,
             elevation: 0,
@@ -310,7 +226,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     alignment: Alignment.centerRight,
                     child: FilledButton.icon(
                       onPressed: () => _showRequestSheet(listing),
-                      icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                      icon:
+                          const Icon(Icons.shopping_bag_outlined, size: 18),
                       label: const Text('Request Purchase'),
                     ),
                   ),
@@ -323,28 +240,29 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _farmerFlowList() {
+  Widget _farmerFlowList(MarketplaceData data) {
     return RefreshIndicator(
-      onRefresh: _loadFlowData,
+      onRefresh: () => ref.refresh(marketplaceDataProvider.future),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         children: [
           Text(
-            'Your Active Listings (${_listings.length})',
+            'Your Active Listings (${data.listings.length})',
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
           const SizedBox(height: 8),
-          if (_listings.isEmpty)
+          if (data.listings.isEmpty)
             const Text('No active listings yet.')
           else
-            ..._listings.map((listing) {
+            ...data.listings.map((listing) {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 elevation: 0,
                 color: AppColors.muted,
                 child: ListTile(
                   leading: const Icon(Icons.inventory_2_outlined),
-                  title: Text(listing['name_en'] as String? ?? 'Produce'),
+                  title:
+                      Text(listing['name_en'] as String? ?? 'Produce'),
                   subtitle: Text(
                     '${(listing['available_qty_kg'] as num?)?.toStringAsFixed(0) ?? '0'} kg · NPR ${(listing['price_per_kg'] as num?)?.toStringAsFixed(0) ?? '0'}/kg',
                   ),
@@ -353,16 +271,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             }),
           const SizedBox(height: 8),
           Text(
-            'Incoming Pickup Requests (${_pendingPickups.length})',
+            'Incoming Pickup Requests (${data.pendingPickups.length})',
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
           const SizedBox(height: 8),
-          if (_pendingPickups.isEmpty)
+          if (data.pendingPickups.isEmpty)
             const Text('No pickup requests yet.')
           else
-            ..._pendingPickups.map((item) {
+            ...data.pendingPickups.map((item) {
               final orderId = item['order_id'] as String?;
-              final order = orderId != null ? _ordersById[orderId] : null;
+              final order =
+                  orderId != null ? data.ordersById[orderId] : null;
               final status = order?['status'] as String? ?? 'pending';
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -375,13 +294,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     children: [
                       Text(
                         '${(item['quantity_kg'] as num?)?.toStringAsFixed(0) ?? '0'} kg pickup request',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Delivery: ${order?['delivery_address'] ?? 'Address pending'}',
                       ),
-                      Text('Order status: ${_formatStatus(status)}'),
+                      Text(
+                          'Order status: ${_formatStatus(status)}'),
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerRight,
@@ -451,7 +372,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     value: requestQty,
                     min: 1,
                     max: maxQty,
-                    divisions: maxQty.toInt() > 1 ? maxQty.toInt() - 1 : 1,
+                    divisions:
+                        maxQty.toInt() > 1 ? maxQty.toInt() - 1 : 1,
                     label: '${requestQty.toStringAsFixed(1)} kg',
                     onChanged: (value) {
                       setLocalState(() => requestQty = value);
@@ -487,16 +409,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  SessionService? _maybeSession() {
-    try {
-      return SessionProvider.of(context);
-    } catch (_) {
-      return null;
-    }
-  }
-
   LatLng _listingLocation(Map<String, dynamic> listing, int index) {
-    final municipality = (listing['municipality'] as String?)?.toLowerCase();
+    final municipalityData = listing['municipalities'] as Map<String, dynamic>?;
+    final municipality = (municipalityData?['name_en'] as String?)?.toLowerCase();
     if (municipality != null) {
       if (municipality.contains('kathmandu')) {
         return const LatLng(27.7172, 85.3240);
@@ -528,7 +443,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         .replaceAll('_', ' ')
         .split(' ')
         .map(
-          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+          (w) =>
+              w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
         )
         .join(' ');
   }

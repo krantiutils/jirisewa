@@ -1,40 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
-import 'package:jirisewa_mobile/core/services/session_service.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/features/shell/role_switcher.dart';
 
-/// App shell with role-aware bottom tab navigation.
-///
-/// Consumer/Farmer tabs: Home, Marketplace, Orders, Profile
-/// Rider tabs:           Home, Trips, Orders, Profile
-///
-/// The shell wraps a [StatefulNavigationShell] with 5 branches.
-/// Only 4 are shown at a time — the second tab swaps between
-/// Marketplace (branch 1) and Trips (branch 2) based on active role.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const AppShell({super.key, required this.navigationShell});
 
   @override
-  Widget build(BuildContext context) {
-    final session = SessionProvider.of(context);
-    final isRider = session.isRider;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeRole = ref.watch(activeRoleProvider);
+    final hasMultiple = ref.watch(hasMultipleRolesProvider);
+    final isRider = activeRole == 'rider';
 
-    // Map from displayed tab index (0-3) to shell branch index (0-4).
     final branchMap = isRider
         ? [ShellBranch.home, ShellBranch.trips, ShellBranch.orders, ShellBranch.profile]
         : [ShellBranch.home, ShellBranch.marketplace, ShellBranch.orders, ShellBranch.profile];
 
-    // Reverse map: shell branch index → displayed tab index.
     final currentBranch = navigationShell.currentIndex;
     int displayIndex = branchMap.indexOf(currentBranch);
     if (displayIndex < 0) {
-      // User switched role while on a tab that doesn't exist in new role.
-      // Fall back to home.
       displayIndex = 0;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         navigationShell.goBranch(ShellBranch.home);
@@ -60,8 +50,7 @@ class AppShell extends StatelessWidget {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (session.hasMultipleRoles)
-            const RoleSwitcherBar(),
+          if (hasMultiple) const RoleSwitcherBar(),
           BottomNavigationBar(
             currentIndex: displayIndex,
             onTap: (index) => navigationShell.goBranch(
@@ -69,7 +58,7 @@ class AppShell extends StatelessWidget {
               initialLocation: index == displayIndex,
             ),
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: _tabColor(session.activeRole),
+            selectedItemColor: _tabColor(activeRole),
             unselectedItemColor: Colors.grey[500],
             backgroundColor: AppColors.background,
             elevation: 0,
