@@ -27,6 +27,7 @@ import 'package:jirisewa_mobile/features/farmer/screens/create_listing_screen.da
 import 'package:jirisewa_mobile/features/farmer/screens/edit_listing_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/analytics_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/verification_screen.dart';
+import 'package:jirisewa_mobile/features/farmer/screens/farmer_orders_screen.dart';
 import 'package:jirisewa_mobile/features/subscriptions/screens/subscription_browse_screen.dart';
 import 'package:jirisewa_mobile/features/subscriptions/screens/farmer_subscriptions_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/business_register_screen.dart';
@@ -38,6 +39,7 @@ import 'package:jirisewa_mobile/features/earnings/screens/earnings_screen.dart';
 import 'package:jirisewa_mobile/features/orders/screens/order_tracking_screen.dart';
 import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
 import 'package:jirisewa_mobile/features/addresses/screens/addresses_screen.dart';
+import 'package:jirisewa_mobile/features/profile/screens/account_settings_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -63,10 +65,12 @@ abstract final class AppRoutes {
   static const farmerListingEdit = '/farmer/listings/:id/edit';
   static const farmerAnalytics = '/farmer/analytics';
   static const farmerVerification = '/farmer/verification';
+  static const farmerOrders = '/farmer/orders';
   static const farmerSubscriptions = '/farmer/subscriptions';
   static const farmerBulkOrders = '/farmer/bulk-orders';
   static const earnings = '/earnings';
   static const addresses = '/addresses';
+  static const accountSettings = '/account-settings';
   static const subscriptions = '/subscriptions';
   static const businessRegister = '/business/register';
   static const businessDashboard = '/business/dashboard';
@@ -268,6 +272,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerVerification,
         builder: (context, state) => const VerificationScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.farmerOrders,
+        builder: (context, state) => const FarmerOrdersScreen(),
       ),
       GoRoute(
         path: AppRoutes.subscriptions,
