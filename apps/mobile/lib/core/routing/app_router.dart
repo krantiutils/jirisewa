@@ -37,6 +37,7 @@ import 'package:jirisewa_mobile/features/business/screens/bulk_order_detail_scre
 import 'package:jirisewa_mobile/features/business/screens/farmer_bulk_orders_screen.dart';
 import 'package:jirisewa_mobile/features/earnings/screens/earnings_screen.dart';
 import 'package:jirisewa_mobile/features/orders/screens/order_tracking_screen.dart';
+import 'package:jirisewa_mobile/features/orders/screens/available_orders_screen.dart';
 import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
 import 'package:jirisewa_mobile/features/addresses/screens/addresses_screen.dart';
 import 'package:jirisewa_mobile/features/profile/screens/account_settings_screen.dart';
@@ -75,6 +76,7 @@ abstract final class AppRoutes {
   static const businessRegister = '/business/register';
   static const businessDashboard = '/business/dashboard';
   static const businessOrders = '/business/orders';
+  static const availableOrders = '/rider/available-orders';
   static const businessOrderDetail = '/business/orders/:id';
 
   // Payment callback deep link routes
@@ -311,6 +313,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.earnings,
         builder: (context, state) => const EarningsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.availableOrders,
+        builder: (context, state) => const AvailableOrdersScreen(),
       ),
       GoRoute(
         path: AppRoutes.addresses,
