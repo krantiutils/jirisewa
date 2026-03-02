@@ -1,23 +1,9 @@
 # =============================================================================
-# Stage 1: deps — install all dependencies (cached by lockfile + package.json)
+# Stage 1: builder — install dependencies and build Next.js standalone
 # =============================================================================
-FROM node:20-alpine AS deps
-
-RUN corepack enable && corepack prepare pnpm@9 --activate
-
-WORKDIR /app
-
-# Copy workspace config and all package.json files first for optimal layer caching.
-# Changes to source code won't invalidate the dependency install layer.
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/web/package.json ./apps/web/package.json
-COPY packages/shared/package.json ./packages/shared/package.json
-COPY packages/database/package.json ./packages/database/package.json
-
-RUN pnpm install --frozen-lockfile
-
-# =============================================================================
-# Stage 2: builder — build the Next.js standalone application
+# pnpm uses symlinks in node_modules (.pnpm virtual store). Copying individual
+# node_modules between Docker stages breaks these symlinks, so we install and
+# build in a single stage. Layer caching still works via BuildKit cache mounts.
 # =============================================================================
 FROM node:20-alpine AS builder
 
@@ -25,11 +11,13 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 
 WORKDIR /app
 
-# Copy installed dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/packages/database/node_modules ./packages/database/node_modules
+# Copy workspace config + lockfile first (cache layer for install)
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/database/package.json ./packages/database/package.json
+
+RUN pnpm install --frozen-lockfile
 
 # Copy all source files
 COPY . .
@@ -47,7 +35,6 @@ ARG NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 ARG NEXT_PUBLIC_FIREBASE_APP_ID
 ARG NEXT_PUBLIC_FIREBASE_VAPID_KEY
 
-# Set them as ENV so Next.js can inline them during the build
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
@@ -63,7 +50,7 @@ ENV NEXT_PUBLIC_FIREBASE_VAPID_KEY=$NEXT_PUBLIC_FIREBASE_VAPID_KEY
 RUN pnpm --filter @jirisewa/web build
 
 # =============================================================================
-# Stage 3: runner — minimal production image
+# Stage 2: runner — minimal production image
 # =============================================================================
 FROM node:20-alpine AS runner
 
