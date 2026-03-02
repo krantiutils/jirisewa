@@ -13,10 +13,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
-      - traefik-public
-    depends_on:
-      db:
-        condition: service_healthy
+      - traefik-proxy
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -50,7 +47,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
-      - traefik-public
+      - traefik-proxy
     depends_on:
       auth:
         condition: service_healthy
@@ -291,7 +288,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
-      - traefik-public
+      - traefik-proxy
     depends_on:
       meta:
         condition: service_started
@@ -398,5 +395,5 @@ volumes:
 # =============================================================================
 networks:
   internal:
-  traefik-public:
+  traefik-proxy:
     external: true

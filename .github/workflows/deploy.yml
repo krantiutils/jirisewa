@@ -77,16 +77,21 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "Logging in to GHCR..."
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
             echo "Pulling latest image..."
             docker pull ghcr.io/krantiutils/jirisewa:latest
 
             echo "Restarting web service..."
-            cd ~/jirisewa/docker
-            docker compose up -d web
+            cd ~/jirisewa-docker
+            docker compose down
+            docker compose up -d
+
+            echo "Cleaning old images..."
+            docker image prune -f
 
             echo "Verifying..."
             sleep 5
-            docker compose ps web
+            docker compose ps
+            curl -sf -o /dev/null http://localhost:3001 && echo "Health check passed!" || echo "WARNING: Health check failed"
             echo "Deploy complete!"

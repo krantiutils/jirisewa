@@ -67,7 +67,7 @@ cp repo/traefik/* ~/traefik/
 cp -r repo/docker/* ~/jirisewa/docker/
 
 # Configure secrets
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 cp .env.example .env
 vim .env  # Fill in all secrets
 ```
@@ -94,7 +94,7 @@ cd ~/traefik
 docker compose up -d
 
 # Start JiriSewa
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 docker compose up -d
 
 # Run migrations (first time only)
@@ -109,6 +109,7 @@ In the GitHub repo settings (Settings > Secrets > Actions), add:
 |--------|-------|
 | `EC2_HOST` | `54.156.88.160` |
 | `EC2_SSH_KEY` | SSH private key for ubuntu user |
+| `GHCR_TOKEN` | GitHub PAT with `read:packages` scope (for EC2 to pull images) |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://khetbata.xyz/_supabase` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key |
 | `NEXT_PUBLIC_BASE_URL` | `https://khetbata.xyz` |
@@ -119,7 +120,7 @@ In the GitHub repo settings (Settings > Secrets > Actions), add:
 
 ```bash
 ssh ubuntu@54.156.88.160
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 
 # Pull and restart web only
 docker compose pull web
@@ -129,14 +130,14 @@ docker compose up -d web
 ## Running Migrations
 
 ```bash
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 docker compose run --rm migrate
 ```
 
 ## Viewing Logs
 
 ```bash
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 
 # All services
 docker compose logs -f
@@ -150,7 +151,7 @@ docker compose logs -f db
 ## Rollback
 
 ```bash
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 
 # Find available image tags
 docker image ls ghcr.io/krantiutils/jirisewa
@@ -204,7 +205,7 @@ docker compose exec db psql -U postgres
 ### Restart everything
 
 ```bash
-cd ~/jirisewa/docker
+cd ~/jirisewa-docker
 docker compose down
 docker compose up -d
 ```
