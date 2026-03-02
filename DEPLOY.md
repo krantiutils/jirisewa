@@ -1,164 +1,218 @@
 # JiriSewa Deployment Guide
 
 ## Server Information
+
 - **Server**: ubuntu@54.156.88.160
 - **Domain**: https://khetbata.xyz
-- **Project path**: ~/jirisewa/apps/web
+- **Studio**: https://studio.khetbata.xyz
+- **Container Registry**: ghcr.io/krantiutils/jirisewa
 
-## Quick Deploy
+## Architecture
+
+```
+Traefik (ports 80/443, auto-SSL)
+├── khetbata.xyz → jirisewa-web:3000
+├── khetbata.xyz/_supabase/* → kong:8000
+└── studio.khetbata.xyz → studio:3000
+
+JiriSewa Stack (docker/docker-compose.yml)
+├── web          Next.js standalone
+├── db           Postgres 15 + PostGIS
+├── kong         Supabase API gateway
+├── auth         GoTrue
+├── rest         PostgREST
+├── realtime     WebSockets
+├── storage      File storage
+├── imgproxy     Image transforms
+├── studio       Supabase Dashboard
+└── meta         Postgres metadata
+```
+
+## Automated Deploy (CI/CD)
+
+Deployments are triggered manually via GitHub Actions:
+
+1. Go to **Actions** tab in GitHub
+2. Select **Deploy JiriSewa** workflow
+3. Click **Run workflow**
+
+This builds the Next.js image, pushes to ghcr.io, and deploys to EC2.
+
+## First-Time EC2 Setup
+
+### 1. Install Docker
 
 ```bash
-# 1. SSH into the server
 ssh ubuntu@54.156.88.160
 
-# 2. Navigate to project
-cd ~/jirisewa/apps/web
-
-# 3. Pull latest changes
-git pull origin master
-
-# 4. Install dependencies (if needed)
-npm install
-
-# 5. Build the app
-npm run build
-
-# 6. Restart the service
-pm2 restart jirisewa-frontend
-
-# 7. Check logs
-pm2 logs jirisewa-frontend --lines 50
+# Install Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker ubuntu
+# Log out and back in for group to take effect
 ```
 
-## Supabase OAuth Configuration
-
-For Google OAuth to work correctly, the Supabase instance needs to know its external URL.
-
-### Method 1: Run the fix script (Recommended)
+### 2. Set Up Directory Structure
 
 ```bash
-cd ~/jirisewa/apps/web/supabase
-bash fix-oauth-redirect.sh
+mkdir -p ~/traefik ~/jirisewa/docker
 ```
 
-### Method 2: Manual configuration
+### 3. Clone and Configure
 
-1. Update `~/jirisewa/apps/web/supabase/config.toml`:
-```toml
-[api]
-external_url = "https://khetbata.xyz/_supabase"
-
-[auth]
-site_url = "https://khetbata.xyz"
-additional_redirect_urls = ["https://khetbata.xyz/_supabase/auth/v1/callback"]
-```
-
-2. Set environment variable and restart Supabase:
 ```bash
-export GOTRUE_EXTERNAL_URL="https://khetbata.xyz/_supabase"
-cd ~/jirisewa/apps/web/supabase
-supabase stop
-supabase start
+# Clone the repo (just for config files)
+cd ~/jirisewa
+git clone https://github.com/krantiutils/jirisewa.git repo
+cp repo/traefik/* ~/traefik/
+cp -r repo/docker/* ~/jirisewa/docker/
+
+# Configure secrets
+cd ~/jirisewa/docker
+cp .env.example .env
+vim .env  # Fill in all secrets
 ```
 
-3. Verify the configuration:
+### 4. Generate Supabase Keys
+
 ```bash
-curl -s "https://khetbata.xyz/_supabase/auth/v1/authorize?provider=google" | grep -o 'redirect_uri=[^&]*'
-# Should show: https://khetbata.xyz/_supabase/auth/v1/callback
-# NOT: http://127.0.0.1:54321/auth/v1/callback
+# Generate JWT secret
+openssl rand -base64 32
+
+# Generate ANON_KEY and SERVICE_ROLE_KEY from the JWT secret
+# Use: https://supabase.com/docs/guides/self-hosting/docker#generate-api-keys
+# Or use the supabase CLI: supabase bootstrap
 ```
 
-## Google Cloud Console Configuration
+### 5. Start Everything
 
-Make sure the following redirect URI is added to your Google OAuth 2.0 Client:
+```bash
+# Create shared network
+docker network create traefik-public
+
+# Start Traefik
+cd ~/traefik
+docker compose up -d
+
+# Start JiriSewa
+cd ~/jirisewa/docker
+docker compose up -d
+
+# Run migrations (first time only)
+docker compose run --rm migrate
+```
+
+### 6. Set Up GitHub Secrets
+
+In the GitHub repo settings (Settings > Secrets > Actions), add:
+
+| Secret | Value |
+|--------|-------|
+| `EC2_HOST` | `54.156.88.160` |
+| `EC2_SSH_KEY` | SSH private key for ubuntu user |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://khetbata.xyz/_supabase` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key |
+| `NEXT_PUBLIC_BASE_URL` | `https://khetbata.xyz` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `NEXT_PUBLIC_FIREBASE_*` | Firebase config values (6 secrets) |
+
+## Manual Deploy
+
+```bash
+ssh ubuntu@54.156.88.160
+cd ~/jirisewa/docker
+
+# Pull and restart web only
+docker compose pull web
+docker compose up -d web
+```
+
+## Running Migrations
+
+```bash
+cd ~/jirisewa/docker
+docker compose run --rm migrate
+```
+
+## Viewing Logs
+
+```bash
+cd ~/jirisewa/docker
+
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f web
+docker compose logs -f auth
+docker compose logs -f db
+```
+
+## Rollback
+
+```bash
+cd ~/jirisewa/docker
+
+# Find available image tags
+docker image ls ghcr.io/krantiutils/jirisewa
+
+# Edit docker-compose.yml to pin a specific SHA
+# Change: image: ghcr.io/krantiutils/jirisewa:latest
+# To:     image: ghcr.io/krantiutils/jirisewa:sha-abc1234
+docker compose up -d web
+```
+
+## Google OAuth Configuration
+
+Add this redirect URI in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
 
 ```
 https://khetbata.xyz/_supabase/auth/v1/callback
 ```
 
-Go to: https://console.cloud.google.com/apis/credentials
-Select your OAuth 2.0 Client ID
-Add the URI to "Authorized redirect URIs"
-
-## Environment Variables
-
-The following environment variables should be set in `.env.local`:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://khetbata.xyz/_supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-NEXT_PUBLIC_BASE_URL=https://khetbata.xyz
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=976742567993-t2ckb1olg9tslhnc5c92qii8hu8fqen0.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=<your-secret>
-```
-
-## Nginx Configuration
-
-The nginx config at `/etc/nginx/sites-available/khetbata` should have these location blocks:
-
-```nginx
-# Supabase Auth callback
-location /_supabase/auth/v1/callback {
-    proxy_pass http://127.0.0.1:54321/auth/v1/callback;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-# Supabase Auth API
-location /_supabase/auth/v1/ {
-    proxy_pass http://127.0.0.1:54321/auth/v1/;
-    # ... same proxy headers
-}
-
-# Supabase REST API
-location /_supabase/rest/v1/ {
-    proxy_pass http://127.0.0.1:54321/rest/v1/;
-    # ... same proxy headers
-}
-
-# Supabase Storage
-location /_supabase/storage/v1/ {
-    proxy_pass http://127.0.0.1:54321/storage/v1/;
-    # ... same proxy headers
-}
-```
-
-After changing nginx config:
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
 ## Testing
 
-1. **Site is up**: `curl -s -o /dev/null -w '%{http_code}' https://khetbata.xyz`
-2. **Supabase API**: `curl -s https://khetbata.xyz/_supabase/rest/v1/ | head -5`
-3. **OAuth endpoint**: Check redirect URI as shown above
+```bash
+# Site is up
+curl -s -o /dev/null -w '%{http_code}' https://khetbata.xyz
+
+# Supabase API
+curl -s https://khetbata.xyz/_supabase/rest/v1/ | head -5
+
+# OAuth callback
+curl -s "https://khetbata.xyz/_supabase/auth/v1/authorize?provider=google" | grep -o 'redirect_uri=[^&]*'
+```
 
 ## Troubleshooting
 
-### OAuth redirect URI shows localhost
-This means GOTRUE_EXTERNAL_URL is not set. Run the fix script or set the environment variable.
+### Container won't start
 
-### Build fails with ENOENT error
 ```bash
-rm -rf .next
-npm run build
+docker compose ps        # Check status
+docker compose logs web  # Check logs for the failing service
 ```
 
-### Supabase not accessible
-```bash
-# Check if Supabase is running
-ps aux | grep supabase
+### Database connection issues
 
-# Restart Supabase
-cd ~/jirisewa/apps/web/supabase
-supabase stop
-supabase start
+```bash
+# Check if db is healthy
+docker compose ps db
+
+# Connect directly
+docker compose exec db psql -U postgres
+```
+
+### Restart everything
+
+```bash
+cd ~/jirisewa/docker
+docker compose down
+docker compose up -d
+```
+
+### Remove all data (nuclear option)
+
+```bash
+docker compose down -v  # -v removes volumes (DATA LOSS!)
+docker compose up -d
+docker compose run --rm migrate  # Re-run migrations
 ```
