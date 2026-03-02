@@ -1,0 +1,402 @@
+# =============================================================================
+# JiriSewa — Full Production Stack
+# Usage:  docker compose up -d
+# Migrate: docker compose run --rm migrate
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. web — Next.js application
+  # ---------------------------------------------------------------------------
+  web:
+    image: ghcr.io/krantiutils/jirisewa:latest
+    restart: unless-stopped
+    networks:
+      - internal
+      - traefik-public
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      # Runtime secrets (not baked into image)
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      ESEWA_SECRET_KEY: ${ESEWA_SECRET_KEY}
+      ESEWA_PRODUCT_CODE: ${ESEWA_PRODUCT_CODE}
+      ESEWA_ENVIRONMENT: ${ESEWA_ENVIRONMENT}
+      KHALTI_SECRET_KEY: ${KHALTI_SECRET_KEY}
+      KHALTI_ENVIRONMENT: ${KHALTI_ENVIRONMENT}
+      CONNECTIPS_MERCHANT_ID: ${CONNECTIPS_MERCHANT_ID}
+      CONNECTIPS_APP_ID: ${CONNECTIPS_APP_ID}
+      CONNECTIPS_APP_NAME: ${CONNECTIPS_APP_NAME}
+      CONNECTIPS_APP_PASSWORD: ${CONNECTIPS_APP_PASSWORD}
+      CONNECTIPS_KEY_PATH: ${CONNECTIPS_KEY_PATH}
+      CONNECTIPS_ENVIRONMENT: ${CONNECTIPS_ENVIRONMENT}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jirisewa-web.rule=Host(`khetbata.xyz`)"
+      - "traefik.http.routers.jirisewa-web.entrypoints=websecure"
+      - "traefik.http.routers.jirisewa-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jirisewa-web.loadbalancer.server.port=3000"
+
+  # ---------------------------------------------------------------------------
+  # 2. kong — Supabase API Gateway
+  # ---------------------------------------------------------------------------
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    networks:
+      - internal
+      - traefik-public
+    depends_on:
+      auth:
+        condition: service_healthy
+    volumes:
+      - ./volumes/api/kong.yml:/home/kong/temp.yml:ro
+    entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth,request-termination
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jirisewa-supabase.rule=Host(`khetbata.xyz`) && PathPrefix(`/_supabase`)"
+      - "traefik.http.routers.jirisewa-supabase.entrypoints=websecure"
+      - "traefik.http.routers.jirisewa-supabase.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.jirisewa-supabase.middlewares=strip-supabase-prefix"
+      - "traefik.http.middlewares.strip-supabase-prefix.stripprefix.prefixes=/_supabase"
+      - "traefik.http.services.jirisewa-supabase.loadbalancer.server.port=8000"
+
+  # ---------------------------------------------------------------------------
+  # 3. db — PostgreSQL + PostGIS
+  # ---------------------------------------------------------------------------
+  db:
+    image: supabase/postgres:15.8.1.085
+    restart: unless-stopped
+    networks:
+      - internal
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - db-config:/etc/postgresql-custom
+      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: ${JWT_EXPIRY:-3600}
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+
+  # ---------------------------------------------------------------------------
+  # 4. auth — GoTrue (Supabase Auth)
+  # ---------------------------------------------------------------------------
+  auth:
+    image: supabase/gotrue:v2.186.0
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-false}
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP:-true}
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: ${ENABLE_ANONYMOUS_USERS:-false}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-false}
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-admin@example.com}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-JiriSewa}
+      GOTRUE_MAILER_URLPATHS_INVITE: ${MAILER_URLPATHS_INVITE:-/auth/v1/verify}
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: ${MAILER_URLPATHS_CONFIRMATION:-/auth/v1/verify}
+      GOTRUE_MAILER_URLPATHS_RECOVERY: ${MAILER_URLPATHS_RECOVERY:-/auth/v1/verify}
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: ${MAILER_URLPATHS_EMAIL_CHANGE:-/auth/v1/verify}
+      GOTRUE_EXTERNAL_PHONE_ENABLED: ${ENABLE_PHONE_SIGNUP:-true}
+      GOTRUE_SMS_AUTOCONFIRM: ${ENABLE_PHONE_AUTOCONFIRM:-true}
+
+  # ---------------------------------------------------------------------------
+  # 5. rest — PostgREST
+  # ---------------------------------------------------------------------------
+  rest:
+    image: postgrest/postgrest:v14.5
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["postgrest"]
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}
+      PGRST_DB_SCHEMAS: ${PGRST_DB_SCHEMAS:-public,storage,graphql_public}
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY:-3600}
+
+  # ---------------------------------------------------------------------------
+  # 6. realtime — Supabase Realtime
+  # ---------------------------------------------------------------------------
+  realtime:
+    image: supabase/realtime:v2.76.5
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl", "-sSfL", "--head", "-o", "/dev/null",
+          "-H", "Authorization: Bearer ${ANON_KEY}",
+          "http://localhost:4000/api/tenants/realtime-dev/health"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    environment:
+      PORT: "4000"
+      DB_HOST: db
+      DB_PORT: ${POSTGRES_PORT:-5432}
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB:-postgres}
+      DB_AFTER_CONNECT_QUERY: "SET search_path TO _realtime"
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+
+  # ---------------------------------------------------------------------------
+  # 7. storage — Supabase Storage
+  # ---------------------------------------------------------------------------
+  storage:
+    image: supabase/storage-api:v1.37.8
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/status"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - storage-data:/var/lib/storage
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-postgres}
+      FILE_SIZE_LIMIT: "52428800"
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      GLOBAL_S3_BUCKET: stub
+      TENANT_ID: stub
+      REGION: us-east-1
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:5001
+      S3_PROTOCOL_ACCESS_KEY_ID: ${S3_PROTOCOL_ACCESS_KEY_ID:-stub}
+      S3_PROTOCOL_ACCESS_KEY_SECRET: ${S3_PROTOCOL_ACCESS_KEY_SECRET:-stub}
+
+  # ---------------------------------------------------------------------------
+  # 8. imgproxy — Image transformation
+  # ---------------------------------------------------------------------------
+  imgproxy:
+    image: darthsim/imgproxy:v3.30.1
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - storage-data:/var/lib/storage:ro
+    environment:
+      IMGPROXY_BIND: ":5001"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: ${IMGPROXY_ENABLE_WEBP_DETECTION:-true}
+      IMGPROXY_MAX_SRC_RESOLUTION: "16.8"
+
+  # ---------------------------------------------------------------------------
+  # 9. studio — Supabase Dashboard
+  # ---------------------------------------------------------------------------
+  studio:
+    image: supabase/studio:2026.02.16-sha-26c615c
+    restart: unless-stopped
+    networks:
+      - internal
+      - traefik-public
+    depends_on:
+      meta:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD", "node", "-e",
+          "fetch('http://localhost:3000/api/platform/profile').then((r) => {if (r.status !== 200) throw new Error(r.status)})"
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    environment:
+      HOSTNAME: "::"
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION:-JiriSewa}
+      DEFAULT_PROJECT_NAME: ${STUDIO_DEFAULT_PROJECT:-JiriSewa}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jirisewa-studio.rule=Host(`studio.khetbata.xyz`)"
+      - "traefik.http.routers.jirisewa-studio.entrypoints=websecure"
+      - "traefik.http.routers.jirisewa-studio.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jirisewa-studio.loadbalancer.server.port=3000"
+
+  # ---------------------------------------------------------------------------
+  # 10. meta — Postgres Meta (for Studio)
+  # ---------------------------------------------------------------------------
+  meta:
+    image: supabase/postgres-meta:v0.95.2
+    restart: unless-stopped
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: "8080"
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: ${POSTGRES_PORT:-5432}
+      PG_META_DB_NAME: ${POSTGRES_DB:-postgres}
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      CRYPTO_KEY: ${PG_META_CRYPTO_KEY}
+
+  # ---------------------------------------------------------------------------
+  # 11. migrate — One-shot migration runner
+  # Run with: docker compose run --rm migrate
+  # ---------------------------------------------------------------------------
+  migrate:
+    image: supabase/postgres:15.8.1.085
+    restart: "no"
+    networks:
+      - internal
+    profiles:
+      - migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ../supabase/migrations:/migrations:ro
+      - ../supabase/seed:/seed:ro
+    environment:
+      PGHOST: db
+      PGPORT: ${POSTGRES_PORT:-5432}
+      PGDATABASE: ${POSTGRES_DB:-postgres}
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        echo "==> Running migrations..."
+        for f in /migrations/*.sql; do
+          echo "  Applying $$(basename $$f)"
+          psql -v ON_ERROR_STOP=1 -f "$$f"
+        done
+        echo "==> Running seeds..."
+        for f in /seed/*.sql; do
+          if [ -f "$$f" ]; then
+            echo "  Seeding $$(basename $$f)"
+            psql -v ON_ERROR_STOP=1 -f "$$f"
+          fi
+        done
+        echo "==> Done."
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  db-data:
+  db-config:
+  storage-data:
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  internal:
+  traefik-public:
+    external: true
