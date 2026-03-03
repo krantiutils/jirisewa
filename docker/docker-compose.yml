@@ -90,7 +90,7 @@ services:
       - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
       - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
       interval: 5s
       timeout: 5s
       retries: 10

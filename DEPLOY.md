@@ -2,21 +2,22 @@
 
 ## Server Information
 
-- **Server**: ubuntu@54.156.88.160
+- **Server**: hetzner-1 (ARM) — `ubuntu@178.104.21.224`
 - **Domain**: https://khetbata.xyz
 - **Studio**: https://studio.khetbata.xyz
-- **Container Registry**: ghcr.io/krantiutils/jirisewa
+- **Source**: `~/jirisewa-src` (git clone)
+- **Compose**: `~/jirisewa-docker/docker-compose.prod.yml`
 
 ## Architecture
 
 ```
-Traefik (ports 80/443, auto-SSL)
+Traefik (ports 80/443, auto-SSL via Docker labels)
 ├── khetbata.xyz → jirisewa-web:3000
-├── khetbata.xyz/_supabase/* → kong:8000
-└── studio.khetbata.xyz → studio:3000
+├── khetbata.xyz/_supabase/* → jirisewa-kong:8000
+└── studio.khetbata.xyz → jirisewa-studio:3000
 
-JiriSewa Stack (docker/docker-compose.yml)
-├── web          Next.js standalone
+JiriSewa Stack (~/jirisewa-docker/docker-compose.prod.yml)
+├── web          Next.js standalone (ARM image, built on server)
 ├── db           Postgres 15 + PostGIS
 ├── kong         Supabase API gateway
 ├── auth         GoTrue
@@ -36,80 +37,14 @@ Deployments are triggered manually via GitHub Actions:
 2. Select **Deploy JiriSewa** workflow
 3. Click **Run workflow**
 
-This builds the Next.js image, pushes to ghcr.io, and deploys to EC2.
+This SSHes into hetzner-1, pulls the latest code, builds the ARM Docker image natively, and restarts the web service.
 
-## First-Time EC2 Setup
-
-### 1. Install Docker
-
-```bash
-ssh ubuntu@54.156.88.160
-
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker ubuntu
-# Log out and back in for group to take effect
-```
-
-### 2. Set Up Directory Structure
-
-```bash
-mkdir -p ~/traefik ~/jirisewa/docker
-```
-
-### 3. Clone and Configure
-
-```bash
-# Clone the repo (just for config files)
-cd ~/jirisewa
-git clone https://github.com/krantiutils/jirisewa.git repo
-cp repo/traefik/* ~/traefik/
-cp -r repo/docker/* ~/jirisewa/docker/
-
-# Configure secrets
-cd ~/jirisewa-docker
-cp .env.example .env
-vim .env  # Fill in all secrets
-```
-
-### 4. Generate Supabase Keys
-
-```bash
-# Generate JWT secret
-openssl rand -base64 32
-
-# Generate ANON_KEY and SERVICE_ROLE_KEY from the JWT secret
-# Use: https://supabase.com/docs/guides/self-hosting/docker#generate-api-keys
-# Or use the supabase CLI: supabase bootstrap
-```
-
-### 5. Start Everything
-
-```bash
-# Create shared network
-docker network create traefik-public
-
-# Start Traefik
-cd ~/traefik
-docker compose up -d
-
-# Start JiriSewa
-cd ~/jirisewa-docker
-docker compose up -d
-
-# Run migrations (first time only)
-docker compose run --rm migrate
-```
-
-### 6. Set Up GitHub Secrets
-
-In the GitHub repo settings (Settings > Secrets > Actions), add:
+### GitHub Secrets
 
 | Secret | Value |
 |--------|-------|
-| `EC2_HOST` | `54.156.88.160` |
-| `EC2_SSH_KEY` | SSH private key for ubuntu user |
-| `GHCR_TOKEN` | GitHub PAT with `read:packages` scope (for EC2 to pull images) |
+| `SERVER_HOST` | `178.104.21.224` |
+| `SERVER_SSH_KEY` | SSH private key (hetzner-1-deploy) |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://khetbata.xyz/_supabase` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key |
 | `NEXT_PUBLIC_BASE_URL` | `https://khetbata.xyz` |
@@ -119,47 +54,79 @@ In the GitHub repo settings (Settings > Secrets > Actions), add:
 ## Manual Deploy
 
 ```bash
-ssh ubuntu@54.156.88.160
-cd ~/jirisewa-docker
+ssh ubuntu@178.104.21.224
 
-# Pull and restart web only
-docker compose pull web
-docker compose up -d web
+# Pull latest code and rebuild
+cd ~/jirisewa-src
+git pull
+docker build -t ghcr.io/krantiutils/jirisewa:latest \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://khetbata.xyz/_supabase \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key> \
+  --build-arg NEXT_PUBLIC_BASE_URL=https://khetbata.xyz \
+  --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=<your-google-client-id> \
+  .
+
+# Restart web
+cd ~/jirisewa-docker
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d web
+docker image prune -f
 ```
 
 ## Running Migrations
 
 ```bash
-cd ~/jirisewa-docker
-docker compose run --rm migrate
+ssh ubuntu@178.104.21.224
+cd ~/jirisewa-src
+for f in supabase/migrations/*.sql; do
+  echo "Applying $(basename $f)..."
+  docker exec -i jirisewa-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$f"
+done
 ```
 
 ## Viewing Logs
 
 ```bash
+ssh ubuntu@178.104.21.224
 cd ~/jirisewa-docker
 
 # All services
-docker compose logs -f
+docker compose -f docker-compose.prod.yml --env-file .env.docker logs -f
 
 # Specific service
-docker compose logs -f web
-docker compose logs -f auth
-docker compose logs -f db
+docker logs jirisewa-web --tail 50 -f
+docker logs jirisewa-auth --tail 50 -f
+docker logs jirisewa-db --tail 50 -f
 ```
 
-## Rollback
+## Managing Services
 
 ```bash
 cd ~/jirisewa-docker
 
-# Find available image tags
-docker image ls ghcr.io/krantiutils/jirisewa
+# Start all
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d
 
-# Edit docker-compose.yml to pin a specific SHA
-# Change: image: ghcr.io/krantiutils/jirisewa:latest
-# To:     image: ghcr.io/krantiutils/jirisewa:sha-abc1234
-docker compose up -d web
+# Restart specific service
+docker compose -f docker-compose.prod.yml --env-file .env.docker restart web
+
+# Stop all
+docker compose -f docker-compose.prod.yml --env-file .env.docker down
+
+# Status
+docker compose -f docker-compose.prod.yml --env-file .env.docker ps
+```
+
+## Database
+
+```bash
+# Connect
+docker exec -it jirisewa-db psql -U postgres -d postgres
+
+# Backup
+docker exec jirisewa-db pg_dumpall -U postgres | gzip > ~/jirisewa-backup-$(date +%Y%m%d).sql.gz
+
+# Restore
+gunzip -c backup.sql.gz | docker exec -i jirisewa-db psql -U postgres -d postgres
 ```
 
 ## Google OAuth Configuration
@@ -177,10 +144,10 @@ https://khetbata.xyz/_supabase/auth/v1/callback
 curl -s -o /dev/null -w '%{http_code}' https://khetbata.xyz
 
 # Supabase API
-curl -s https://khetbata.xyz/_supabase/rest/v1/ | head -5
+curl -s https://khetbata.xyz/_supabase/rest/v1/ -H 'apikey: <anon-key>' | head -5
 
-# OAuth callback
-curl -s "https://khetbata.xyz/_supabase/auth/v1/authorize?provider=google" | grep -o 'redirect_uri=[^&]*'
+# Auth health
+curl -s https://khetbata.xyz/_supabase/auth/v1/health -H 'apikey: <anon-key>'
 ```
 
 ## Troubleshooting
@@ -188,32 +155,21 @@ curl -s "https://khetbata.xyz/_supabase/auth/v1/authorize?provider=google" | gre
 ### Container won't start
 
 ```bash
-docker compose ps        # Check status
-docker compose logs web  # Check logs for the failing service
+docker compose -f docker-compose.prod.yml --env-file .env.docker ps
+docker logs jirisewa-web --tail 50  # Check logs for the failing service
 ```
 
 ### Database connection issues
 
 ```bash
-# Check if db is healthy
-docker compose ps db
-
-# Connect directly
-docker compose exec db psql -U postgres
+docker exec -it jirisewa-db psql -U postgres -d postgres
+docker logs jirisewa-db --tail 50
 ```
 
 ### Restart everything
 
 ```bash
 cd ~/jirisewa-docker
-docker compose down
-docker compose up -d
-```
-
-### Remove all data (nuclear option)
-
-```bash
-docker compose down -v  # -v removes volumes (DATA LOSS!)
-docker compose up -d
-docker compose run --rm migrate  # Re-run migrations
+docker compose -f docker-compose.prod.yml --env-file .env.docker down
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d
 ```
