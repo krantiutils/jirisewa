@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { use } from "react";
 import { Link } from "@/i18n/navigation";
+import DeleteAccountForm from "@/components/DeleteAccountForm";
 
 export default function DeleteAccountPage({
   params,
@@ -24,35 +25,29 @@ export default function DeleteAccountPage({
           <p>
             We respect your right to control your personal data. If you wish to
             delete your JiriSewa account and all associated data, you can do so
-            using one of the methods below.
+            below.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-bold text-foreground">
-            How to Delete Your Account
+            Delete Your Account
           </h2>
+          <p className="mt-3">
+            Sign in and click the button below to permanently delete your
+            account and all associated data.
+          </p>
+          <div className="mt-4">
+            <DeleteAccountForm />
+          </div>
+        </section>
 
-          <h3 className="mt-4 font-semibold text-foreground">
-            Option 1: In-App Deletion
-          </h3>
-          <ol className="mt-2 list-decimal space-y-1 pl-6">
-            <li>Open JiriSewa and sign in to your account.</li>
-            <li>
-              Go to <strong>Settings</strong> (tap your profile icon in the top
-              right).
-            </li>
-            <li>
-              Scroll down and tap <strong>Delete Account</strong>.
-            </li>
-            <li>Confirm the deletion when prompted.</li>
-          </ol>
-
-          <h3 className="mt-6 font-semibold text-foreground">
-            Option 2: Email Request
-          </h3>
+        <section>
+          <h2 className="text-xl font-bold text-foreground">
+            Alternative: Email Request
+          </h2>
           <p className="mt-2">
-            Send an email to{" "}
+            You can also send an email to{" "}
             <a
               href="mailto:info@jirisewa.com?subject=Account%20Deletion%20Request"
               className="text-primary underline hover:text-primary/80"
