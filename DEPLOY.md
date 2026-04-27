@@ -1,164 +1,175 @@
 # JiriSewa Deployment Guide
 
 ## Server Information
-- **Server**: ubuntu@54.156.88.160
+
+- **Server**: hetzner-1 (ARM) — `ubuntu@178.104.21.224`
 - **Domain**: https://khetbata.xyz
-- **Project path**: ~/jirisewa/apps/web
+- **Studio**: https://studio.khetbata.xyz
+- **Source**: `~/jirisewa-src` (git clone)
+- **Compose**: `~/jirisewa-docker/docker-compose.prod.yml`
 
-## Quick Deploy
+## Architecture
+
+```
+Traefik (ports 80/443, auto-SSL via Docker labels)
+├── khetbata.xyz → jirisewa-web:3000
+├── khetbata.xyz/_supabase/* → jirisewa-kong:8000
+└── studio.khetbata.xyz → jirisewa-studio:3000
+
+JiriSewa Stack (~/jirisewa-docker/docker-compose.prod.yml)
+├── web          Next.js standalone (ARM image, built on server)
+├── db           Postgres 15 + PostGIS
+├── kong         Supabase API gateway
+├── auth         GoTrue
+├── rest         PostgREST
+├── realtime     WebSockets
+├── storage      File storage
+├── imgproxy     Image transforms
+├── studio       Supabase Dashboard
+└── meta         Postgres metadata
+```
+
+## Automated Deploy (CI/CD)
+
+Deployments are triggered manually via GitHub Actions:
+
+1. Go to **Actions** tab in GitHub
+2. Select **Deploy JiriSewa** workflow
+3. Click **Run workflow**
+
+This SSHes into hetzner-1, pulls the latest code, builds the ARM Docker image natively, and restarts the web service.
+
+### GitHub Secrets
+
+| Secret | Value |
+|--------|-------|
+| `SERVER_HOST` | `178.104.21.224` |
+| `SERVER_SSH_KEY` | SSH private key (hetzner-1-deploy) |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://khetbata.xyz/_supabase` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key |
+| `NEXT_PUBLIC_BASE_URL` | `https://khetbata.xyz` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `NEXT_PUBLIC_FIREBASE_*` | Firebase config values (6 secrets) |
+
+## Manual Deploy
 
 ```bash
-# 1. SSH into the server
-ssh ubuntu@54.156.88.160
+ssh ubuntu@178.104.21.224
 
-# 2. Navigate to project
-cd ~/jirisewa/apps/web
+# Pull latest code and rebuild
+cd ~/jirisewa-src
+git pull
+docker build -t ghcr.io/krantiutils/jirisewa:latest \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://khetbata.xyz/_supabase \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key> \
+  --build-arg NEXT_PUBLIC_BASE_URL=https://khetbata.xyz \
+  --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=<your-google-client-id> \
+  .
 
-# 3. Pull latest changes
-git pull origin master
-
-# 4. Install dependencies (if needed)
-npm install
-
-# 5. Build the app
-npm run build
-
-# 6. Restart the service
-pm2 restart jirisewa-frontend
-
-# 7. Check logs
-pm2 logs jirisewa-frontend --lines 50
+# Restart web
+cd ~/jirisewa-docker
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d web
+docker image prune -f
 ```
 
-## Supabase OAuth Configuration
-
-For Google OAuth to work correctly, the Supabase instance needs to know its external URL.
-
-### Method 1: Run the fix script (Recommended)
+## Running Migrations
 
 ```bash
-cd ~/jirisewa/apps/web/supabase
-bash fix-oauth-redirect.sh
+ssh ubuntu@178.104.21.224
+cd ~/jirisewa-src
+for f in supabase/migrations/*.sql; do
+  echo "Applying $(basename $f)..."
+  docker exec -i jirisewa-db psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$f"
+done
 ```
 
-### Method 2: Manual configuration
+## Viewing Logs
 
-1. Update `~/jirisewa/apps/web/supabase/config.toml`:
-```toml
-[api]
-external_url = "https://khetbata.xyz/_supabase"
-
-[auth]
-site_url = "https://khetbata.xyz"
-additional_redirect_urls = ["https://khetbata.xyz/_supabase/auth/v1/callback"]
-```
-
-2. Set environment variable and restart Supabase:
 ```bash
-export GOTRUE_EXTERNAL_URL="https://khetbata.xyz/_supabase"
-cd ~/jirisewa/apps/web/supabase
-supabase stop
-supabase start
+ssh ubuntu@178.104.21.224
+cd ~/jirisewa-docker
+
+# All services
+docker compose -f docker-compose.prod.yml --env-file .env.docker logs -f
+
+# Specific service
+docker logs jirisewa-web --tail 50 -f
+docker logs jirisewa-auth --tail 50 -f
+docker logs jirisewa-db --tail 50 -f
 ```
 
-3. Verify the configuration:
+## Managing Services
+
 ```bash
-curl -s "https://khetbata.xyz/_supabase/auth/v1/authorize?provider=google" | grep -o 'redirect_uri=[^&]*'
-# Should show: https://khetbata.xyz/_supabase/auth/v1/callback
-# NOT: http://127.0.0.1:54321/auth/v1/callback
+cd ~/jirisewa-docker
+
+# Start all
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d
+
+# Restart specific service
+docker compose -f docker-compose.prod.yml --env-file .env.docker restart web
+
+# Stop all
+docker compose -f docker-compose.prod.yml --env-file .env.docker down
+
+# Status
+docker compose -f docker-compose.prod.yml --env-file .env.docker ps
 ```
 
-## Google Cloud Console Configuration
+## Database
 
-Make sure the following redirect URI is added to your Google OAuth 2.0 Client:
+```bash
+# Connect
+docker exec -it jirisewa-db psql -U postgres -d postgres
+
+# Backup
+docker exec jirisewa-db pg_dumpall -U postgres | gzip > ~/jirisewa-backup-$(date +%Y%m%d).sql.gz
+
+# Restore
+gunzip -c backup.sql.gz | docker exec -i jirisewa-db psql -U postgres -d postgres
+```
+
+## Google OAuth Configuration
+
+Add this redirect URI in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
 
 ```
 https://khetbata.xyz/_supabase/auth/v1/callback
 ```
 
-Go to: https://console.cloud.google.com/apis/credentials
-Select your OAuth 2.0 Client ID
-Add the URI to "Authorized redirect URIs"
-
-## Environment Variables
-
-The following environment variables should be set in `.env.local`:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://khetbata.xyz/_supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-NEXT_PUBLIC_BASE_URL=https://khetbata.xyz
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=976742567993-t2ckb1olg9tslhnc5c92qii8hu8fqen0.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=<your-secret>
-```
-
-## Nginx Configuration
-
-The nginx config at `/etc/nginx/sites-available/khetbata` should have these location blocks:
-
-```nginx
-# Supabase Auth callback
-location /_supabase/auth/v1/callback {
-    proxy_pass http://127.0.0.1:54321/auth/v1/callback;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
-
-# Supabase Auth API
-location /_supabase/auth/v1/ {
-    proxy_pass http://127.0.0.1:54321/auth/v1/;
-    # ... same proxy headers
-}
-
-# Supabase REST API
-location /_supabase/rest/v1/ {
-    proxy_pass http://127.0.0.1:54321/rest/v1/;
-    # ... same proxy headers
-}
-
-# Supabase Storage
-location /_supabase/storage/v1/ {
-    proxy_pass http://127.0.0.1:54321/storage/v1/;
-    # ... same proxy headers
-}
-```
-
-After changing nginx config:
-```bash
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
 ## Testing
 
-1. **Site is up**: `curl -s -o /dev/null -w '%{http_code}' https://khetbata.xyz`
-2. **Supabase API**: `curl -s https://khetbata.xyz/_supabase/rest/v1/ | head -5`
-3. **OAuth endpoint**: Check redirect URI as shown above
+```bash
+# Site is up
+curl -s -o /dev/null -w '%{http_code}' https://khetbata.xyz
+
+# Supabase API
+curl -s https://khetbata.xyz/_supabase/rest/v1/ -H 'apikey: <anon-key>' | head -5
+
+# Auth health
+curl -s https://khetbata.xyz/_supabase/auth/v1/health -H 'apikey: <anon-key>'
+```
 
 ## Troubleshooting
 
-### OAuth redirect URI shows localhost
-This means GOTRUE_EXTERNAL_URL is not set. Run the fix script or set the environment variable.
+### Container won't start
 
-### Build fails with ENOENT error
 ```bash
-rm -rf .next
-npm run build
+docker compose -f docker-compose.prod.yml --env-file .env.docker ps
+docker logs jirisewa-web --tail 50  # Check logs for the failing service
 ```
 
-### Supabase not accessible
-```bash
-# Check if Supabase is running
-ps aux | grep supabase
+### Database connection issues
 
-# Restart Supabase
-cd ~/jirisewa/apps/web/supabase
-supabase stop
-supabase start
+```bash
+docker exec -it jirisewa-db psql -U postgres -d postgres
+docker logs jirisewa-db --tail 50
+```
+
+### Restart everything
+
+```bash
+cd ~/jirisewa-docker
+docker compose -f docker-compose.prod.yml --env-file .env.docker down
+docker compose -f docker-compose.prod.yml --env-file .env.docker up -d
 ```

@@ -1,0 +1,17 @@
+**/node_modules
+**/.next
+.git
+.gitignore
+*.md
+docs/
+apps/mobile/
+supabase/
+.env*
+!.env.example
+*.png
+*.jpg
+state.json
+.playwright-mcp/
+.beads/
+docker/
+traefik/
