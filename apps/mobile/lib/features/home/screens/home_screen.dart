@@ -153,6 +153,22 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ),
+      _sectionHeader('Quick Links'),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.location_on, color: AppColors.primary),
+                title: const Text('Saved Addresses'),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => context.push(AppRoutes.addresses),
+              ),
+            ],
+          ),
+        ),
+      ),
       const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
     ];
   }
@@ -185,6 +201,28 @@ class HomeScreen extends ConsumerWidget {
             childCount: data.matchedOrders.length,
           ),
         ),
+      _sectionHeader('Quick Links'),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.local_shipping, color: AppColors.accent),
+                title: const Text('Available Orders'),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => context.push(AppRoutes.availableOrders),
+              ),
+              ListTile(
+                leading: const Icon(Icons.account_balance_wallet, color: AppColors.accent),
+                title: const Text('Earnings'),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => context.push(AppRoutes.earnings),
+              ),
+            ],
+          ),
+        ),
+      ),
       const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
     ];
   }
@@ -217,6 +255,28 @@ class HomeScreen extends ConsumerWidget {
             childCount: data.pendingOrders.length,
           ),
         ),
+      _sectionHeader('Quick Links'),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.receipt_long, color: AppColors.secondary),
+                title: const Text('My Orders'),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => context.push(AppRoutes.farmerOrders),
+              ),
+              ListTile(
+                leading: const Icon(Icons.account_balance_wallet, color: AppColors.secondary),
+                title: const Text('Earnings'),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: () => context.push(AppRoutes.earnings),
+              ),
+            ],
+          ),
+        ),
+      ),
       const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
     ];
   }

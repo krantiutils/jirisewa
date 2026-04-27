@@ -27,6 +27,7 @@ import 'package:jirisewa_mobile/features/farmer/screens/create_listing_screen.da
 import 'package:jirisewa_mobile/features/farmer/screens/edit_listing_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/analytics_screen.dart';
 import 'package:jirisewa_mobile/features/farmer/screens/verification_screen.dart';
+import 'package:jirisewa_mobile/features/farmer/screens/farmer_orders_screen.dart';
 import 'package:jirisewa_mobile/features/subscriptions/screens/subscription_browse_screen.dart';
 import 'package:jirisewa_mobile/features/subscriptions/screens/farmer_subscriptions_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/business_register_screen.dart';
@@ -34,8 +35,12 @@ import 'package:jirisewa_mobile/features/business/screens/business_dashboard_scr
 import 'package:jirisewa_mobile/features/business/screens/bulk_orders_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/bulk_order_detail_screen.dart';
 import 'package:jirisewa_mobile/features/business/screens/farmer_bulk_orders_screen.dart';
+import 'package:jirisewa_mobile/features/earnings/screens/earnings_screen.dart';
 import 'package:jirisewa_mobile/features/orders/screens/order_tracking_screen.dart';
+import 'package:jirisewa_mobile/features/orders/screens/available_orders_screen.dart';
 import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
+import 'package:jirisewa_mobile/features/addresses/screens/addresses_screen.dart';
+import 'package:jirisewa_mobile/features/profile/screens/account_settings_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -61,12 +66,17 @@ abstract final class AppRoutes {
   static const farmerListingEdit = '/farmer/listings/:id/edit';
   static const farmerAnalytics = '/farmer/analytics';
   static const farmerVerification = '/farmer/verification';
+  static const farmerOrders = '/farmer/orders';
   static const farmerSubscriptions = '/farmer/subscriptions';
   static const farmerBulkOrders = '/farmer/bulk-orders';
+  static const earnings = '/earnings';
+  static const addresses = '/addresses';
+  static const accountSettings = '/account-settings';
   static const subscriptions = '/subscriptions';
   static const businessRegister = '/business/register';
   static const businessDashboard = '/business/dashboard';
   static const businessOrders = '/business/orders';
+  static const availableOrders = '/rider/available-orders';
   static const businessOrderDetail = '/business/orders/:id';
 
   // Payment callback deep link routes
@@ -266,6 +276,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const VerificationScreen(),
       ),
       GoRoute(
+        path: AppRoutes.farmerOrders,
+        builder: (context, state) => const FarmerOrdersScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.subscriptions,
         builder: (context, state) => const SubscriptionBrowseScreen(),
       ),
@@ -295,6 +309,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.farmerBulkOrders,
         builder: (context, state) => const FarmerBulkOrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.earnings,
+        builder: (context, state) => const EarningsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.availableOrders,
+        builder: (context, state) => const AvailableOrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.addresses,
+        builder: (context, state) => const AddressesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.accountSettings,
+        builder: (_, __) => const AccountSettingsScreen(),
       ),
       // Order tracking — full-screen map, outside shell (no bottom nav).
       GoRoute(

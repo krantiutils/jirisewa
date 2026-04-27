@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/core/providers/session_provider.dart';
@@ -26,8 +30,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
   final _textController = TextEditingController();
   final _imagePicker = ImagePicker();
+  final _audioRecorder = AudioRecorder();
 
   bool _isSending = false;
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -39,6 +45,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void dispose() {
     _scrollController.dispose();
     _textController.dispose();
+    _audioRecorder.dispose();
     super.dispose();
   }
 
@@ -219,6 +226,54 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  Future<void> _startRecording() async {
+    final status = await Permission.microphone.request();
+    if (!status.isGranted) return;
+
+    final dir = await getTemporaryDirectory();
+    final path =
+        '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    await _audioRecorder.start(
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: path,
+    );
+    setState(() => _isRecording = true);
+  }
+
+  Future<void> _stopAndSendRecording() async {
+    final path = await _audioRecorder.stop();
+    setState(() => _isRecording = false);
+    if (path == null) return;
+
+    setState(() => _isSending = true);
+    try {
+      final bytes = await File(path).readAsBytes();
+      final repo = ref.read(chatRepositoryProvider);
+      final audioUrl =
+          await repo.uploadChatAudio(bytes, widget.conversationId);
+      final profile = ref.read(userProfileProvider);
+      if (profile == null) return;
+      await repo.sendMessage(
+        widget.conversationId,
+        profile.id,
+        audioUrl,
+        messageType: 'audio',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send audio: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final messagesAsync = ref.watch(messagesProvider(widget.conversationId));
@@ -371,7 +426,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
           const SizedBox(width: 4),
 
-          // Send button
+          // Send / Mic / Stop button
           if (_isSending)
             const Padding(
               padding: EdgeInsets.all(12),
@@ -381,16 +436,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
+          else if (_isRecording)
+            IconButton(
+              onPressed: _stopAndSendRecording,
+              icon: const Icon(Icons.stop_circle, size: 32),
+              color: AppColors.error,
+              tooltip: 'Stop recording',
+            )
           else
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _textController,
               builder: (context, value, child) {
                 final hasText = value.text.trim().isNotEmpty;
+                if (hasText) {
+                  return IconButton(
+                    onPressed: _sendTextMessage,
+                    icon: const Icon(Icons.send),
+                    color: AppColors.primary,
+                    tooltip: 'Send',
+                  );
+                }
                 return IconButton(
-                  onPressed: hasText ? _sendTextMessage : null,
-                  icon: const Icon(Icons.send),
+                  onPressed: _startRecording,
+                  icon: const Icon(Icons.mic),
                   color: AppColors.primary,
-                  tooltip: 'Send',
+                  tooltip: 'Record voice message',
                 );
               },
             ),

@@ -13,7 +13,14 @@ import 'package:jirisewa_mobile/core/providers/locale_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp();
+  // Firebase is optional — push notifications won't work without google-services.json
+  // but the rest of the app should run fine.
+  try {
+    await Firebase.initializeApp();
+    await PushNotificationService.instance.initialize();
+  } catch (e) {
+    debugPrint('Firebase init skipped: $e');
+  }
 
   await Supabase.initialize(
     url: const String.fromEnvironment(
@@ -26,8 +33,6 @@ Future<void> main() async {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
     ),
   );
-
-  await PushNotificationService.instance.initialize();
 
   runApp(const ProviderScope(child: JiriSewaApp()));
 }

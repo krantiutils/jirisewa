@@ -275,6 +275,42 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                 const SizedBox(height: 32),
 
+                // Account settings
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: const Text('Account Settings'),
+                  subtitle: const Text('Edit profile, change password'),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () => context.push(AppRoutes.accountSettings),
+                ),
+
+                // Role-specific links
+                if (activeRole == 'farmer' || activeRole == 'rider')
+                  ListTile(
+                    leading: Icon(
+                      Icons.account_balance_wallet,
+                      color: activeRole == 'farmer'
+                          ? AppColors.secondary
+                          : AppColors.accent,
+                    ),
+                    title: const Text('Earnings'),
+                    subtitle: const Text('View your earnings and payouts'),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => context.push(AppRoutes.earnings),
+                  ),
+                if (activeRole == 'consumer')
+                  ListTile(
+                    leading: const Icon(Icons.location_on, color: AppColors.primary),
+                    title: const Text('Saved Addresses'),
+                    subtitle: const Text('Manage your delivery addresses'),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => context.push(AppRoutes.addresses),
+                  ),
+                const SizedBox(height: 16),
+
                 // Sign out
                 OutlinedButton.icon(
                   onPressed: _signOut,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Handles background messages when the app is terminated or in background.
@@ -142,6 +143,44 @@ class PushNotificationService {
   /// Check if the app was opened from a terminated state via notification tap.
   Future<RemoteMessage?> getInitialMessage() async {
     return _messaging?.getInitialMessage();
+  }
+
+  /// Set up deep link handling for notification taps using GoRouter.
+  /// Routes the user to the appropriate screen based on notification data.
+  /// Call this once after the router is initialized.
+  void setupDeepLinkHandling(GoRouter router) {
+    // Handle notification tap when app is in background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleNotificationTap(router, message.data);
+    });
+
+    // Handle notification tap when app was terminated
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleNotificationTap(router, message.data);
+      }
+    });
+  }
+
+  /// Route to the appropriate screen based on notification data payload.
+  void _handleNotificationTap(GoRouter router, Map<String, dynamic> data) {
+    final orderId = data['order_id'] as String?;
+    final type = data['type'] as String?;
+    if (orderId == null) return;
+
+    switch (type) {
+      case 'new_order':
+      case 'order_matched':
+      case 'picked_up':
+      case 'delivered':
+        router.go('/orders/$orderId');
+        break;
+      case 'in_transit':
+        router.go('/tracking/$orderId');
+        break;
+      default:
+        router.go('/orders/$orderId');
+    }
   }
 
   /// Deactivate the current device token (call on sign out).

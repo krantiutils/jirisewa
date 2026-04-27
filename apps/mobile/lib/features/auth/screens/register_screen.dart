@@ -34,6 +34,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final Set<UserRole> _roles = {};
   VehicleType _vehicleType = VehicleType.bike;
 
+  // Fixed route for bus/truck riders
+  String? _fixedRouteOriginName;
+  double? _fixedRouteOriginLat;
+  double? _fixedRouteOriginLng;
+  String? _fixedRouteDestName;
+  double? _fixedRouteDestLat;
+  double? _fixedRouteDestLng;
+
+  final _fixedRouteOriginController = TextEditingController();
+  final _fixedRouteDestController = TextEditingController();
+
   SupabaseClient get _supabase => ref.read(supabaseProvider);
 
   @override
@@ -43,6 +54,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _municipalityController.dispose();
     _farmNameController.dispose();
     _capacityController.dispose();
+    _fixedRouteOriginController.dispose();
+    _fixedRouteDestController.dispose();
     super.dispose();
   }
 
@@ -114,6 +127,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         'role': _roles.first.name,
         'onboarding_completed': true,
       });
+
+      // 1c. Update user_profiles with vehicle type and fixed route for riders
+      if (_roles.contains(UserRole.rider)) {
+        final profileUpdate = <String, dynamic>{
+          'vehicle_type': _vehicleType.name,
+        };
+        if (_vehicleType == VehicleType.bus ||
+            _vehicleType == VehicleType.truck) {
+          if (_fixedRouteOriginName != null) {
+            profileUpdate['fixed_route_origin_name'] = _fixedRouteOriginName;
+            if (_fixedRouteOriginLat != null &&
+                _fixedRouteOriginLng != null) {
+              profileUpdate['fixed_route_origin'] =
+                  'POINT($_fixedRouteOriginLng $_fixedRouteOriginLat)';
+            }
+          }
+          if (_fixedRouteDestName != null) {
+            profileUpdate['fixed_route_destination_name'] = _fixedRouteDestName;
+            if (_fixedRouteDestLat != null && _fixedRouteDestLng != null) {
+              profileUpdate['fixed_route_destination'] =
+                  'POINT($_fixedRouteDestLng $_fixedRouteDestLat)';
+            }
+          }
+        }
+        await _supabase
+            .from('user_profiles')
+            .update(profileUpdate)
+            .eq('id', user.id);
+      }
 
       // 2. Insert user roles
       final roleInserts =
@@ -386,6 +428,85 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ],
             decoration: const InputDecoration(hintText: 'e.g. 50'),
           ),
+          if (_vehicleType == VehicleType.bus ||
+              _vehicleType == VehicleType.truck) ...[
+            const SizedBox(height: 24),
+            Text(
+              'Fixed Route',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _label('Route Origin'),
+            TextField(
+              controller: _fixedRouteOriginController,
+              decoration: InputDecoration(
+                hintText: 'e.g. Jiri',
+                prefixIcon: const Icon(
+                  Icons.trip_origin,
+                  color: Color(0xFF10B981),
+                ),
+                suffixIcon:
+                    _fixedRouteOriginController.text.isNotEmpty
+                        ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _fixedRouteOriginController.clear();
+                              _fixedRouteOriginName = null;
+                              _fixedRouteOriginLat = null;
+                              _fixedRouteOriginLng = null;
+                            });
+                          },
+                        )
+                        : null,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _fixedRouteOriginName =
+                      value.trim().isEmpty ? null : value.trim();
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            _label('Route Destination'),
+            TextField(
+              controller: _fixedRouteDestController,
+              decoration: InputDecoration(
+                hintText: 'e.g. Kathmandu',
+                prefixIcon: const Icon(
+                  Icons.location_on,
+                  color: Color(0xFFEF4444),
+                ),
+                suffixIcon:
+                    _fixedRouteDestController.text.isNotEmpty
+                        ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _fixedRouteDestController.clear();
+                              _fixedRouteDestName = null;
+                              _fixedRouteDestLat = null;
+                              _fixedRouteDestLng = null;
+                            });
+                          },
+                        )
+                        : null,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _fixedRouteDestName =
+                      value.trim().isEmpty ? null : value.trim();
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Enter route names \u2014 GPS coordinates are optional for now',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ],
         ],
       ],
     );

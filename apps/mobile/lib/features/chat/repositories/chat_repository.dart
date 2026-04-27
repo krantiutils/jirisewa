@@ -299,6 +299,25 @@ class ChatRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Audio upload
+  // ---------------------------------------------------------------------------
+
+  /// Upload chat audio bytes to Supabase Storage and return the public URL.
+  Future<String> uploadChatAudio(Uint8List bytes, String conversationId) async {
+    final path =
+        'chat-audio/$conversationId/${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    await _client.storage.from('chat-audio').uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+        );
+
+    final url = _client.storage.from('chat-audio').getPublicUrl(path);
+    return url;
+  }
+
+  // ---------------------------------------------------------------------------
   // Cleanup helper (for tests / manual use)
   // ---------------------------------------------------------------------------
 

@@ -71,4 +71,26 @@ class ProduceRepository {
     }
     return map;
   }
+
+  /// Fetch estimated delivery times for multiple listings to a delivery point.
+  /// Returns a map of listing ID -> ETA in minutes.
+  /// Gracefully returns an empty map if the RPC is unavailable.
+  Future<Map<String, int>> batchDeliveryEtas(
+      List<String> listingIds, double deliveryLat, double deliveryLng) async {
+    try {
+      final result = await _client.rpc('batch_delivery_etas', params: {
+        'listing_ids': listingIds,
+        'delivery_point': 'POINT($deliveryLng $deliveryLat)',
+      });
+      final etas = <String, int>{};
+      for (final row in (result as List)) {
+        final id = row['listing_id'] as String?;
+        final eta = row['eta_minutes'] as int?;
+        if (id != null && eta != null) etas[id] = eta;
+      }
+      return etas;
+    } catch (_) {
+      return {};
+    }
+  }
 }

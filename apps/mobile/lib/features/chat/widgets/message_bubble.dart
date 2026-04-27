@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:jirisewa_mobile/core/theme.dart';
@@ -126,6 +127,9 @@ class MessageBubble extends StatelessWidget {
           ),
         );
 
+      case 'audio':
+        return _AudioPlayer(url: message.content, textColor: textColor);
+
       case 'location':
         // Content is "lat,lng" — parse and show a tappable map link.
         final parts = message.content.split(',');
@@ -172,5 +176,81 @@ class MessageBubble extends StatelessWidget {
           style: TextStyle(color: textColor, fontSize: 14, height: 1.3),
         );
     }
+  }
+}
+
+/// Inline audio player for voice messages.
+class _AudioPlayer extends StatefulWidget {
+  const _AudioPlayer({required this.url, required this.textColor});
+
+  final String url;
+  final Color textColor;
+
+  @override
+  State<_AudioPlayer> createState() => _AudioPlayerState();
+}
+
+class _AudioPlayerState extends State<_AudioPlayer> {
+  final _player = ja.AudioPlayer();
+  bool _playing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.playerStateStream.listen((state) {
+      if (state.processingState == ja.ProcessingState.completed) {
+        if (mounted) setState(() => _playing = false);
+        _player.seek(Duration.zero);
+        _player.pause();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    if (_playing) {
+      await _player.pause();
+      if (mounted) setState(() => _playing = false);
+    } else {
+      if (_player.processingState == ja.ProcessingState.idle ||
+          _player.processingState == ja.ProcessingState.completed) {
+        await _player.setUrl(widget.url);
+      }
+      await _player.play();
+      if (mounted) setState(() => _playing = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: _toggle,
+          icon: Icon(
+            _playing ? Icons.pause_circle_filled : Icons.play_circle_filled,
+            size: 28,
+          ),
+          color: widget.textColor,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Voice message',
+          style: TextStyle(
+            color: widget.textColor,
+            fontSize: 14,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
   }
 }
