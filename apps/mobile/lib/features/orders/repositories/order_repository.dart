@@ -147,39 +147,20 @@ class OrderRepository {
   // -------------------------------------------------------------------------
 
   /// Cancel a pending or matched order.
-  /// Only updates if the order is in a cancellable state.
+  /// Routes through cancel_order_v1 — atomic SECURITY DEFINER RPC that also
+  /// refunds farmer payouts, expires pending pings, and marks digital payment
+  /// transactions REFUNDED. Mirrors the web cancelOrder action.
   Future<bool> cancelOrder(String orderId) async {
-    final result = await _client
-        .from('orders')
-        .update({'status': 'cancelled'})
-        .eq('id', orderId)
-        .inFilter('status', ['pending', 'matched'])
-        .select('id');
-    return (result as List).isNotEmpty;
+    await _client.rpc('cancel_order_v1', params: {'p_order_id': orderId});
+    return true;
   }
 
-  /// Consumer confirms delivery. Transitions order to 'delivered'
-  /// and settles farmer payouts.
+  /// Consumer confirms delivery.
+  /// Routes through confirm_delivery_v1 — atomic SECURITY DEFINER RPC that
+  /// settles payouts, marks items delivery_confirmed, releases digital escrow,
+  /// and (via the status trigger) notifies the rider.
   Future<bool> confirmDelivery(String orderId) async {
-    final result = await _client
-        .from('orders')
-        .update({
-          'status': 'delivered',
-          'payment_status': 'settled',
-        })
-        .eq('id', orderId)
-        .eq('status', 'in_transit')
-        .select('id');
-
-    if ((result as List).isEmpty) return false;
-
-    // Settle farmer payouts
-    await _client
-        .from('farmer_payouts')
-        .update({'status': 'settled'})
-        .eq('order_id', orderId)
-        .eq('status', 'pending');
-
+    await _client.rpc('confirm_delivery_v1', params: {'p_order_id': orderId});
     return true;
   }
 
