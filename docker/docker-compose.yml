@@ -32,6 +32,11 @@ services:
       CONNECTIPS_APP_PASSWORD: ${CONNECTIPS_APP_PASSWORD}
       CONNECTIPS_KEY_PATH: ${CONNECTIPS_KEY_PATH}
       CONNECTIPS_ENVIRONMENT: ${CONNECTIPS_ENVIRONMENT}
+      # Firebase Cloud Messaging (server-side push dispatch via HTTP v1)
+      FIREBASE_SERVICE_ACCOUNT_BASE64: ${FIREBASE_SERVICE_ACCOUNT_BASE64}
+      # SMS fallback (Sparrow SMS, Nepal) — optional
+      SPARROW_SMS_TOKEN: ${SPARROW_SMS_TOKEN:-}
+      SPARROW_SMS_FROM: ${SPARROW_SMS_FROM:-JiriSewa}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jirisewa-web.rule=Host(`khetbata.xyz`)"

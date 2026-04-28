@@ -2,6 +2,7 @@
 
 import { NotificationCategory } from "@jirisewa/shared";
 import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
+import { isFcmConfigured, sendFcmPush } from "@/lib/fcm";
 import type { ActionResult } from "@/lib/types/action";
 
 async function getAuthUserId(): Promise<string | null> {
@@ -288,43 +289,120 @@ interface SendNotificationPayload {
   data?: Record<string, unknown>;
 }
 
+interface CreateNotificationResult {
+  notification_id: string;
+  user_lang: string;
+  phone: string | null;
+  tokens: Array<{ token: string; platform: string }>;
+  has_tokens: boolean;
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+  skipped?: boolean;
+  reason?: string;
+}
+
+async function sendSmsFallback(
+  phone: string,
+  message: string,
+): Promise<boolean> {
+  const sparrowToken = process.env.SPARROW_SMS_TOKEN;
+  const sparrowFrom = process.env.SPARROW_SMS_FROM ?? "JiriSewa";
+  if (!sparrowToken) return false;
+
+  try {
+    const res = await fetch("https://api.sparrowsms.com/v2/sms/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: sparrowToken,
+        from: sparrowFrom,
+        to: phone,
+        text: message,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("SMS fallback error:", err);
+    return false;
+  }
+}
+
 /**
- * Trigger a notification via the Supabase edge function.
- * This creates the in-app notification, sends FCM push, and falls back to SMS.
+ * Trigger a notification:
+ *  1. Calls the create_notification RPC (creates in-app row, returns user lang/phone/devices)
+ *  2. Sends FCM HTTP v1 push to each active device token
+ *  3. Falls back to SMS via Sparrow if no push delivered and a phone is on file
+ *  4. Records delivery status on the notification row
+ *
+ * All failures are swallowed — notifications must never break the calling flow
+ * (order placement, ping accept, etc).
  */
 export async function triggerNotification(
   payload: SendNotificationPayload,
 ): Promise<void> {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabase = createServiceRoleClient();
 
-    if (!supabaseUrl || !serviceKey) {
-      console.error("triggerNotification: missing Supabase env vars");
+    const { data, error } = await supabase.rpc("create_notification", {
+      p_user_id: payload.user_id,
+      p_category: payload.category,
+      p_title_en: payload.title_en,
+      p_title_ne: payload.title_ne,
+      p_body_en: payload.body_en,
+      p_body_ne: payload.body_ne,
+      p_data: payload.data ?? {},
+    });
+
+    if (error) {
+      console.error("triggerNotification RPC error:", error);
       return;
     }
 
-    const response = await fetch(
-      `${supabaseUrl}/functions/v1/send-notification`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify(payload),
-      },
-    );
+    const result = data as CreateNotificationResult;
+    if (result.skipped) return;
 
-    if (!response.ok) {
-      console.error(
-        "triggerNotification failed:",
-        response.status,
-        await response.text(),
+    let pushSent = false;
+    let smsSent = false;
+
+    if (result.has_tokens && isFcmConfigured()) {
+      const failedTokens: string[] = [];
+      const sends = await Promise.all(
+        result.tokens.map(async (t) => {
+          const r = await sendFcmPush(
+            t.token,
+            result.title,
+            result.body,
+            result.data,
+          );
+          if (!r.ok && r.shouldDeactivate) failedTokens.push(t.token);
+          if (!r.ok && r.error) console.error("FCM push failed:", r.error);
+          return r.ok;
+        }),
+      );
+      pushSent = sends.some(Boolean);
+
+      if (failedTokens.length > 0) {
+        await supabase
+          .from("user_devices")
+          .update({ is_active: false })
+          .in("fcm_token", failedTokens)
+          .eq("user_id", payload.user_id);
+      }
+    }
+
+    if (!pushSent && result.phone) {
+      smsSent = await sendSmsFallback(
+        result.phone,
+        `${result.title}: ${result.body}`,
       );
     }
+
+    await supabase
+      .from("notifications")
+      .update({ push_sent: pushSent, sms_fallback_sent: smsSent })
+      .eq("id", result.notification_id);
   } catch (err) {
-    // Notification failures should not break order flows
     console.error("triggerNotification error:", err);
   }
 }
@@ -438,6 +516,34 @@ export async function notifyRiderNewOrderMatch(
     body_en: "A new order has been matched to your trip. Check the details.",
     body_ne: "तपाईंको यात्रामा नयाँ अर्डर मिलेको छ। विवरण हेर्नुहोस्।",
     data: { order_id: orderId, trip_id: tripId, url: `/rider/trips/${tripId}` },
+  });
+}
+
+/**
+ * Notify a rider that a ping is available — call when an order_pings row is
+ * created so the rider sees a banner even if the app is backgrounded.
+ * Reuses the NewOrderMatch category (no new enum value required).
+ */
+export async function notifyRiderPingArrived(
+  riderId: string,
+  orderId: string,
+  tripId: string,
+  estimatedEarnings: number,
+): Promise<void> {
+  const earnings = Math.round(estimatedEarnings);
+  await triggerNotification({
+    user_id: riderId,
+    category: NotificationCategory.NewOrderMatch,
+    title_en: "New delivery opportunity",
+    title_ne: "नयाँ डेलिभरी अवसर",
+    body_en: `Rs ${earnings} earnings — tap to accept within 5 min.`,
+    body_ne: `रु ${earnings} कमाइ — ५ मिनेट भित्र स्वीकार्न ट्याप गर्नुहोस्।`,
+    data: {
+      order_id: orderId,
+      trip_id: tripId,
+      type: "ping",
+      url: `/rider/dashboard`,
+    },
   });
 }
 
