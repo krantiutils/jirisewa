@@ -115,11 +115,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: refreshNotifier,
     redirect: (BuildContext context, GoRouterState state) {
-      final sessionLoading = ref.read(userSessionProvider).isLoading;
-      if (sessionLoading) return null;
+      final sessionAsync = ref.read(userSessionProvider);
+      if (sessionAsync.isLoading) return null;
 
+      // Read hasProfile directly off the AsyncValue rather than via
+      // hasProfileProvider. The refresh listener can fire BEFORE the
+      // dependent Provider chain (hasProfileProvider) has recomputed,
+      // so its cached value lags one tick behind userSessionProvider —
+      // long enough to bounce a fully-registered user to /register.
+      final session = sessionAsync.valueOrNull;
       final isAuthenticated = ref.read(isAuthenticatedProvider);
-      final hasProfile = ref.read(hasProfileProvider);
+      final hasProfile = session?.hasProfile ?? false;
 
       final isOnLogin = state.matchedLocation == AppRoutes.login;
       final isOnRegister = state.matchedLocation == AppRoutes.register;

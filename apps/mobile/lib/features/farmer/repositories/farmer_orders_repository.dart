@@ -133,4 +133,55 @@ class FarmerOrdersRepository {
 
     return orders;
   }
+
+  /// Confirm pickup of this farmer's items in [orderId].
+  ///
+  /// Mirrors the web `confirmFarmerPickup` server action:
+  ///   1. Flip pickup_status to 'picked_up' + record pickup_confirmed{,_at}
+  ///   2. If all items in the order are now non-pending, transition the
+  ///      order from 'matched' to 'picked_up' so the rider can start delivery.
+  Future<void> confirmPickup(String orderId, String farmerId) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+
+    // Only flip items that are still pending — leaves 'unavailable' items alone.
+    await _client
+        .from('order_items')
+        .update({
+          'pickup_status': 'picked_up',
+          'pickup_confirmed': true,
+          'pickup_confirmed_at': now,
+        })
+        .eq('order_id', orderId)
+        .eq('farmer_id', farmerId)
+        .eq('pickup_status', 'pending_pickup');
+
+    // Has anything in the order still got a pending pickup?
+    final remaining = await _client
+        .from('order_items')
+        .select('pickup_status')
+        .eq('order_id', orderId)
+        .eq('pickup_status', 'pending_pickup');
+
+    if ((remaining as List).isEmpty) {
+      // All items picked up or marked unavailable — advance the order.
+      // Conditional update so we never overwrite a more advanced status.
+      await _client
+          .from('orders')
+          .update({'status': 'picked_up'})
+          .eq('id', orderId)
+          .eq('status', 'matched');
+    }
+  }
+
+  /// Mark this farmer's items in [orderId] as unavailable.
+  /// Note: this does not refund payouts or adjust order totals — for the
+  /// demo flow we expect the consumer/rider to handle that downstream.
+  Future<void> markUnavailable(String orderId, String farmerId) async {
+    await _client
+        .from('order_items')
+        .update({'pickup_status': 'unavailable'})
+        .eq('order_id', orderId)
+        .eq('farmer_id', farmerId)
+        .eq('pickup_status', 'pending_pickup');
+  }
 }
