@@ -309,6 +309,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     contentPadding: EdgeInsets.zero,
                     onTap: () => context.push(AppRoutes.addresses),
                   ),
+                if (activeRole == 'farmer')
+                  ListTile(
+                    key: const Key('profile-farmer-hubs'),
+                    leading: const Icon(Icons.business, color: AppColors.secondary),
+                    title: const Text('Drop off at hub'),
+                    subtitle: const Text("Hand off produce at a hub — rider picks up later"),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => context.push(AppRoutes.farmerHubs),
+                  ),
+                if (activeRole == 'hub_operator')
+                  ListTile(
+                    key: const Key('profile-hub-inventory'),
+                    leading: const Icon(Icons.inventory_2, color: AppColors.primary),
+                    title: const Text('Hub inventory'),
+                    subtitle: const Text('Manage dropoffs at your hub'),
+                    trailing: const Icon(Icons.chevron_right, size: 20),
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () => context.push(AppRoutes.hubInventory),
+                  ),
                 const SizedBox(height: 16),
 
                 // Sign out

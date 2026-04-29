@@ -237,6 +237,7 @@ async function fetchWithoutLocation(
     photos: row.photos ?? [],
     is_active: row.is_active,
     municipality_id: null,
+    pickup_mode: (row as { pickup_mode?: "farm_pickup" | "hub_dropoff" | "both" }).pickup_mode ?? "farm_pickup",
     created_at: row.created_at,
     updated_at: row.updated_at,
     farmer_verified: verifiedMap[row.farmer_id] ?? false,
@@ -310,6 +311,7 @@ export async function fetchProduceById(
     photos: data.photos ?? [],
     is_active: data.is_active,
     municipality_id: null,
+    pickup_mode: (data as { pickup_mode?: "farm_pickup" | "hub_dropoff" | "both" }).pickup_mode ?? "farm_pickup",
     created_at: data.created_at,
     updated_at: data.updated_at,
     farmer_verified: (roleData as { verified: boolean } | null)?.verified ?? false,
@@ -354,6 +356,7 @@ function mapRpcRow(row: RpcProduceRow): ProduceListingWithDetails {
     created_at: row.created_at,
     updated_at: row.updated_at,
     municipality_id: null,
+    pickup_mode: "farm_pickup",
     distance_km:
       row.distance_km != null ? Math.round(row.distance_km * 10) / 10 : undefined,
     farmer_verified: row.farmer_verified ?? false,

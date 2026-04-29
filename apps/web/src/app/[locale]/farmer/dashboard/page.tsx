@@ -127,6 +127,25 @@ export default async function FarmerDashboardPage({
         </Link>
 
         <Link
+          href="/farmer/hubs"
+          data-testid="farmer-hubs-link"
+          className="group rounded-lg bg-white p-5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-blue-100">
+              <Plus className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-500">Drop off</p>
+              <p className="text-xl font-bold text-foreground">At a hub</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs font-medium text-primary group-hover:underline">
+            Drop off &rarr;
+          </p>
+        </Link>
+
+        <Link
           href="/farmer/listings/new"
           className="group rounded-lg bg-primary/5 border-2 border-dashed border-primary/30 p-5 transition-all duration-200 hover:scale-[1.02] hover:border-primary hover:bg-primary/10"
         >

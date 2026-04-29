@@ -45,6 +45,10 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
     listing?.freshness_date ?? "",
   );
   const [photos, setPhotos] = useState<string[]>(listing?.photos ?? []);
+  const [pickupMode, setPickupMode] = useState<"farm_pickup" | "hub_dropoff" | "both">(
+    (listing?.pickup_mode as "farm_pickup" | "hub_dropoff" | "both" | undefined) ??
+      "farm_pickup",
+  );
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
@@ -102,6 +106,7 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
       unit,
       freshness_date: freshnessDate,
       photos,
+      pickup_mode: pickupMode,
     };
 
     const result = listing
@@ -297,6 +302,25 @@ export function ListingForm({ categories, listing }: ListingFormProps) {
           {t("form.photos")}
         </label>
         <PhotoUpload photos={photos} onChange={setPhotos} />
+      </div>
+
+      {/* Pickup mode */}
+      <div>
+        <label className="mb-2 block text-sm font-medium text-foreground">
+          Pickup mode
+        </label>
+        <select
+          data-testid="listing-pickup-mode"
+          value={pickupMode}
+          onChange={(e) =>
+            setPickupMode(e.target.value as "farm_pickup" | "hub_dropoff" | "both")
+          }
+          className="w-full rounded-md border border-gray-300 px-3 py-2"
+        >
+          <option value="farm_pickup">Farm pickup (rider picks up at farm)</option>
+          <option value="hub_dropoff">Hub dropoff only (drop at hub)</option>
+          <option value="both">Both (drop at hub or farm pickup)</option>
+        </select>
       </div>
 
       {/* Error message */}
