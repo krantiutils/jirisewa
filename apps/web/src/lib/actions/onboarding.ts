@@ -54,8 +54,8 @@ export async function completeOnboarding(
       .upsert(profileUpdate, { onConflict: "id" });
 
     if (profileError) {
-      console.error("completeOnboarding: profile update failed:", profileError);
-      return { error: "Failed to update profile" };
+      console.error("[onboarding] user_profiles upsert failed:", profileError);
+      return { error: `user_profiles: ${profileError.message}` };
     }
 
     // 2. Ensure row in users table (FK target for orders.consumer_id)
@@ -70,8 +70,13 @@ export async function completeOnboarding(
         { onConflict: "id" },
       );
     if (usersError) {
-      console.error("completeOnboarding: users upsert failed:", usersError);
-      return { error: "Failed to complete registration. Please try again." };
+      console.error("[onboarding] users upsert failed:", usersError, {
+        id: user.id,
+        phone,
+        name,
+        role: appRole,
+      });
+      return { error: `users: ${usersError.message}` };
     }
 
     // 3. Ensure row in user_roles
@@ -79,7 +84,7 @@ export async function completeOnboarding(
       .from("user_roles")
       .insert({ user_id: user.id, role: appRole });
     if (rolesError && rolesError.code !== "23505") {
-      console.error("completeOnboarding: user_roles insert failed:", rolesError);
+      console.error("[onboarding] user_roles insert failed:", rolesError);
       // Non-fatal
     }
 

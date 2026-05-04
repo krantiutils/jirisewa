@@ -74,6 +74,7 @@ export default function OnboardingPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Rider-specific state
   const [vehicleType, setVehicleType] = useState<VehicleType | null>(null);
@@ -104,6 +105,7 @@ export default function OnboardingPage() {
     if (!selectedRole || !user) return;
 
     setLoading(true);
+    setSubmitError(null);
 
     const result = await completeOnboarding({
       role: selectedRole,
@@ -121,6 +123,7 @@ export default function OnboardingPage() {
 
     if (result.error) {
       console.error("Onboarding error:", result.error);
+      setSubmitError(result.error);
       setLoading(false);
       return;
     }
@@ -294,7 +297,7 @@ export default function OnboardingPage() {
         )}
 
         {/* Continue Button */}
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex flex-col items-center gap-3">
           <button
             onClick={handleContinue}
             disabled={!selectedRole || loading}
@@ -307,6 +310,11 @@ export default function OnboardingPage() {
             {loading ? t("saving") : t("continue")}
             {!loading && <ArrowRight className="h-5 w-5" />}
           </button>
+          {submitError && (
+            <p className="max-w-md rounded-md bg-red-50 px-4 py-2 text-center text-sm text-red-700">
+              {submitError}
+            </p>
+          )}
         </div>
 
         {/* Skip Link */}
