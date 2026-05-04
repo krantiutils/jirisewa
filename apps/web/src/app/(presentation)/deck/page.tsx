@@ -71,12 +71,228 @@ const slides: Slide[] = [
     ),
     notes: (
       <p>
-        Pause for the room to read. Don&apos;t rush. Belief: A. 1:30.
+        Read it once, pause, then pivot: &ldquo;the demand is real — but
+        here&apos;s what blocks Jiri&apos;s farmers from capturing it.&rdquo;
+        Set up the next slide. 1:00.
       </p>
     ),
   },
 
-  // 3 — Today vs Tomorrow
+  // 3 — The middleman problem
+  {
+    id: "middleman-problem",
+    bg: "bg-background",
+    body: (
+      <div className="flex h-full flex-col px-14 py-12">
+        <div>
+          <div className="np-display np text-5xl font-bold text-foreground">
+            बीचमा बसेका बिचौलिया
+          </div>
+          <div className="mt-2 text-lg font-medium text-gray-500">
+            The real problem isn&apos;t supply or demand — it&apos;s who sits
+            between them
+          </div>
+        </div>
+
+        {/* Chain */}
+        <div className="mt-12 flex items-center justify-between gap-2">
+          {/* Farmer */}
+          <div className="flex w-[150px] flex-col items-center gap-1 rounded-md bg-secondary px-3 py-5 text-white">
+            <div className="np text-base font-bold">किसान</div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80">
+              Farmer
+            </div>
+            <div className="mt-2 text-2xl font-extrabold">रु. १००</div>
+          </div>
+          {/* Arrow + markup */}
+          <div className="flex flex-col items-center gap-1 px-1">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
+              + ५०
+            </span>
+          </div>
+          <div className="flex w-[150px] flex-col items-center gap-1 rounded-md bg-muted px-3 py-5">
+            <div className="np text-base font-bold text-foreground">संकलक</div>
+            <div className="text-[11px] uppercase tracking-wider text-gray-500">
+              Aggregator
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-1 px-1">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
+              + ५०
+            </span>
+          </div>
+          <div className="flex w-[150px] flex-col items-center gap-1 rounded-md bg-muted px-3 py-5">
+            <div className="np text-base font-bold text-foreground">थोक</div>
+            <div className="text-[11px] uppercase tracking-wider text-gray-500">
+              Wholesaler
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-1 px-1">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
+              + १००
+            </span>
+          </div>
+          <div className="flex w-[150px] flex-col items-center gap-1 rounded-md bg-muted px-3 py-5">
+            <div className="np text-base font-bold text-foreground">खुद्रा</div>
+            <div className="text-[11px] uppercase tracking-wider text-gray-500">
+              Retailer
+            </div>
+          </div>
+          <div className="flex flex-col items-center px-1">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+          </div>
+          <div className="flex w-[150px] flex-col items-center gap-1 rounded-md bg-foreground px-3 py-5 text-white">
+            <div className="np text-base font-bold">ग्राहक</div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80">
+              Consumer
+            </div>
+            <div className="mt-2 text-2xl font-extrabold">रु. ३००</div>
+          </div>
+        </div>
+
+        <div className="mt-2 text-center text-[11px] uppercase tracking-wider text-gray-400">
+          उदाहरण · illustrative — exact ratios vary by produce
+        </div>
+
+        {/* Stats */}
+        <div className="mt-10 grid grid-cols-3 gap-6 text-center">
+          <div className="rounded-md bg-emerald-50 p-5">
+            <div className="text-5xl font-extrabold text-secondary">~33%</div>
+            <div className="np mt-2 text-sm font-semibold text-foreground">
+              किसानले पाउने
+            </div>
+            <div className="text-xs text-gray-500">What the farmer keeps</div>
+          </div>
+          <div className="rounded-md bg-amber-50 p-5">
+            <div className="text-5xl font-extrabold text-amber-600">~67%</div>
+            <div className="np mt-2 text-sm font-semibold text-foreground">
+              बीचमा हराउने
+            </div>
+            <div className="text-xs text-gray-500">Lost to middlemen</div>
+          </div>
+          <div className="rounded-md bg-muted p-5">
+            <div className="text-5xl font-extrabold text-foreground">3×</div>
+            <div className="np mt-2 text-sm font-semibold text-foreground">
+              ग्राहकको मूल्य
+            </div>
+            <div className="text-xs text-gray-500">What the consumer pays</div>
+          </div>
+        </div>
+
+        <div className="mt-auto rounded-md bg-foreground px-6 py-4 text-center text-white">
+          <div className="np text-xl font-bold">
+            किसानले उत्पादन गर्छन्। बिचौलियाले मूल्य पाउँछन्।
+          </div>
+          <div className="text-sm text-white/70">
+            Farmers grow it. Middlemen capture the value.
+          </div>
+        </div>
+      </div>
+    ),
+    notes: (
+      <p>
+        Numbers are illustrative — the structure is what matters: 3+ layers
+        between farm and plate, each taking a cut. If asked, soften: &ldquo;the
+        ratios vary by crop and season, but the pattern is the same.&rdquo;
+        Belief: A. 2:00.
+      </p>
+    ),
+  },
+
+  // 4 — The Pathao parable
+  {
+    id: "pathao-parable",
+    bg: "bg-background",
+    body: (
+      <div className="flex h-full flex-col px-14 py-12">
+        <div>
+          <div className="np-display np text-5xl font-bold text-foreground">
+            जसरी पठाओले ट्याक्सी कार्टेल तोड्यो
+          </div>
+          <div className="mt-2 text-lg font-medium text-gray-500">
+            How Pathao broke the taxi cartel — same playbook, different
+            industry
+          </div>
+        </div>
+
+        <div className="mt-10 grid flex-1 grid-cols-2 gap-6">
+          <div className="flex flex-col rounded-lg bg-muted p-10">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              Before · पठाओ अघि
+            </div>
+            <div className="np mt-3 text-3xl font-bold text-foreground">
+              ट्याक्सी कार्टेल
+            </div>
+            <ul className="mt-8 space-y-4 text-lg text-gray-700">
+              <li className="flex gap-3">
+                <span className="text-gray-400">×</span>
+                <span className="np">मिटर बिग्रिएको</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-gray-400">×</span>
+                <span className="np">कार्टेलले मूल्य तय गर्छ</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-gray-400">×</span>
+                <span className="np">ड्राइभरले आधा मात्र पाउँछन्</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-gray-400">×</span>
+                <span className="np">रिफ्युजल, अनिश्चितता</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col rounded-lg bg-primary p-10 text-white">
+            <div className="text-xs font-bold uppercase tracking-wider text-white/70">
+              After · पठाओ पछि
+            </div>
+            <div className="np mt-3 text-3xl font-bold">सिधा एप</div>
+            <ul className="mt-8 space-y-4 text-lg text-white/95">
+              <li className="flex gap-3">
+                <span className="text-amber-300">✓</span>
+                <span className="np">पारदर्शी मूल्य</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-amber-300">✓</span>
+                <span className="np">ड्राइभरले धेरै बढी पाउँछन्</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-amber-300">✓</span>
+                <span className="np">ग्राहकले कम तिर्छन्</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-amber-300">✓</span>
+                <span className="np">रेटिङ, जवाफदेहिता</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-md bg-secondary px-6 py-4 text-center text-white">
+          <span className="np text-2xl font-bold">
+            कृषिमा पनि उही कुरा गर्न सकिन्छ।
+          </span>
+          <span className="text-white/50">·</span>
+          <span className="text-base">
+            JiriSewa is to agriculture what Pathao was to taxis.
+          </span>
+        </div>
+      </div>
+    ),
+    notes: (
+      <p>
+        Use the room&apos;s familiarity. Everyone in this hall has used
+        Pathao. The analogy carries the rest of the talk. Belief: A + B.
+        2:00.
+      </p>
+    ),
+  },
+
+  // 5 — Today vs Tomorrow (direct-route framing)
   {
     id: "today-tomorrow",
     bg: "bg-background",
@@ -89,18 +305,19 @@ const slides: Slide[] = [
           </div>
           <ul className="np mt-10 space-y-5 text-2xl font-medium text-gray-700">
             <li className="flex gap-3">
-              <span className="text-gray-400">·</span> पर्यटकले जिरीमा किवी
-              चाख्छन्
+              <span className="text-gray-400">·</span> किसान दिनभर बजार
+              पुर्‍याउँछन्
             </li>
             <li className="flex gap-3">
-              <span className="text-gray-400">·</span> १ किलो लिन्छन्,
-              हवाईजहाजमा घर फर्कन्छन्
+              <span className="text-gray-400">·</span> मूल्य अरूले तय गर्छन्
             </li>
             <li className="flex gap-3">
-              <span className="text-gray-400">·</span> ६ महिनापछि सम्झन्छन्
+              <span className="text-gray-400">·</span> तीन हात पार गर्दा १००{" "}
+              <span className="text-gray-400">→</span> ३००
             </li>
             <li className="flex gap-3 font-bold text-foreground">
-              <span className="text-gray-400">·</span> तर थप किन्ने उपाय छैन
+              <span className="text-gray-400">·</span> किसानले एक-तिहाइ मात्र
+              पाउँछन्
             </li>
           </ul>
         </div>
@@ -111,19 +328,19 @@ const slides: Slide[] = [
           </div>
           <ul className="np mt-10 space-y-5 text-2xl font-medium text-white/95">
             <li className="flex gap-3">
-              <span className="text-white/50">·</span> त्यही पर्यटक, भक्तपुरको
-              भान्सामा
-            </li>
-            <li className="flex gap-3">
-              <span className="text-white/50">·</span> एप खोल्छन्, अर्डर
+              <span className="text-white/50">·</span> किसानले आफ्नो मूल्य तय
               गर्छन्
             </li>
             <li className="flex gap-3">
-              <span className="text-white/50">·</span> कोशेली घरबाट राइडरले
-              उठाउँछ
+              <span className="text-white/50">·</span> एउटै राइडर — सीधा
+              काठमाडौँको घरसम्म
+            </li>
+            <li className="flex gap-3">
+              <span className="text-white/50">·</span> बीचमा कुनै हात छैन
             </li>
             <li className="flex gap-3 font-bold text-amber-200">
-              <span className="text-white/50">·</span> तीन दिनमा घरसम्म पुग्छ
+              <span className="text-white/50">·</span> किसानले बढी, ग्राहकले
+              कम
             </li>
           </ul>
         </div>
@@ -131,13 +348,14 @@ const slides: Slide[] = [
     ),
     notes: (
       <p>
-        Visit Year 2025 brought tourists to Jiri. JiriSewa carries that
-        interest home. Belief: A. 1:30.
+        Direct-route framing. The tourist appeal is a side-benefit, not the
+        lead. The win is: Jiri farmer captures the value Kathmandu is willing
+        to pay. Belief: A. 1:30.
       </p>
     ),
   },
 
-  // 4 — Consumer
+  // 6 — Consumer
   {
     id: "consumer",
     bg: "bg-background",
@@ -145,10 +363,10 @@ const slides: Slide[] = [
       <div className="grid h-full grid-cols-[1.1fr_1fr] gap-12 px-16 py-14">
         <div className="flex flex-col">
           <div className="np-display np text-5xl font-bold text-foreground">
-            काठमाडौँको भान्सामा बस्ने पर्यटक
+            काठमाडौँको ग्राहक, सीधै किसानसँग
           </div>
           <div className="mt-2 text-lg font-medium text-gray-500">
-            A consumer in Kathmandu searches &ldquo;जिरी किवी&rdquo;
+            A Kathmandu consumer, ordering directly from a Jiri farmer
           </div>
 
           <div className="mt-8 rounded-lg bg-muted p-8">
@@ -695,7 +913,7 @@ const slides: Slide[] = [
                 },
                 {
                   h: "किसान कल्याण तथ्याङ्क",
-                  d: "Active farmers, average revenue per household, new verified count.",
+                  d: "Active farmers, average revenue per household, and the price farmers actually received versus traditional market rate — the middleman delta, made visible.",
                 },
                 {
                   h: "“अर्गानीक जिरी” ब्रान्ड",
