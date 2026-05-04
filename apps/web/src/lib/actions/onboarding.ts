@@ -21,10 +21,16 @@ export async function completeOnboarding(
 
     const supabase = createServiceRoleClient();
 
-    // 1. Update user_profiles
+    // 1. Upsert user_profiles
+    // Phone-OTP signups don't have a row here (only the OAuth callback creates
+    // one), so update() would silently affect 0 rows and the onboarding state
+    // would never persist. Upsert handles both cases.
     const profileUpdate: Record<string, unknown> = {
+      id: user.id,
       role: input.role,
       onboarding_completed: true,
+      email: user.email ?? null,
+      phone: user.phone ?? null,
     };
     if (input.fullName?.trim()) {
       profileUpdate.full_name = input.fullName.trim();
@@ -45,8 +51,7 @@ export async function completeOnboarding(
 
     const { error: profileError } = await supabase
       .from("user_profiles")
-      .update(profileUpdate)
-      .eq("id", user.id);
+      .upsert(profileUpdate, { onConflict: "id" });
 
     if (profileError) {
       console.error("completeOnboarding: profile update failed:", profileError);

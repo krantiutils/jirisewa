@@ -99,43 +99,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const user = session?.user ?? null;
+    // The onAuthStateChange callback must NOT await any other supabase call —
+    // the auth client holds a NavigatorLock and any await inside the callback
+    // can deadlock the in-flight request, surfacing as
+    // `AbortError: signal is aborted without reason`. Defer all async work to
+    // a setTimeout so it runs after the lock is released.
+    // Ref: https://supabase.com/docs/reference/javascript/auth-onauthstatechange
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setTimeout(async () => {
+        const user = session?.user ?? null;
+        const profile = user ? await fetchProfile(user.id) : null;
 
-      let profile: UserProfile | null = null;
-      if (user) {
-        profile = await fetchProfile(user.id);
+        setState({ session, user, profile, loading: false });
+
+        // Only redirect on a brand-new sign-in (or initial session restore on
+        // an auth page). Token refresh, sign-out, etc. should not navigate.
+        if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION") return;
+        if (!user) return;
 
         const currentPath = window.location.pathname;
-        const isAuthPage = currentPath.includes("/auth/") || currentPath === "/login" || currentPath === "/register";
+        const isAuthPage =
+          currentPath.includes("/auth/") ||
+          currentPath === "/login" ||
+          currentPath === "/register";
+        if (!isAuthPage) return;
 
-        // Extract locale from path (e.g. "/ne/auth/login" → "ne")
         const localeMatch = currentPath.match(/^\/([a-z]{2})\//);
         const locale = localeMatch ? localeMatch[1] : "en";
 
-        if (!profile) {
-          // New signup — profile trigger hasn't fired yet. Redirect to onboarding.
-          if (isAuthPage) {
-            window.location.href = `/${locale}/onboarding`;
-            return;
-          }
-        } else if (!profile.onboarding_completed) {
-          // Profile exists but onboarding not completed
+        if (!profile || !profile.onboarding_completed) {
           window.location.href = `/${locale}/onboarding`;
           return;
-        } else if (isAuthPage) {
-          // Onboarding complete — redirect away from auth pages
-          const dashboardMap: Record<string, string> = {
-            farmer: "/farmer/dashboard",
-            rider: "/rider/dashboard",
-            customer: "/marketplace",
-          };
-          window.location.href = `/${locale}${dashboardMap[profile.role || "customer"] || "/marketplace"}`;
-          return;
         }
-      }
 
-      setState({ session, user, profile, loading: false });
+        const dashboardMap: Record<string, string> = {
+          farmer: "/farmer/dashboard",
+          rider: "/rider/dashboard",
+          customer: "/marketplace",
+        };
+        window.location.href = `/${locale}${
+          dashboardMap[profile.role || "customer"] || "/marketplace"
+        }`;
+      }, 0);
     });
 
     return () => subscription.unsubscribe();
