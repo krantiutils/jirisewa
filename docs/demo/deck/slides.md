@@ -128,7 +128,7 @@ Time: 1:30
 
 <div>
 
-<img src="/captures/04-consumer/01-marketplace.png" alt="Marketplace listing for Jiri kiwi" class="rounded-md shadow-md" />
+<img src="/captures/04-consumer/01-marketplace-ne.png" alt="Marketplace listing for Jiri kiwi" class="rounded-md shadow-md" />
 
 </div>
 
@@ -199,7 +199,7 @@ Time: 2:00
 <div class="en-sub">The rider's view — Android, in your hand</div>
 
 <div class="flex justify-center mt-6">
-<img src="/captures/06-rider/01-home.png" alt="Rider home on Android" style="max-height: 60vh; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.12)" />
+<img src="/captures/06-rider/00-app-launched.png" alt="Rider home on Android" style="max-height: 60vh; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.12)" />
 </div>
 
 <!--
@@ -306,7 +306,7 @@ The tactile moment matters. Officials touch real paper.
 
 <div>
 
-<img src="/captures/09-operator/02-received.png" alt="Inventory after received" class="rounded-md shadow-md" />
+<img src="/captures/09-operator/03-after-mark-received.png" alt="Inventory after received" class="rounded-md shadow-md" />
 
 </div>
 
@@ -455,7 +455,17 @@ This document is a partnership, not a contract."
 <div>
 <div class="np" style="font-size: 0.95em; font-weight: 700; margin-bottom: 0.8em">अनि सम्पूर्ण नेपालले:</div>
 
-<img src="/captures/12-nepal-map.png" alt="Nepal-wide expansion map" style="width: 100%; border-radius: 8px" />
+<div style="border: 1px solid var(--jirisewa-divider); border-radius: 8px; padding: 18px; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)">
+<div class="np" style="font-weight: 600; font-size: 0.95em; margin-bottom: 0.6em">विस्तार मार्ग</div>
+<div class="en-sub" style="font-size: 0.75em; margin-bottom: 0.8em">Expansion path</div>
+<div style="display: flex; flex-direction: column; gap: 8px; font-family: 'Mukta', sans-serif; font-size: 0.85em">
+<div>• <strong>जिरी</strong> <span class="en-sub">— pilot</span></div>
+<div>• दोलखा / रामेछाप <span class="en-sub">— year 1</span></div>
+<div>• सोलुखुम्बु / ओखलढुङ्गा <span class="en-sub">— year 2</span></div>
+<div>• कोशी प्रदेशका पहाडी जिल्लाहरू <span class="en-sub">— year 3</span></div>
+<div>• सम्पूर्ण नेपाल <span class="en-sub">— horizon</span></div>
+</div>
+</div>
 
 <div class="np" style="font-size: 0.95em; margin-top: 1em; font-weight: 600">
 जिरीको नाम यी सबैमा पहिलो लेखिनेछ।

@@ -1,0 +1,159 @@
+/* JiriSewa Jiri-presentation deck — global type + palette */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Mukta:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Three-colour theme drawn from "क्लिन जिरी, ग्रीन जिरी, अर्गानीक जिरी" */
+  --jirisewa-clean: #F8FAFC;
+  --jirisewa-green: #16A34A;
+  --jirisewa-organic: #2563EB;
+  --jirisewa-ink: #0F172A;
+  --jirisewa-ink-soft: rgba(15, 23, 42, 0.6);
+  --jirisewa-divider: rgba(15, 23, 42, 0.08);
+}
+
+.slidev-layout {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--jirisewa-ink);
+  background: var(--jirisewa-clean);
+}
+
+.slidev-layout h1,
+.slidev-layout h2,
+.slidev-layout h3,
+.slidev-layout h4 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--jirisewa-ink);
+}
+
+/* Devanagari block — slightly heavier and tighter for visual density */
+.np {
+  font-family: 'Mukta', 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.np-display {
+  font-family: 'Mukta', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 2.4em;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.en-sub {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  color: var(--jirisewa-ink-soft);
+  font-size: 0.85em;
+  margin-top: 0.4em;
+}
+
+.brand-blue { color: var(--jirisewa-organic); }
+.brand-green { color: var(--jirisewa-green); }
+
+.live-badge {
+  display: inline-block;
+  background: var(--jirisewa-green);
+  color: white;
+  font-size: 0.7em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.attribution {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6em;
+  color: var(--jirisewa-ink-soft);
+  letter-spacing: 0.02em;
+}
+
+/* Big-number layout for slide-as-statistic moments */
+.big-number {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 8em;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--jirisewa-organic);
+}
+
+/* Quote-only slide treatment */
+.center-quote {
+  font-family: 'Mukta', sans-serif;
+  font-weight: 600;
+  font-size: 1.8em;
+  line-height: 1.5;
+  max-width: 28ch;
+  margin: 0 auto;
+  text-align: center;
+  color: var(--jirisewa-ink);
+}
+
+/* Counter card for §10 live data */
+.counter-card {
+  background: white;
+  border: 1px solid var(--jirisewa-divider);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.counter-card .label {
+  font-family: 'Mukta', sans-serif;
+  font-weight: 600;
+  font-size: 0.85em;
+  color: var(--jirisewa-ink-soft);
+}
+.counter-card .value {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 2.5em;
+  line-height: 1;
+  color: var(--jirisewa-organic);
+}
+.counter-card .value.zero {
+  color: var(--jirisewa-ink-soft);
+  font-weight: 500;
+}
+.counter-card .sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75em;
+  color: var(--jirisewa-ink-soft);
+}
+
+/* Three-row ask layout for slide 11 */
+.ask-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 24px;
+  padding: 18px 0;
+  border-top: 1px solid var(--jirisewa-divider);
+}
+.ask-row:first-child { border-top: none; }
+.ask-icon {
+  font-size: 2em;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  color: var(--jirisewa-green);
+}
+.ask-headline {
+  font-family: 'Mukta', sans-serif;
+  font-weight: 700;
+  font-size: 1.2em;
+  margin-bottom: 4px;
+}
+.ask-detail {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95em;
+  color: var(--jirisewa-ink-soft);
+  line-height: 1.5;
+}

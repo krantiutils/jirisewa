@@ -1,0 +1,11 @@
+{
+  "name": "jirisewa-deck-flows",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "slidev --remote --port 3031",
+    "build": "slidev build",
+    "export-pdf": "slidev export --output deck-flows.pdf"
+  }
+}

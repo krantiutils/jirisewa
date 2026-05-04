@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const mapEl = ref<HTMLElement | null>(null)
 const tilesFailed = ref(false)
+const fallbackSrc = '/cache/jiri-map-static.png'
+const fallbackImgFailed = ref(false)
 
 // Jiri Bazaar (city centre) — 27.6275, 86.2202 from jirimun.gov.np
 const JIRI_CENTER: [number, number] = [27.6275, 86.2202]
@@ -77,7 +79,8 @@ onMounted(async () => {
     <div v-if="tilesFailed" class="map-fallback">
       <div class="np">नेटवर्क समस्या — स्थैतिक नक्शा देखाइँदै</div>
       <div class="en-sub">Network issue — showing static map fallback</div>
-      <img src="/cache/jiri-map-static.png" alt="Static Jiri map fallback" />
+      <img v-if="!fallbackImgFailed" :src="fallbackSrc" alt="Static Jiri map fallback" @error="fallbackImgFailed = true" />
+      <div v-else class="np" style="margin-top: 12px; font-size: 0.9em; opacity: 0.7">जिरी बजार · २७.६२७५° N, ८६.२२०२° E</div>
     </div>
     <div v-else ref="mapEl" class="leaflet-host"></div>
   </div>
