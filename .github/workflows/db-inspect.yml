@@ -19,6 +19,7 @@ on:
           - service_role_upload_test
           - decode_service_role_jwt
           - upload_with_fresh_jwt
+          - pg_roles_bypassrls
 
 jobs:
   inspect:
@@ -80,6 +81,13 @@ jobs:
                   echo "SUPABASE_SERVICE_ROLE_KEY length=${#SUPABASE_SERVICE_ROLE_KEY}";
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
                 '
+                ;;
+              pg_roles_bypassrls)
+                run_query "
+                  SELECT rolname, rolsuper, rolbypassrls, rolcanlogin
+                    FROM pg_roles
+                   WHERE rolname IN ('service_role','authenticator','authenticated','anon','postgres','supabase_admin','supabase_storage_admin','supabase_auth_admin')
+                   ORDER BY rolname;"
                 ;;
               upload_with_fresh_jwt)
                 echo "==> Signing a service_role JWT with the live JWT_SECRET and uploading..."
