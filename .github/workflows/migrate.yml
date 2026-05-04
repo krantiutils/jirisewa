@@ -49,63 +49,34 @@ jobs:
                 );"
 
             echo "==> Seeding tracker with already-applied migrations (first run only)..."
-            # On the first run, assume every existing migration file <= the
-            # last known-applied one is already applied. We detect "already
-            # applied" by checking for a known signal column from each era,
-            # then mark older files as applied without running them. This
-            # avoids re-running CREATE TABLE on a populated DB.
-            docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
-              psql -U postgres -d postgres -v ON_ERROR_STOP=1 << 'SQL'
-            DO $$
-            DECLARE
-              has_listings_pickup_mode boolean;
-            BEGIN
-              SELECT EXISTS (
-                SELECT 1 FROM information_schema.columns
-                 WHERE table_schema='public' AND table_name='produce_listings' AND column_name='pickup_mode'
-              ) INTO has_listings_pickup_mode;
-
-              -- If pickup_mode column already exists, prod is at HEAD or near
-              -- it. Nothing to backfill into the tracker for the older files.
-              -- If it does NOT exist, mark every migration filename
-              -- alphabetically before 20260428* as already applied (they
-              -- shipped with previous deploys that ran the migrate compose
-              -- service on a fresh DB).
-              IF NOT has_listings_pickup_mode THEN
-                INSERT INTO supabase_migrations.applied (filename, applied_at)
-                SELECT filename, now()
-                  FROM (VALUES
-                    ('20260214000001_extensions_and_enums.sql'),
-                    ('20260214000002_core_tables.sql'),
-                    ('20260214000003_indexes_and_rls.sql'),
-                    ('20260214000004_search_produce_rpc.sql'),
-                    ('20260214000005_produce_photos_bucket.sql'),
-                    ('20260214000007_order_pings.sql'),
-                    ('20260214000009_delivery_rates.sql'),
-                    ('20260214000010_esewa_payments.sql'),
-                    ('20260214000011_notifications.sql'),
-                    ('20260214000012_rating_stats_trigger.sql'),
-                    ('20260214000013_realtime_rider_location.sql'),
-                    ('20260214000014_multi_farmer_orders.sql'),
-                    ('20260214000015_trip_stops.sql'),
-                    ('20260214000016_seed_produce_categories.sql'),
-                    ('20260214100001_admin_role.sql'),
-                    ('20260214200001_farmer_verification.sql'),
-                    ('20260214300001_khalti_connectips_payments.sql'),
-                    ('20260214300002_bulk_ordering.sql'),
-                    ('20260214300003_chat.sql'),
-                    ('20260214300004_farmer_analytics_rpc.sql'),
-                    ('20260214300005_geographic_expansion.sql'),
-                    ('20260217000001_create_user_profiles.sql'),
-                    ('20260221000001_update_produce_categories.sql'),
-                    ('20260221100004_order_notification_triggers.sql'),
-                    ('20260222000001_fix_order_items_rls_recursion.sql'),
-                    ('20260222000002_voice_messages.sql')
-                  ) AS t(filename)
-                ON CONFLICT (filename) DO NOTHING;
-              END IF;
-            END $$;
-            SQL
+            # On the first run we can't tell which individual migrations are
+            # applied, so we use the produce_listings.pickup_mode column as
+            # the cutoff signal: that column was added by 20260429000001. If
+            # it's missing, every migration with a filename < that one is
+            # treated as already applied (they shipped with previous fresh-DB
+            # deploys via the migrate compose service). Apply only the new
+            # ones from 20260428* onward.
+            CUTOFF="20260428000001"
+            HAS_PICKUP_MODE=$(docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
+              psql -U postgres -d postgres -tA -c "
+                SELECT EXISTS (
+                  SELECT 1 FROM information_schema.columns
+                   WHERE table_schema='public' AND table_name='produce_listings'
+                     AND column_name='pickup_mode')")
+            if [ "$HAS_PICKUP_MODE" = "f" ]; then
+              for f in ~/jirisewa-src/supabase/migrations/*.sql; do
+                base=$(basename "$f")
+                if [[ "$base" < "${CUTOFF}_" ]]; then
+                  docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
+                    psql -U postgres -d postgres -tA -c \
+                    "INSERT INTO supabase_migrations.applied (filename) VALUES ('$base') ON CONFLICT DO NOTHING;" \
+                    > /dev/null
+                fi
+              done
+              echo "  Marked all pre-${CUTOFF} migrations as applied."
+            else
+              echo "  pickup_mode column already exists; tracker treated as authoritative."
+            fi
 
             echo "==> Applying any unapplied migrations..."
             for f in ~/jirisewa-src/supabase/migrations/*.sql; do
