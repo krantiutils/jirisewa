@@ -18,6 +18,7 @@ on:
           - web_env_check
           - service_role_upload_test
           - decode_service_role_jwt
+          - upload_with_fresh_jwt
 
 jobs:
   inspect:
@@ -78,6 +79,34 @@ jobs:
                   echo "SUPABASE_SERVICE_ROLE_KEY (first 20 chars)=${SUPABASE_SERVICE_ROLE_KEY:0:20}";
                   echo "SUPABASE_SERVICE_ROLE_KEY length=${#SUPABASE_SERVICE_ROLE_KEY}";
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
+                '
+                ;;
+              upload_with_fresh_jwt)
+                echo "==> Signing a service_role JWT with the live JWT_SECRET and uploading..."
+                JWT_SECRET=$(grep -E "^JWT_SECRET=" ~/jirisewa-docker/.env.docker | head -1 | cut -d= -f2- | tr -d "\"")
+                if [ -z "$JWT_SECRET" ]; then echo "JWT_SECRET not found in .env.docker"; exit 1; fi
+                echo "JWT_SECRET length: ${#JWT_SECRET}"
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T -e JWT_SECRET="$JWT_SECRET" web node -e '
+                const crypto = require("crypto");
+                const secret = process.env.JWT_SECRET;
+                const b64url = (b) => Buffer.from(b).toString("base64").replace(/=+$/,"").replace(/\+/g,"-").replace(/\//g,"_");
+                const header = b64url(JSON.stringify({alg:"HS256",typ:"JWT"}));
+                const payload = b64url(JSON.stringify({iss:"supabase",role:"service_role",iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+3600}));
+                const sig = b64url(crypto.createHmac("sha256", secret).update(header+"."+payload).digest());
+                const tok = header+"."+payload+"."+sig;
+                console.log("fresh JWT (truncated):", tok.slice(0,40), "...");
+                fetch("https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/00000000-0000-4000-a000-000000000a01/freshjwt-"+Date.now()+".txt", {
+                  method: "POST",
+                  headers: {
+                    "Authorization": "Bearer " + tok,
+                    "apikey": tok,
+                    "Content-Type": "text/plain",
+                  },
+                  body: "test with fresh jwt",
+                }).then(async r => {
+                  console.log("status:", r.status);
+                  console.log("body:", await r.text());
+                });
                 '
                 ;;
               decode_service_role_jwt)
