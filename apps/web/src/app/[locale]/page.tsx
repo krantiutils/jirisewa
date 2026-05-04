@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { use } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { SectionBlock, Button, IconCircle } from "@/components/ui";
 import {
@@ -8,8 +9,6 @@ import {
   Route,
   ShoppingBag,
   Truck,
-  Users,
-  Percent,
   ArrowRight,
   Mail,
   MapPin,
@@ -25,15 +24,6 @@ const STEP_COLORS: Array<"secondary" | "accent" | "primary"> = [
 
 const STEP_ICONS = [Sprout, Route, ShoppingBag];
 
-const STAT_COLORS = [
-  "text-primary",
-  "text-secondary",
-  "text-accent",
-  "text-primary",
-];
-
-const STAT_ICONS = [Users, Truck, Route, Percent];
-
 export default function HomePage({
   params,
 }: {
@@ -44,7 +34,7 @@ export default function HomePage({
 
   const hero = useTranslations("landing.hero");
   const how = useTranslations("landing.howItWorks");
-  const stats = useTranslations("landing.stats");
+  const jiri = useTranslations("landing.jiri");
   const farmers = useTranslations("landing.forFarmers");
   const riders = useTranslations("landing.forRiders");
   const cta = useTranslations("landing.cta");
@@ -55,13 +45,6 @@ export default function HomePage({
     { number: how("step1Number"), title: how("step1Title"), desc: how("step1Desc") },
     { number: how("step2Number"), title: how("step2Title"), desc: how("step2Desc") },
     { number: how("step3Number"), title: how("step3Title"), desc: how("step3Desc") },
-  ];
-
-  const statItems = [
-    { value: stats("farmersValue"), label: stats("farmersLabel") },
-    { value: stats("deliveredValue"), label: stats("deliveredLabel") },
-    { value: stats("ridersValue"), label: stats("ridersLabel") },
-    { value: stats("savingsValue"), label: stats("savingsLabel") },
   ];
 
   const farmerBenefits = [
@@ -228,39 +211,66 @@ export default function HomePage({
         </div>
       </SectionBlock>
 
-      {/* ─── STATS ─── */}
+      {/* ─── BUILT FOR JIRI ─── */}
       <SectionBlock color="white">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            {stats("title")}
+            {jiri("title")}
           </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
+            {jiri("subtitle")}
+          </p>
         </div>
-        <div className="mt-14 grid grid-cols-2 gap-8 lg:grid-cols-4">
-          {statItems.map((stat, i) => {
-            const StatIcon = STAT_ICONS[i];
-            return (
-              <div
-                key={i}
-                className="group flex flex-col items-center text-center"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                  <StatIcon
-                    className={`h-7 w-7 ${STAT_COLORS[i]}`}
-                    strokeWidth={2.25}
-                  />
-                </div>
-                <span
-                  className={`mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl ${STAT_COLORS[i]}`}
-                >
-                  {stat.value}
-                </span>
-                <span className="mt-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                  {stat.label}
-                </span>
-              </div>
-            );
-          })}
+        <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:grid-rows-2">
+          <figure className="relative col-span-2 row-span-2 overflow-hidden rounded-xl border border-border">
+            <Image
+              src="/images/jiri/lincoln-bazaar.jpg"
+              alt={jiri("captionLincoln")}
+              width={1600}
+              height={1067}
+              className="h-full w-full object-cover"
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              priority={false}
+            />
+            <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 py-4 text-sm font-semibold text-white">
+              {jiri("captionLincoln")}
+            </figcaption>
+          </figure>
+          {[
+            { src: "/images/jiri/buddha-park.jpg", caption: jiri("captionBuddhaPark") },
+            { src: "/images/jiri/kuthame-view.jpg", caption: jiri("captionKuthame") },
+            { src: "/images/jiri/buldanda-view.jpg", caption: jiri("captionBuldanda") },
+            { src: "/images/jiri/jata-pokhari.jpg", caption: jiri("captionJataPokhari") },
+          ].map((photo) => (
+            <figure
+              key={photo.src}
+              className="relative overflow-hidden rounded-xl border border-border"
+            >
+              <Image
+                src={photo.src}
+                alt={photo.caption}
+                width={1600}
+                height={1067}
+                className="aspect-[4/3] h-full w-full object-cover"
+                sizes="(min-width: 1024px) 25vw, 50vw"
+              />
+              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 text-xs font-semibold text-white">
+                {photo.caption}
+              </figcaption>
+            </figure>
+          ))}
         </div>
+        <p className="mt-6 text-center text-xs text-gray-500">
+          {jiri("credit")}{" "}
+          <a
+            href="https://jirimun.gov.np/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground"
+          >
+            jirimun.gov.np
+          </a>
+        </p>
       </SectionBlock>
 
       {/* ─── FOR FARMERS ─── */}

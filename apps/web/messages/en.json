@@ -667,16 +667,15 @@
       "step3Desc": "You order fresh produce. A rider heading your way picks it up and delivers it to your door.",
       "step3Number": "3"
     },
-    "stats": {
-      "title": "Growing Every Day",
-      "farmersValue": "500+",
-      "farmersLabel": "Farmers Registered",
-      "deliveredValue": "12,000",
-      "deliveredLabel": "KG Delivered",
-      "ridersValue": "200+",
-      "ridersLabel": "Active Riders",
-      "savingsValue": "40%",
-      "savingsLabel": "Average Savings"
+    "jiri": {
+      "title": "Built for Jiri & beyond",
+      "subtitle": "JiriSewa starts in Dolakha — connecting farmers, riders, and consumers from Lincoln Bazaar to the rest of Nepal.",
+      "captionLincoln": "Lincoln Bazaar, Jiri",
+      "captionBuddhaPark": "Buddha Park",
+      "captionKuthame": "View from Kuthame",
+      "captionBuldanda": "Buldanda",
+      "captionJataPokhari": "Jata Pokhari",
+      "credit": "Photos courtesy of Jiri Municipality —"
     },
     "forFarmers": {
       "title": "For Farmers",

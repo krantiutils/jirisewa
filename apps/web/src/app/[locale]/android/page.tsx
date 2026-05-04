@@ -12,7 +12,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-export const APK_DOWNLOAD_URL = "/downloads/jirisewa.apk";
+export const APK_DOWNLOAD_URL =
+  "https://github.com/krantiutils/jirisewa/releases/latest/download/jirisewa.apk";
 
 const FEATURE_ICONS = [ShoppingBag, Sprout, Truck, Wifi];
 const FEATURE_COLORS: Array<"primary" | "secondary" | "accent" | "primary"> = [
