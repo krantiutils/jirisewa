@@ -80,36 +80,43 @@ jobs:
                 '
                 ;;
               service_role_upload_test)
-                echo "==> Whether deployed image has the service-role photo upload fix:"
+                echo "==> BUILD_ID + image label:"
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web cat /app/apps/web/.next/BUILD_ID
+                echo ""
+                echo "==> Whether deployed code has the service-role photo upload fix:"
                 docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web sh -c '
-                  cd /app
-                  # The compiled server chunk for the farmer actions. Search
-                  # for a string that is unique to the post-fix version (the
-                  # comment we added) and the import of createServiceRoleClient
-                  # in the upload action.
-                  echo "--- searching for createServiceRoleClient usage in server chunks ---"
-                  grep -l "createServiceRoleClient" .next/server/**/*.js 2>/dev/null | head -5
-                  echo "--- searching for the post-fix comment ---"
-                  grep -l "supabase-ssr.s cookie-based JWT" .next/server/**/*.js 2>/dev/null
-                  grep -l "auth check above is the source of truth" .next/server/**/*.js 2>/dev/null
-                  echo "--- git revision in /app (if present) ---"
-                  cat .next/BUILD_ID 2>/dev/null || echo "(no BUILD_ID)"
+                  cd /app/apps/web
+                  echo "--- count of createServiceRoleClient mentions in compiled server output ---"
+                  find .next/server -name "*.js" -exec grep -l "createServiceRoleClient" {} \; | wc -l
+                  echo "--- look for the post-fix comment in any server chunk ---"
+                  find .next/server -name "*.js" -exec grep -l "auth check above is the source of truth" {} \; | head
+                  echo "--- look for uploadProducePhoto chunk ---"
+                  CHUNK=$(find .next/server -name "*.js" -exec grep -l "uploadProducePhoto" {} \; | head -1)
+                  echo "found chunk: $CHUNK"
+                  if [ -n "$CHUNK" ]; then
+                    echo "--- excerpt around uploadProducePhoto ---"
+                    grep -o "uploadProducePhoto[^}]\{0,400\}" "$CHUNK" | head -2 | cut -c1-500
+                  fi
                 '
                 echo ""
-                echo "==> Direct upload test using wget..."
-                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web sh -c '
-                  echo "test data" > /tmp/test.txt
-                  TEST_PATH="00000000-0000-4000-a000-000000000a01/diag-$(date +%s).txt"
-                  wget -qO /tmp/upload-resp \
-                    --method=POST \
-                    --header="Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-                    --header="apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-                    --header="Content-Type: text/plain" \
-                    --body-file=/tmp/test.txt \
-                    --server-response \
-                    "https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/$TEST_PATH" 2>&1 | head -20
-                  echo "--- response body ---"
-                  cat /tmp/upload-resp 2>/dev/null | head -10
+                echo "==> Service-role storage upload via Node from inside the web container..."
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web node -e '
+                const fs = require("fs");
+                const url = "https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/00000000-0000-4000-a000-000000000a01/diag-" + Date.now() + ".txt";
+                const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+                if (!key) { console.error("missing key"); process.exit(1); }
+                fetch(url, {
+                  method: "POST",
+                  headers: {
+                    "Authorization": "Bearer " + key,
+                    "apikey": key,
+                    "Content-Type": "text/plain",
+                  },
+                  body: "diagnostic",
+                }).then(async r => {
+                  console.log("status:", r.status);
+                  console.log("body:", await r.text());
+                }).catch(e => console.error("err:", e.message));
                 '
                 ;;
               user_profiles_check)
