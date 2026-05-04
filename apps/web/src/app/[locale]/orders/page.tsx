@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations, useFormatter } from "next-intl";
-import { Package, Search, Filter, X, MapIcon, ListIcon, MapPin } from "lucide-react";
+import { Package, Search, Filter, X, MapIcon, ListIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import { OrderStatus } from "@jirisewa/shared";
 import { listOrders } from "@/lib/actions/orders";

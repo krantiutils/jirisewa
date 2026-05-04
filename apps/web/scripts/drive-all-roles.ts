@@ -15,7 +15,6 @@
  * admin promotion step works. Reads from .env.local.prod if present.
  */
 import { chromium, type Browser, type Page } from "@playwright/test";
-import { createClient as createSupa } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -116,7 +115,6 @@ async function main() {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env");
   }
   fs.mkdirSync(RUN_DIR, { recursive: true });
-  const admin = createSupa(SUPA_URL, SERVICE_KEY, { auth: { persistSession: false } });
   const browser = await chromium.launch({ headless: true });
   const summary: { role: string; finalUrl: string; errors: number }[] = [];
 

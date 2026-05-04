@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { LogIn, User, Bell, LogOut, ChevronDown, MapPin, Settings } from "lucide-react";
@@ -16,9 +16,8 @@ interface HeaderProps {
 }
 
 export function Header({ locale }: HeaderProps) {
-  const params = useParams();
   const pathname = usePathname();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const t = useTranslations("nav");
   const tAddr = useTranslations("addresses");
   const tAcct = useTranslations("account");

@@ -129,7 +129,7 @@ export default function MessagesPage() {
                 {/* Check for 3-way chat */}
                 {conv.participants && conv.participants.length > 1 ? (
                   <div className="flex -space-x-2">
-                    {conv.participants.slice(0, 3).map((participant, idx) => (
+                    {conv.participants.slice(0, 3).map((participant) => (
                       participant.avatar_url ? (
                         <Image
                           key={participant.id}

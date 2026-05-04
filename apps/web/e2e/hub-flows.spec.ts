@@ -38,7 +38,7 @@ test.describe("Hub flows (authenticated)", () => {
     await expect(success).toContainText(/Lot code/i);
   });
 
-  test("hub operator dashboard shows recent dropoff", async ({ page }) => {
+  test("hub operator dashboard shows recent dropoff", async () => {
     // Seed a dropoff via service role so this test is independent of the
     // farmer-side test order.
     const sb = admin();
@@ -93,7 +93,7 @@ test.describe("Hub flows (authenticated)", () => {
     await sb.from("hub_dropoffs").delete().eq("id", visibleAsOp.data!.id);
   });
 
-  test("RPC chain: dropoff → receive → notification", async ({}) => {
+  test("RPC chain: dropoff → receive → notification", async () => {
     const sb = admin();
 
     // Find a farmer + listing.

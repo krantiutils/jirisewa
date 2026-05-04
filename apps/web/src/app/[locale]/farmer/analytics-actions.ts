@@ -24,8 +24,12 @@ async function getAuthenticatedFarmer() {
     .eq("role", "farmer")
     .single();
 
-  if (!userRole) {
-    return { supabase, user: null, error: "Not a farmer" } as const;
+  if (roleError || !userRole) {
+    return {
+      supabase,
+      user: null,
+      error: roleError?.message ?? "Not a farmer",
+    } as const;
   }
 
   return { supabase, user, error: null } as const;

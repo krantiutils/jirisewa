@@ -61,7 +61,7 @@ async function captureStep(
   page.on("console", onConsole);
   page.on("response", onResponse);
 
-  let status: number | null = null;
+  const status: number | null = null;
   await navigate().then(
     () => { /* ok */ },
     (e) => consoleErrors.push("navigate error: " + (e as Error).message),
@@ -135,7 +135,7 @@ async function run() {
             await page.waitForTimeout(1500);
           }
         }
-      } catch (e) {
+      } catch {
         // swallow — we'll just screenshot what's visible
       }
     }),

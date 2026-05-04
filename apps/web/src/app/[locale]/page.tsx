@@ -3,7 +3,7 @@ import { setRequestLocale } from "next-intl/server";
 import { use } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { SectionBlock, Button, IconCircle } from "@/components/ui";
+import { SectionBlock, IconCircle } from "@/components/ui";
 import {
   Sprout,
   Route,

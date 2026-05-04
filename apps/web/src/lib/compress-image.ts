@@ -9,7 +9,7 @@ export async function compressImage(
 ): Promise<File> {
   return new Promise((resolve) => {
     const img = new window.Image();
-    img.onload = () => {
+    img.onload = async () => {
       URL.revokeObjectURL(img.src);
       const canvas = document.createElement("canvas");
       let { width, height } = img;
@@ -22,13 +22,24 @@ export async function compressImage(
       canvas.height = height;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          resolve(new File([blob!], file.name, { type: "image/jpeg" }));
-        },
-        "image/jpeg",
-        0.8,
-      );
+      const maxBytes = Math.max(0.1, maxSizeMB) * 1024 * 1024;
+      let compressed: Blob | null = null;
+
+      for (let quality = 0.82; quality >= 0.42; quality -= 0.08) {
+        const blob = await new Promise<Blob | null>((done) => {
+          canvas.toBlob(done, "image/jpeg", quality);
+        });
+        if (!blob) continue;
+        compressed = blob;
+        if (blob.size <= maxBytes) break;
+      }
+
+      if (!compressed) {
+        resolve(file);
+        return;
+      }
+
+      resolve(new File([compressed], file.name, { type: "image/jpeg" }));
     };
     img.onerror = () => {
       URL.revokeObjectURL(img.src);

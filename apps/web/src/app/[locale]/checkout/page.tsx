@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodOption>("cash");
   const [submitting, setSubmitting] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [esewaForm, setEsewaForm] = useState<EsewaPaymentFormData | null>(null);
   const [connectipsForm, setConnectipsForm] = useState<ConnectIPSPaymentFormData | null>(null);
@@ -61,10 +62,10 @@ export default function CheckoutPage() {
 
   // Redirect to cart if empty (after hydration to avoid flash)
   useEffect(() => {
-    if (hydrated && cart.items.length === 0) {
+    if (hydrated && cart.items.length === 0 && !submitting && !orderPlaced) {
       router.push(`/${locale}/cart`);
     }
-  }, [hydrated, cart.items.length, locale, router]);
+  }, [hydrated, cart.items.length, locale, orderPlaced, router, submitting]);
 
   // Auto-submit hidden payment forms when form data is set
   useEffect(() => {
@@ -169,6 +170,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    setOrderPlaced(true);
     clearCart();
 
     // Save the delivery address if user opted in

@@ -48,7 +48,8 @@ export default async function HubDashboardPage({
   const all = await listHubInventory(hub.id);
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(todayStart.getDate() - 7);
 
   const droppedToday = all.filter(
     (d) => new Date(d.dropped_at) >= todayStart,

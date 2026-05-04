@@ -1,20 +1,11 @@
 import { hasLocale } from "next-intl";
 import { NextIntlClientProvider } from "next-intl";
-import {
-  getMessages,
-  getTranslations,
-  setRequestLocale,
-} from "next-intl/server";
+import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Outfit } from "next/font/google";
-import Link from "next/link";
 import { routing } from "@/i18n/routing";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { AuthProvider } from "@/components/AuthProvider";
 import { CartProvider } from "@/lib/cart";
-import { CartHeaderLink } from "@/components/cart/CartHeaderLink";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { ChatBadge } from "@/components/chat/ChatBadge";
 import { PushNotificationManager } from "@/components/notifications/PushNotificationManager";
 import { Header } from "@/components/layout/Header";
 

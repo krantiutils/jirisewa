@@ -38,7 +38,6 @@ export default function FarmerEarningsPage() {
 
   const [summary, setSummary] = useState<EarningsSummary | null>(null);
   const [earnings, setEarnings] = useState<EarningItem[]>([]);
-  const [totalEarnings, setTotalEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Payout form state
@@ -74,7 +73,6 @@ export default function FarmerEarningsPage() {
       }
       if (earningsResult.data) {
         setEarnings(earningsResult.data.items);
-        setTotalEarnings(earningsResult.data.total);
       }
       setLoading(false);
     }

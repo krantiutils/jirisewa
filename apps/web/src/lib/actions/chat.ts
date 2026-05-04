@@ -554,10 +554,6 @@ export async function getConversationDetails(
       return { error: "You are not a participant in this conversation" };
     }
 
-    const otherUserId = conv.participant_ids.find(
-      (id: string) => id !== currentUserId,
-    );
-
     // Get all other participants (for 3-way chat)
     const otherParticipantIds = conv.participant_ids.filter(
       (id: string) => id !== currentUserId,

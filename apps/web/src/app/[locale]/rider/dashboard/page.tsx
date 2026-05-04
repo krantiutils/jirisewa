@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { TripStatus } from "@jirisewa/shared";
-import { DollarSign, MapIcon, ListIcon, MapPin, Package, Loader2 } from "lucide-react";
+import { DollarSign, MapIcon, ListIcon, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { TripStatusBadge } from "@/components/rider/TripStatusBadge";
