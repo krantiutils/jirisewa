@@ -80,19 +80,36 @@ jobs:
                 '
                 ;;
               service_role_upload_test)
-                echo "==> Direct upload test using service role key from web container..."
+                echo "==> Whether deployed image has the service-role photo upload fix:"
                 docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web sh -c '
-                  test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SERVICE ROLE KEY MISSING"; exit 1; }
+                  cd /app
+                  # The compiled server chunk for the farmer actions. Search
+                  # for a string that is unique to the post-fix version (the
+                  # comment we added) and the import of createServiceRoleClient
+                  # in the upload action.
+                  echo "--- searching for createServiceRoleClient usage in server chunks ---"
+                  grep -l "createServiceRoleClient" .next/server/**/*.js 2>/dev/null | head -5
+                  echo "--- searching for the post-fix comment ---"
+                  grep -l "supabase-ssr.s cookie-based JWT" .next/server/**/*.js 2>/dev/null
+                  grep -l "auth check above is the source of truth" .next/server/**/*.js 2>/dev/null
+                  echo "--- git revision in /app (if present) ---"
+                  cat .next/BUILD_ID 2>/dev/null || echo "(no BUILD_ID)"
+                '
+                echo ""
+                echo "==> Direct upload test using wget..."
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web sh -c '
                   echo "test data" > /tmp/test.txt
                   TEST_PATH="00000000-0000-4000-a000-000000000a01/diag-$(date +%s).txt"
-                  echo "Hitting: https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/$TEST_PATH"
-                  curl -sS -i -X POST \
-                    -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-                    -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-                    -H "Content-Type: text/plain" \
-                    --data-binary @/tmp/test.txt \
-                    "https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/$TEST_PATH" \
-                    | head -25
+                  wget -qO /tmp/upload-resp \
+                    --method=POST \
+                    --header="Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+                    --header="apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+                    --header="Content-Type: text/plain" \
+                    --body-file=/tmp/test.txt \
+                    --server-response \
+                    "https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/$TEST_PATH" 2>&1 | head -20
+                  echo "--- response body ---"
+                  cat /tmp/upload-resp 2>/dev/null | head -10
                 '
                 ;;
               user_profiles_check)
