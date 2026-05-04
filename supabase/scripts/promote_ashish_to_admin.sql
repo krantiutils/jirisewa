@@ -1,5 +1,5 @@
--- Promote ashish@ampixa.com to superadmin (and ensure a `users` row exists
--- in case onboarding upserted into user_profiles only).
+-- Provision (if missing) and promote ashish@ampixa.com to superadmin.
+-- Idempotent: safe to re-run.
 
 DO $$
 DECLARE
@@ -7,16 +7,41 @@ DECLARE
   v_phone text;
   v_full_name text;
   v_email text := 'ashish@ampixa.com';
+  v_password text := 'codingjokers';
 BEGIN
-  -- Find by user_profiles.email (set during email signup) first, then by auth.users.email
+  -- Find existing
   SELECT id INTO v_user_id FROM user_profiles WHERE email = v_email LIMIT 1;
   IF v_user_id IS NULL THEN
     SELECT id INTO v_user_id FROM auth.users WHERE email = v_email LIMIT 1;
   END IF;
 
   IF v_user_id IS NULL THEN
-    RAISE NOTICE 'No user found with email %', v_email;
-    RETURN;
+    -- Create fresh auth.users row
+    v_user_id := gen_random_uuid();
+    INSERT INTO auth.users (
+      id, instance_id, aud, role, email,
+      raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at, email_confirmed_at,
+      encrypted_password, confirmation_token,
+      recovery_token, email_change_token_new, email_change
+    ) VALUES (
+      v_user_id, '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      v_email,
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"name":"Ashish"}'::jsonb,
+      now(), now(), now(),
+      crypt(v_password, gen_salt('bf')),
+      '', '', '', ''
+    );
+    RAISE NOTICE 'Created auth.users row for % (id=%)', v_email, v_user_id;
+  ELSE
+    -- Reset password + ensure email is confirmed
+    UPDATE auth.users
+       SET encrypted_password = crypt(v_password, gen_salt('bf')),
+           email_confirmed_at = COALESCE(email_confirmed_at, now())
+     WHERE id = v_user_id;
+    RAISE NOTICE 'Updated existing auth.users row for % (id=%)', v_email, v_user_id;
   END IF;
 
   -- Make sure user_profiles exists
