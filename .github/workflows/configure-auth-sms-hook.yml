@@ -15,7 +15,6 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SERVER_SSH_KEY }}
           command_timeout: 10m
-          script_stop: true
           script: |
             set -euo pipefail
 
@@ -61,6 +60,7 @@ jobs:
             hook_secret="$webhook_secret"
             hook_secret="${hook_secret#v1,}"
             hook_secret="${hook_secret#whsec_}"
+            gotrue_hook_secret="v1,whsec_${hook_secret}"
 
             if [ -z "$hook_secret" ]; then
               echo "Normalized hook secret is empty"
@@ -74,23 +74,34 @@ jobs:
 
             set_env GOTRUE_HOOK_SEND_SMS_ENABLED true
             set_env GOTRUE_HOOK_SEND_SMS_URI https://khetbata.xyz/api/auth/sms-hook
-            set_env GOTRUE_HOOK_SEND_SMS_SECRETS "$hook_secret"
+            set_env GOTRUE_HOOK_SEND_SMS_SECRETS "$gotrue_hook_secret"
 
             echo "Configured auth hook env:"
             echo "  GOTRUE_HOOK_SEND_SMS_ENABLED=true"
             echo "  GOTRUE_HOOK_SEND_SMS_URI=https://khetbata.xyz/api/auth/sms-hook"
-            echo "  GOTRUE_HOOK_SEND_SMS_SECRETS=<configured:${#hook_secret}>"
+            echo "  GOTRUE_HOOK_SEND_SMS_SECRETS=<configured:${#gotrue_hook_secret}>"
             echo "  AAKASH_SMS_TOKEN=<configured:${#aakash_token}>"
 
             docker compose -f docker-compose.prod.yml --env-file .env.docker up -d auth
 
             echo "Waiting for auth health..."
+            auth_healthy=false
             for _ in $(seq 1 30); do
               if docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T auth wget -q --spider http://localhost:9999/health; then
+                auth_healthy=true
                 break
               fi
               sleep 2
             done
+
+            if [ "$auth_healthy" != "true" ]; then
+              echo "Auth did not become healthy; recent auth logs:"
+              docker compose -f docker-compose.prod.yml --env-file .env.docker logs --tail=120 auth || true
+              echo "Rolling auth SMS hook back off to restore auth service."
+              set_env GOTRUE_HOOK_SEND_SMS_ENABLED false
+              docker compose -f docker-compose.prod.yml --env-file .env.docker up -d auth
+              exit 1
+            fi
 
             echo "Live auth hook env:"
             docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T auth sh -c '
