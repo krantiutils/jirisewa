@@ -17,6 +17,7 @@ on:
           - user_profiles_check
           - web_env_check
           - service_role_upload_test
+          - decode_service_role_jwt
 
 jobs:
   inspect:
@@ -77,6 +78,35 @@ jobs:
                   echo "SUPABASE_SERVICE_ROLE_KEY (first 20 chars)=${SUPABASE_SERVICE_ROLE_KEY:0:20}";
                   echo "SUPABASE_SERVICE_ROLE_KEY length=${#SUPABASE_SERVICE_ROLE_KEY}";
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
+                '
+                ;;
+              decode_service_role_jwt)
+                echo "==> Decoding the SERVICE_ROLE_KEY claims (base64 payload)..."
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web node -e '
+                const tok = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+                const parts = tok.split(".");
+                if (parts.length !== 3) {
+                  console.log("Not a JWT (parts:", parts.length, ", first 20 chars:", tok.slice(0,20), ")");
+                  console.log("Length:", tok.length);
+                  process.exit(0);
+                }
+                const decode = (s) => JSON.parse(Buffer.from(s.replace(/-/g,"+").replace(/_/g,"/"), "base64").toString("utf8"));
+                console.log("header:", decode(parts[0]));
+                console.log("payload:", decode(parts[1]));
+                '
+                echo ""
+                echo "==> Decoding the ANON key claims..."
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T web node -e '
+                const tok = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+                const parts = tok.split(".");
+                if (parts.length !== 3) {
+                  console.log("Not a JWT (parts:", parts.length, ", first 20 chars:", tok.slice(0,20), ")");
+                  console.log("Length:", tok.length);
+                  process.exit(0);
+                }
+                const decode = (s) => JSON.parse(Buffer.from(s.replace(/-/g,"+").replace(/_/g,"/"), "base64").toString("utf8"));
+                console.log("header:", decode(parts[0]));
+                console.log("payload:", decode(parts[1]));
                 '
                 ;;
               service_role_upload_test)
