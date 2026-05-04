@@ -4,6 +4,9 @@ const FULL_E2E = process.env.FULL_E2E === "1";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const HAS_REAL_SUPABASE_KEY = SERVICE_ROLE_KEY.split(".").length === 3;
 const INCLUDE_LEGACY_E2E = FULL_E2E && HAS_REAL_SUPABASE_KEY;
+const WEB_PORT = process.env.PORT ?? "3000";
+const LOCAL_BASE_URL = `http://localhost:${WEB_PORT}`;
+const BASE_URL = process.env.BASE_URL ?? LOCAL_BASE_URL;
 
 /**
  * Playwright E2E test configuration for JiriSewa web app.
@@ -32,7 +35,7 @@ export default defineConfig({
     : [["list"], ["html", { open: "on-failure" }]],
 
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
@@ -76,10 +79,12 @@ export default defineConfig({
           },
         ],
 
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: process.env.BASE_URL
+    ? undefined
+    : {
+        command: `pnpm dev --port ${WEB_PORT}`,
+        url: LOCAL_BASE_URL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
 });

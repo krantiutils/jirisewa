@@ -345,7 +345,7 @@ export async function getFarmerDashboardData(): Promise<
 export async function uploadProducePhoto(
   formData: FormData,
 ): Promise<ActionResult<{ url: string }>> {
-  const { user, error: authError } = await getAuthenticatedFarmer();
+  const { supabase, user, error: authError } = await getAuthenticatedFarmer();
   if (!user) {
     return { success: false, error: authError };
   }
@@ -355,8 +355,8 @@ export async function uploadProducePhoto(
     return { success: false, error: "No file provided" };
   }
 
-  if (file.size > 5242880) {
-    return { success: false, error: "File too large (max 5MB)" };
+  if (file.size > 1048576) {
+    return { success: false, error: "File too large (max 1MB)" };
   }
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -364,11 +364,28 @@ export async function uploadProducePhoto(
     return { success: false, error: "Invalid file type. Use JPEG, PNG, or WebP." };
   }
 
-  // TEMPORARY: storage uploads to self-hosted Supabase v1.37 are returning
-  // "new row violates row-level security policy" even with RLS disabled and
-  // the service-role JWT — likely a buckets-level v1.37 check we haven't
-  // located yet. Returning a deterministic placeholder URL so the listing
-  // flow remains usable. Photos can be backfilled once storage is fixed.
-  const placeholder = `https://placehold.co/800x600/10B981/FFFFFF/png?text=${encodeURIComponent(file.name)}`;
-  return { success: true, data: { url: placeholder } };
+  const mimeToExt: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  const ext = mimeToExt[file.type] ?? "jpg";
+  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("produce-photos")
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const { data } = supabase.storage
+    .from("produce-photos")
+    .getPublicUrl(path);
+
+  return { success: true, data: { url: data.publicUrl } };
 }

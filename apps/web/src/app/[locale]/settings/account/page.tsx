@@ -46,11 +46,19 @@ export default function AccountSettingsPage() {
 
   // Populate form from profile
   useEffect(() => {
-    if (profile) {
+    if (!profile) return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
       setFullName(profile.full_name || "");
       setPhone(profile.phone || "");
       setBio(profile.bio || "");
-    }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [profile]);
 
   const handleSaveProfile = async () => {

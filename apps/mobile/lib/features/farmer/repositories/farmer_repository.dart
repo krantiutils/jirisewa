@@ -3,6 +3,24 @@ import 'dart:typed_data';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+String producePhotoContentType(String extension) {
+  switch (extension.toLowerCase().replaceFirst(RegExp(r'^\.'), '')) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+  }
+
+  throw ArgumentError.value(
+    extension,
+    'extension',
+    'Unsupported produce photo extension',
+  );
+}
+
 class FarmerRepository {
   final SupabaseClient _client;
   FarmerRepository(this._client);
@@ -128,20 +146,24 @@ class FarmerRepository {
     Uint8List bytes, {
     String extension = 'jpg',
   }) async {
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final normalizedExtension =
+        extension.toLowerCase().replaceFirst(RegExp(r'^\.'), '');
+    final fileName =
+        '${DateTime.now().millisecondsSinceEpoch}.$normalizedExtension';
     final path = '$userId/$fileName';
 
-    await _client.storage.from('produce-photos').uploadBinary(
+    await _client.storage
+        .from('produce-photos')
+        .uploadBinary(
           path,
           bytes,
           fileOptions: FileOptions(
-            contentType: 'image/$extension',
+            contentType: producePhotoContentType(normalizedExtension),
             upsert: false,
           ),
         );
 
-    final publicUrl =
-        _client.storage.from('produce-photos').getPublicUrl(path);
+    final publicUrl = _client.storage.from('produce-photos').getPublicUrl(path);
     return publicUrl;
   }
 

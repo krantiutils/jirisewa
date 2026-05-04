@@ -1,10 +1,9 @@
 import { setRequestLocale } from "next-intl/server";
-import { getTranslations } from "next-intl/server";
-import { use } from "react";
 import { fetchProduceListings } from "@/lib/queries/produce";
 import { MarketplaceContent } from "@/components/marketplace";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { ProduceListingWithDetails } from "@/lib/supabase/types";
 
 export default async function CustomerPage({
   params,
@@ -22,7 +21,7 @@ export default async function CustomerPage({
   }
 
   // Fetch products
-  let listings: any[] = [];
+  let listings: ProduceListingWithDetails[] = [];
   let total = 0;
   try {
     const result = await fetchProduceListings({

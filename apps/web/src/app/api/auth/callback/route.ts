@@ -1,7 +1,35 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
+
+type CallbackDatabase = {
+  public: {
+    Tables: {
+      user_profiles: {
+        Row: {
+          id: string;
+          onboarding_completed: boolean | null;
+          role: string | null;
+        };
+        Insert: {
+          id: string;
+          email?: string | null;
+          full_name?: string | null;
+          avatar_url?: string | null;
+          role?: string | null;
+          onboarding_completed?: boolean | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
+  };
+};
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -25,9 +53,13 @@ export async function GET(request: NextRequest) {
 
   // Create Supabase client with proper cookie handling for edge runtime
   // In edge runtime, we need to collect cookies and apply them to the final redirect response
-  const cookiesToSet: { name: string; value: string; options: any }[] = [];
+  const cookiesToSet: {
+    name: string;
+    value: string;
+    options: CookieOptions;
+  }[] = [];
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<CallbackDatabase>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -55,11 +87,11 @@ export async function GET(request: NextRequest) {
 
   if (user) {
     // Check if profile exists - use type assertion
-    const { data: profile, error: profileError } = await (supabase
-      .from("user_profiles" as any)
+    const { data: profile, error: profileError } = await supabase
+      .from("user_profiles")
       .select("id, onboarding_completed, role")
       .eq("id", user.id)
-      .single() as any);
+      .single();
 
     // If profile does not exist (RLS or not created), create it using metadata
     if (!profile || profileError) {
@@ -72,9 +104,8 @@ export async function GET(request: NextRequest) {
         user.user_metadata?.picture ||
         null;
 
-      // Use any to bypass type checking since user_profiles is not in types yet
-      const { error: insertError } = await (supabase
-        .from("user_profiles" as any)
+      const { error: insertError } = await supabase
+        .from("user_profiles")
         .insert({
           id: user.id,
           email: user.email,
@@ -82,7 +113,7 @@ export async function GET(request: NextRequest) {
           avatar_url: avatarUrl,
           role: null,
           onboarding_completed: false,
-        }) as any);
+        });
 
       // If insert failed due to RLS, the trigger should have created it anyway
       if (insertError && insertError.code !== "23505") {

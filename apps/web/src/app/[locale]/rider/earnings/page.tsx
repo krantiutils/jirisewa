@@ -79,7 +79,7 @@ export default function RiderEarningsPage() {
 
   useEffect(() => {
     if (!authChecked || !isAuthenticated) return;
-    loadData();
+    void Promise.resolve().then(loadData);
   }, [authChecked, isAuthenticated, loadData]);
 
   const handleRequestPayout = async () => {

@@ -25,7 +25,16 @@ export function LocationSearchInput({
 
   // Sync external value changes
   useEffect(() => {
-    if (value !== undefined) setQuery(value);
+    if (value === undefined) return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setQuery(value);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [value]);
 
   const handleChange = useCallback((val: string) => {

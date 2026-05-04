@@ -69,24 +69,33 @@ export default function NewTripPage() {
     if (!profile || defaultsApplied.current) return;
     defaultsApplied.current = true;
 
-    if (profile.vehicle_type) {
-      const vt = profile.vehicle_type as VehicleType;
-      if (Object.values(VehicleType).includes(vt)) {
-        setVehicleType(vt);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+
+      if (profile.vehicle_type) {
+        const vt = profile.vehicle_type as VehicleType;
+        if (Object.values(VehicleType).includes(vt)) {
+          setVehicleType(vt);
+        }
       }
-    }
 
-    const originPt = parseEwkbPoint(profile.fixed_route_origin);
-    if (originPt && profile.fixed_route_origin_name) {
-      setOrigin(originPt);
-      setOriginName(profile.fixed_route_origin_name);
-    }
+      const originPt = parseEwkbPoint(profile.fixed_route_origin);
+      if (originPt && profile.fixed_route_origin_name) {
+        setOrigin(originPt);
+        setOriginName(profile.fixed_route_origin_name);
+      }
 
-    const destPt = parseEwkbPoint(profile.fixed_route_destination);
-    if (destPt && profile.fixed_route_destination_name) {
-      setDestination(destPt);
-      setDestinationName(profile.fixed_route_destination_name);
-    }
+      const destPt = parseEwkbPoint(profile.fixed_route_destination);
+      if (destPt && profile.fixed_route_destination_name) {
+        setDestination(destPt);
+        setDestinationName(profile.fixed_route_destination_name);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [profile]);
 
   // Route state
