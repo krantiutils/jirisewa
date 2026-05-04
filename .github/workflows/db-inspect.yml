@@ -85,17 +85,14 @@ jobs:
                   test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "SERVICE ROLE KEY MISSING"; exit 1; }
                   echo "test data" > /tmp/test.txt
                   TEST_PATH="00000000-0000-4000-a000-000000000a01/diag-$(date +%s).txt"
-                  HTTP=$(wget -q -O /tmp/upload-resp \
-                    --method=POST \
-                    --header="Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-                    --header="apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-                    --header="Content-Type: text/plain" \
-                    --body-file=/tmp/test.txt \
-                    --server-response \
-                    "$NEXT_PUBLIC_SUPABASE_URL/storage/v1/object/produce-photos/$TEST_PATH" 2>&1 | grep "HTTP/" | tail -1)
-                  echo "Response: $HTTP"
-                  echo "Body:"
-                  cat /tmp/upload-resp 2>/dev/null | head -5
+                  echo "Hitting: https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/$TEST_PATH"
+                  curl -sS -i -X POST \
+                    -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+                    -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+                    -H "Content-Type: text/plain" \
+                    --data-binary @/tmp/test.txt \
+                    "https://khetbata.xyz/_supabase/storage/v1/object/produce-photos/$TEST_PATH" \
+                    | head -25
                 '
                 ;;
               user_profiles_check)
