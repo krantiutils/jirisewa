@@ -1,0 +1,66 @@
+name: Wipe user data (DESTRUCTIVE)
+
+# Manual-only. Wipes user-generated rows (orders, listings, trips, users,
+# auth.users, …) on prod. Preserves seeds (categories, municipalities,
+# delivery rates) and the seeded Jiri bazaar hub operator.
+#
+# Requires the operator to type the literal string CONFIRM into the
+# `confirm` input. Anything else aborts before SSH connects.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type CONFIRM to proceed. This deletes all user data on prod.'
+        required: true
+        default: ''
+
+jobs:
+  wipe:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "CONFIRM" ]; then
+            echo "Confirmation string must be exactly: CONFIRM"
+            echo "You entered: '${{ inputs.confirm }}'"
+            exit 1
+          fi
+          echo "Confirmation accepted."
+
+      - name: SSH and run wipe
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+
+            echo "==> Pulling latest code (for fresh wipe script)..."
+            cd ~/jirisewa-src
+            git pull
+
+            if [ ! -f supabase/scripts/wipe_userdata.sql ]; then
+              echo "supabase/scripts/wipe_userdata.sql missing on server"
+              exit 1
+            fi
+
+            echo "==> Pre-wipe row counts..."
+            cd ~/jirisewa-docker
+            docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
+              psql -U postgres -d postgres -c "
+                SELECT 'auth.users' AS tbl, COUNT(*) FROM auth.users
+                UNION ALL SELECT 'users', COUNT(*) FROM users
+                UNION ALL SELECT 'orders', COUNT(*) FROM orders
+                UNION ALL SELECT 'produce_listings', COUNT(*) FROM produce_listings
+                UNION ALL SELECT 'rider_trips', COUNT(*) FROM rider_trips;"
+
+            echo "==> Applying wipe..."
+            docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
+              psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+              < ~/jirisewa-src/supabase/scripts/wipe_userdata.sql
+
+            echo "==> Wipe complete."
