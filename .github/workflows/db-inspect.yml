@@ -20,6 +20,7 @@ on:
           - decode_service_role_jwt
           - upload_with_fresh_jwt
           - pg_roles_bypassrls
+          - all_storage_policies
 
 jobs:
   inspect:
@@ -81,6 +82,19 @@ jobs:
                   echo "SUPABASE_SERVICE_ROLE_KEY length=${#SUPABASE_SERVICE_ROLE_KEY}";
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
                 '
+                ;;
+              all_storage_policies)
+                run_query "
+                  SELECT tablename, policyname, permissive, roles, cmd, qual, with_check
+                    FROM pg_policies
+                   WHERE schemaname='storage'
+                   ORDER BY tablename, policyname;"
+                echo "==> RLS enabled on storage tables:"
+                run_query "
+                  SELECT relname, relrowsecurity, relforcerowsecurity
+                    FROM pg_class c
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                   WHERE n.nspname = 'storage' AND c.relkind = 'r';"
                 ;;
               pg_roles_bypassrls)
                 run_query "
