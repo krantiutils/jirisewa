@@ -14,6 +14,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Smartphone,
 } from "lucide-react";
 
 const STEP_COLORS: Array<"secondary" | "accent" | "primary"> = [
@@ -48,6 +49,7 @@ export default function HomePage({
   const riders = useTranslations("landing.forRiders");
   const cta = useTranslations("landing.cta");
   const footer = useTranslations("landing.footer");
+  const androidBanner = useTranslations("landing.androidBanner");
 
   const steps = [
     { number: how("step1Number"), title: how("step1Title"), desc: how("step1Desc") },
@@ -162,6 +164,35 @@ export default function HomePage({
             </div>
           </div>
         </div>
+      </SectionBlock>
+
+      {/* ─── ANDROID APP BANNER ─── */}
+      <SectionBlock color="white" className="py-12">
+        <Link
+          href="/android"
+          className="group flex flex-col items-start gap-6 rounded-2xl border-2 border-foreground/10 bg-gradient-to-r from-emerald-50 via-white to-blue-50 p-8 transition-all hover:border-foreground/20 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="flex items-center gap-5">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-foreground text-white">
+              <Smartphone className="h-7 w-7" strokeWidth={2.25} />
+            </div>
+            <div>
+              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                {androidBanner("eyebrow")}
+              </span>
+              <h3 className="mt-1 text-xl font-extrabold text-foreground sm:text-2xl">
+                {androidBanner("title")}
+              </h3>
+              <p className="text-sm font-medium text-gray-600 sm:text-base">
+                {androidBanner("subtitle")}
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-foreground px-6 h-12 font-semibold text-white transition-all group-hover:bg-gray-800">
+            {androidBanner("cta")}
+            <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+          </span>
+        </Link>
       </SectionBlock>
 
       {/* ─── HOW IT WORKS ─── */}
