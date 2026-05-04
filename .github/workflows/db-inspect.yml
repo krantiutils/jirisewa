@@ -24,6 +24,7 @@ on:
           - setup_admin_and_hub
           - list_users
           - server_status
+          - promote_ashish
 
 jobs:
   inspect:
@@ -115,6 +116,17 @@ jobs:
                    ORDER BY created_at DESC LIMIT 30;"
                 ;;
 
+              promote_ashish)
+                cd ~/jirisewa-src
+                if ! git diff --quiet || ! git diff --cached --quiet; then
+                  git stash push -u -m "auto-stash by db-inspect $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                fi
+                git pull
+                cd ~/jirisewa-docker
+                docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
+                  psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
+                  < ~/jirisewa-src/supabase/scripts/promote_ashish_to_admin.sql
+                ;;
               setup_admin_and_hub)
                 cd ~/jirisewa-src
                 # Preserve any local edits the operator made on the server
