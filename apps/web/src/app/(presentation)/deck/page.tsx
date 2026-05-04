@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ArrowRight, Sprout, Truck, ShoppingBag } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowDown,
+  Sprout,
+  Truck,
+  ShoppingBag,
+  Building2,
+  Bus,
+  Bike,
+  Package,
+  Search,
+  TrendingUp,
+} from "lucide-react";
 import { SlideStage, type Slide } from "../SlideStage";
 
 export const metadata: Metadata = {
@@ -292,7 +304,337 @@ const slides: Slide[] = [
     ),
   },
 
-  // 5 — Today vs Tomorrow (direct-route framing)
+  // 5 — How it works (system diagram)
+  {
+    id: "how-it-works",
+    bg: "bg-background",
+    body: (
+      <div className="flex h-full flex-col px-12 py-10">
+        <div>
+          <div className="np-display np text-5xl font-bold text-foreground">
+            कसरी काम गर्छ
+          </div>
+          <div className="mt-2 text-lg font-medium text-gray-500">
+            The system, end to end — Jiri farm to Kathmandu doorstep, no
+            middlemen
+          </div>
+        </div>
+
+        {/* Main horizontal flow */}
+        <div className="mt-10 grid grid-cols-[1fr_auto_1.2fr_auto_1.2fr_auto_1.2fr_auto_1fr] items-stretch gap-2">
+          {/* Stage 1: Farmer */}
+          <div className="flex flex-col items-center gap-2 rounded-md bg-secondary p-4 text-white">
+            <Sprout className="h-7 w-7" strokeWidth={2.25} />
+            <div className="np text-base font-bold">किसान</div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80">
+              Farmer
+            </div>
+          </div>
+
+          {/* Arrow 1 */}
+          <div className="flex items-center self-center">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+          </div>
+
+          {/* Stage 2: Jiri Hub */}
+          <div className="flex flex-col items-center gap-2 rounded-md bg-foreground p-4 text-white">
+            <Building2 className="h-7 w-7" strokeWidth={2.25} />
+            <div className="np text-base font-bold">जिरी हब</div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80">
+              Jiri pickup hub
+            </div>
+            <div className="np mt-1 text-center text-xs leading-tight text-amber-200">
+              कोशेली घर × बस काउन्टर
+            </div>
+            <div className="text-center text-[10px] leading-tight text-white/60">
+              Koseli Ghar × bus ticket counter
+            </div>
+          </div>
+
+          {/* Arrow 2 with middle-mile chips */}
+          <div className="flex flex-col items-center justify-center gap-2 self-stretch">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+          </div>
+
+          {/* Stage 3: Middle-mile options */}
+          <div className="flex flex-col gap-1.5 rounded-md border-2 border-dashed border-gray-300 p-3">
+            <div className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              मध्य-मार्ग · Middle-mile
+            </div>
+            <div className="flex items-center gap-2 rounded bg-muted px-2 py-1.5">
+              <Bus className="h-4 w-4 text-foreground" strokeWidth={2.25} />
+              <div>
+                <div className="np text-xs font-semibold leading-tight">
+                  बस + काउन्टर
+                </div>
+                <div className="text-[10px] leading-tight text-gray-500">
+                  Bus + counter operator
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded bg-muted px-2 py-1.5">
+              <Truck className="h-4 w-4 text-foreground" strokeWidth={2.25} />
+              <div>
+                <div className="np text-xs font-semibold leading-tight">
+                  जीप / गाडी
+                </div>
+                <div className="text-[10px] leading-tight text-gray-500">
+                  Jeep / pickup driver
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded bg-muted px-2 py-1.5 opacity-70">
+              <Truck className="h-4 w-4 text-foreground" strokeWidth={2.25} />
+              <div>
+                <div className="np text-xs font-semibold leading-tight">
+                  ट्रक
+                </div>
+                <div className="text-[10px] leading-tight text-gray-500">
+                  Truck (later)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Arrow 3 */}
+          <div className="flex items-center self-center">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+          </div>
+
+          {/* Stage 4: KTM Hub */}
+          <div className="flex flex-col items-center gap-2 rounded-md bg-foreground p-4 text-white">
+            <Building2 className="h-7 w-7" strokeWidth={2.25} />
+            <div className="np text-base font-bold">काठमाडौँ हब</div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80">
+              Kathmandu hub
+            </div>
+            <div className="np mt-1 text-center text-xs leading-tight text-amber-200">
+              आगमन काउन्टर
+            </div>
+            <div className="text-center text-[10px] leading-tight text-white/60">
+              Arrival counter
+            </div>
+          </div>
+
+          {/* Arrow 4 with last-mile chips */}
+          <div className="flex flex-col items-center justify-center gap-2 self-stretch">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+          </div>
+
+          {/* Stage 5: Last-mile options */}
+          <div className="flex flex-col gap-1.5 rounded-md border-2 border-dashed border-gray-300 p-3">
+            <div className="text-center text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              अन्तिम-मार्ग · Last-mile
+            </div>
+            <div className="flex items-center gap-2 rounded bg-muted px-2 py-1.5">
+              <Bike className="h-4 w-4 text-foreground" strokeWidth={2.25} />
+              <div>
+                <div className="np text-xs font-semibold leading-tight">
+                  जिरीसेवा राइडर
+                </div>
+                <div className="text-[10px] leading-tight text-gray-500">
+                  Our app riders (KTM)
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded bg-muted px-2 py-1.5">
+              <Package className="h-4 w-4 text-foreground" strokeWidth={2.25} />
+              <div>
+                <div className="np text-xs font-semibold leading-tight">
+                  NepalCanMove
+                </div>
+                <div className="text-[10px] leading-tight text-gray-500">
+                  Logistics partner
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded bg-muted px-2 py-1.5">
+              <ShoppingBag
+                className="h-4 w-4 text-foreground"
+                strokeWidth={2.25}
+              />
+              <div>
+                <div className="np text-xs font-semibold leading-tight">
+                  ग्राहकले लिन आउँछन्
+                </div>
+                <div className="text-[10px] leading-tight text-gray-500">
+                  Counter pickup
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Arrow 5 */}
+          <div className="flex items-center self-center">
+            <ArrowRight className="h-5 w-5 text-gray-300" strokeWidth={2.5} />
+          </div>
+
+          {/* Stage 6: Customer */}
+          <div className="flex flex-col items-center gap-2 rounded-md bg-primary p-4 text-white">
+            <ShoppingBag className="h-7 w-7" strokeWidth={2.25} />
+            <div className="np text-base font-bold">ग्राहक</div>
+            <div className="text-[11px] uppercase tracking-wider opacity-80">
+              Customer
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom callouts */}
+        <div className="mt-auto grid grid-cols-3 gap-4">
+          <div className="rounded-md bg-emerald-50 p-4">
+            <div className="np text-sm font-bold text-secondary">
+              हब = एउटै ठाउँ, दुई काम
+            </div>
+            <div className="mt-1 text-xs leading-snug text-gray-600">
+              Koseli Ghar (gift counter for tourists) AND bus parcel counter
+              (Kathmandu market) — same physical place, two markets.
+            </div>
+          </div>
+          <div className="rounded-md bg-blue-50 p-4">
+            <div className="np text-sm font-bold text-primary">
+              पारदर्शी ढुवानी शुल्क
+            </div>
+            <div className="mt-1 text-xs leading-snug text-gray-600">
+              Distance + weight formula, calculated and shown to the consumer
+              before checkout. Our revenue line — not a hidden cut.
+            </div>
+          </div>
+          <div className="rounded-md bg-amber-50 p-4">
+            <div className="np text-sm font-bold text-amber-700">
+              साझेदार सञ्जाल
+            </div>
+            <div className="mt-1 text-xs leading-snug text-gray-600">
+              We don&apos;t need to own every mile. NepalCanMove and similar
+              partners cover routes our own riders don&apos;t reach.
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+    notes: (
+      <p>
+        Walk through left to right, slowly. Pause at the Jiri hub to land the
+        dual-purpose framing — same physical place, two markets. Mention bus
+        is the workhorse middle-mile carrier, ticket counter doubles as
+        drop-off. Belief: A + B. 3:00.
+      </p>
+    ),
+  },
+
+  // 6 — Demand × Supply intelligence
+  {
+    id: "demand-supply",
+    bg: "bg-background",
+    body: (
+      <div className="flex h-full flex-col px-14 py-12">
+        <div>
+          <div className="np-display np text-5xl font-bold text-foreground">
+            माग र आपूर्ति, एकै नक्सामा
+          </div>
+          <div className="mt-2 text-lg font-medium text-gray-500">
+            What the platform sees — and what that gives the municipality
+          </div>
+        </div>
+
+        <div className="mt-10 grid grid-cols-2 gap-6">
+          <div className="rounded-lg bg-blue-50 p-7">
+            <div className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" strokeWidth={2.25} />
+              <div className="text-xs font-bold uppercase tracking-wider text-primary">
+                Demand · माग
+              </div>
+            </div>
+            <div className="np mt-3 text-2xl font-bold text-foreground">
+              ग्राहकले के खोज्छन्
+            </div>
+            <div className="mt-1 text-sm text-gray-500">
+              What Kathmandu is asking for
+            </div>
+            <ul className="mt-5 space-y-2 text-sm text-gray-700">
+              <li>· Searches and filters by Kathmandu consumers</li>
+              <li>· Orders placed (item × quantity × week)</li>
+              <li>· Out-of-stock / unfulfilled demand</li>
+              <li>· Repeat-buyer cohorts and seasonality</li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg bg-emerald-50 p-7">
+            <div className="flex items-center gap-2">
+              <Sprout className="h-5 w-5 text-secondary" strokeWidth={2.25} />
+              <div className="text-xs font-bold uppercase tracking-wider text-secondary">
+                Supply · आपूर्ति
+              </div>
+            </div>
+            <div className="np mt-3 text-2xl font-bold text-foreground">
+              जिरीले के लिस्टिङ गर्छ
+            </div>
+            <div className="mt-1 text-sm text-gray-500">
+              What Jiri is producing this week
+            </div>
+            <ul className="mt-5 space-y-2 text-sm text-gray-700">
+              <li>· Active listings by farmer + ward</li>
+              <li>· Hub drop-offs in kg, by week and by produce</li>
+              <li>· Price farmers received vs Kalimati market rate</li>
+              <li>· Freshness windows and seasonal curves</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="my-3 flex items-center justify-center">
+          <ArrowDown className="h-7 w-7 text-gray-300" strokeWidth={2.5} />
+        </div>
+
+        <div className="rounded-lg bg-foreground p-6 text-white">
+          <div className="flex items-center gap-2">
+            <TrendingUp
+              className="h-5 w-5 text-amber-300"
+              strokeWidth={2.25}
+            />
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
+              तपाईंलाई के दिन्छौं · What the municipality gets
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-4">
+            <div className="rounded-md bg-white/5 p-4">
+              <div className="np text-base font-bold">माग-आपूर्ति अन्तर</div>
+              <div className="text-xs text-white/70">Demand-supply gap</div>
+              <div className="mt-2 text-xs leading-snug text-white/85">
+                &ldquo;Kathmandu wants 200 kg kiwi this week — Jiri listed 50
+                kg.&rdquo; Production-planning intelligence at municipality
+                level.
+              </div>
+            </div>
+            <div className="rounded-md bg-white/5 p-4">
+              <div className="np text-base font-bold">वडा-स्तरीय हीटम्याप</div>
+              <div className="text-xs text-white/70">Ward-level heatmap</div>
+              <div className="mt-2 text-xs leading-snug text-white/85">
+                Which wards are over-producing X, which wards have unmet
+                demand for Y. Targeted extension support, not blanket subsidy.
+              </div>
+            </div>
+            <div className="rounded-md bg-white/5 p-4">
+              <div className="np text-base font-bold">मूल्य बेन्चमार्क</div>
+              <div className="text-xs text-white/70">Price benchmark</div>
+              <div className="mt-2 text-xs leading-snug text-white/85">
+                The price your farmers actually received vs Kalimati Market —
+                the middleman delta, audited monthly.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+    notes: (
+      <p>
+        The room cares about ward-level data. Lead with the production-gap
+        example (kiwi: 200kg demand vs 50kg supply) — most vivid. This is
+        what they don&apos;t get from any other source today. Belief: B.
+        2:00.
+      </p>
+    ),
+  },
+
+  // 7 — Today vs Tomorrow (direct-route framing)
   {
     id: "today-tomorrow",
     bg: "bg-background",
@@ -539,73 +881,7 @@ const slides: Slide[] = [
     ),
   },
 
-  // 7 — Hub framing pivot
-  {
-    id: "hub",
-    bg: "bg-background",
-    body: (
-      <div className="flex h-full flex-col px-20 py-14">
-        <div>
-          <div className="np-display np text-5xl font-bold text-foreground">
-            हब = कोशेली घर × जिरीसेवा
-          </div>
-          <div className="mt-2 text-lg font-medium text-gray-500">
-            The pickup hub: where Koseli Ghar meets JiriSewa
-          </div>
-        </div>
-
-        <div className="mt-12 grid grid-cols-[1fr_auto_1fr] items-center gap-8">
-          <div className="rounded-lg bg-emerald-50 p-10">
-            <div className="np text-3xl font-bold text-secondary">
-              कोशेली घर
-            </div>
-            <div className="text-sm font-medium uppercase tracking-wider text-gray-500">
-              Koseli Ghar — your existing program
-            </div>
-            <ul className="np mt-6 space-y-3 text-lg text-foreground">
-              <li>· भौतिक खुद्रा बिक्री</li>
-              <li>· पर्यटक हिँडेर पस्न सक्ने</li>
-              <li>· कोशेली / उपहार बिक्री</li>
-            </ul>
-          </div>
-
-          <div className="grid h-16 w-16 place-items-center rounded-full bg-foreground text-3xl font-extrabold text-white">
-            ×
-          </div>
-
-          <div className="rounded-lg bg-blue-50 p-10">
-            <div className="np text-3xl font-bold text-primary">
-              जिरीसेवा पिकअप हब
-            </div>
-            <div className="text-sm font-medium uppercase tracking-wider text-gray-500">
-              JiriSewa pickup hub — our digital layer
-            </div>
-            <ul className="np mt-6 space-y-3 text-lg text-foreground">
-              <li>· डिजिटल इनटेक</li>
-              <li>· काठमाडौँमा डेलिभरी</li>
-              <li>· वर्षभर</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="mt-12 rounded-md bg-muted py-6 text-center">
-          <div className="np text-2xl font-bold text-foreground">
-            एउटै ठाउँ। दुई बजार। पर्यटक र काठमाडौँ — दुवै।
-          </div>
-          <div className="mt-1 text-base text-gray-500">
-            One place. Two markets. Tourists and Kathmandu — both.
-          </div>
-        </div>
-      </div>
-    ),
-    notes: (
-      <p>
-        This slide is the framing pivot. Do not rush. Belief: B. 2:30.
-      </p>
-    ),
-  },
-
-  // 8 — Drop off
+  // — Drop off
   {
     id: "dropoff",
     bg: "bg-background",
