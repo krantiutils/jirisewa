@@ -1,0 +1,69 @@
+name: DB inspect (read-only)
+
+# Manual workflow to inspect prod DB state. Read-only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      query_id:
+        description: 'Predefined query'
+        required: true
+        type: choice
+        options:
+          - storage_buckets_and_policies
+          - applied_migrations
+          - row_counts
+          - produce_listings_columns
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and inspect
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            cd ~/jirisewa-docker
+            QUERY_ID="${{ inputs.query_id }}"
+
+            run_query() {
+              docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
+                psql -U postgres -d postgres -c "$1"
+            }
+
+            case "$QUERY_ID" in
+              storage_buckets_and_policies)
+                echo "==> Storage buckets:"
+                run_query "SELECT id, name, public, file_size_limit FROM storage.buckets;"
+                echo ""
+                echo "==> Policies on storage.objects:"
+                run_query "SELECT policyname, cmd, qual, with_check FROM pg_policies WHERE schemaname='storage' AND tablename='objects' ORDER BY policyname;"
+                ;;
+              applied_migrations)
+                echo "==> supabase_migrations.applied (last 30 by filename desc):"
+                run_query "SELECT filename, applied_at FROM supabase_migrations.applied ORDER BY filename DESC LIMIT 30;"
+                ;;
+              row_counts)
+                run_query "
+                  SELECT 'auth.users' AS tbl, COUNT(*) FROM auth.users
+                  UNION ALL SELECT 'users', COUNT(*) FROM users
+                  UNION ALL SELECT 'user_profiles', COUNT(*) FROM user_profiles
+                  UNION ALL SELECT 'orders', COUNT(*) FROM orders
+                  UNION ALL SELECT 'produce_listings', COUNT(*) FROM produce_listings
+                  UNION ALL SELECT 'produce_categories', COUNT(*) FROM produce_categories
+                  UNION ALL SELECT 'pickup_hubs', COUNT(*) FROM pickup_hubs;"
+                ;;
+              produce_listings_columns)
+                run_query "
+                  SELECT column_name, data_type, is_nullable, column_default
+                    FROM information_schema.columns
+                   WHERE table_schema='public' AND table_name='produce_listings'
+                   ORDER BY ordinal_position;"
+                ;;
+            esac
