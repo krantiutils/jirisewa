@@ -62,8 +62,11 @@ class BusinessDashboardScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.business_outlined,
-                      size: 64, color: Colors.grey[400]),
+                  Icon(
+                    Icons.business_outlined,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No business profile found',
@@ -166,13 +169,17 @@ class BusinessDashboardScreen extends ConsumerWidget {
                   data: (orders) {
                     final totalOrders = orders.length;
                     final pendingOrders = orders
-                        .where((o) =>
-                            o.status == 'submitted' || o.status == 'quoted')
+                        .where(
+                          (o) =>
+                              o.status == 'submitted' || o.status == 'quoted',
+                        )
                         .length;
                     final activeOrders = orders
-                        .where((o) =>
-                            o.status == 'accepted' ||
-                            o.status == 'in_progress')
+                        .where(
+                          (o) =>
+                              o.status == 'accepted' ||
+                              o.status == 'in_progress',
+                        )
                         .length;
 
                     return _StatsSection(
@@ -188,10 +195,7 @@ class BusinessDashboardScreen extends ConsumerWidget {
                 // Quick links
                 const Text(
                   'Quick Actions',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
 
@@ -214,7 +218,7 @@ class BusinessDashboardScreen extends ConsumerWidget {
                 // Recent orders preview
                 ordersAsync.when(
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                   data: (orders) {
                     if (orders.isEmpty) return const SizedBox.shrink();
 
@@ -336,10 +340,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),
           ],
         ),

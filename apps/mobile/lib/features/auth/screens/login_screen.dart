@@ -150,10 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await _supabase.auth.signInWithPassword(email: email, password: password);
       if (!mounted) return;
       // Auth state change propagates via authStateProvider -> GoRouter redirect.
       setState(() => _loading = false);
@@ -196,10 +193,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await _supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
+      await _supabase.auth.signUp(email: email, password: password);
       if (!mounted) return;
       // Auth state change propagates via authStateProvider -> GoRouter redirect.
       setState(() => _loading = false);
@@ -229,15 +223,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text(
                   'Login to JiriSewa',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Choose your login method',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 24),
                 _buildTabSelector(),
@@ -281,7 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   boxShadow: !_isEmailTab
                       ? [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
@@ -294,9 +288,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: !_isEmailTab
-                        ? AppColors.primary
-                        : Colors.grey[600],
+                    color: !_isEmailTab ? AppColors.primary : Colors.grey[600],
                   ),
                 ),
               ),
@@ -318,7 +310,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   boxShadow: _isEmailTab
                       ? [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 4,
                             offset: const Offset(0, 1),
                           ),
@@ -331,9 +323,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _isEmailTab
-                        ? AppColors.primary
-                        : Colors.grey[600],
+                    color: _isEmailTab ? AppColors.primary : Colors.grey[600],
                   ),
                 ),
               ),
@@ -350,9 +340,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Text(
           'Phone Number',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         Row(
@@ -368,9 +358,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Text(
                 '+977',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
-                    ),
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -382,9 +372,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(10),
                 ],
-                decoration: const InputDecoration(
-                  hintText: '98XXXXXXXX',
-                ),
+                decoration: const InputDecoration(hintText: '98XXXXXXXX'),
                 onSubmitted: (_) => _sendOtp(),
                 autofocus: true,
               ),
@@ -394,9 +382,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         const SizedBox(height: 4),
         Text(
           'Enter your 10-digit Nepal mobile number',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[500],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
@@ -426,16 +414,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Text(
           'Verify OTP',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           'Enter the 6-digit code sent to +977$phone',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 32),
         TextField(
@@ -451,9 +439,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             letterSpacing: 12,
             fontWeight: FontWeight.w600,
           ),
-          decoration: const InputDecoration(
-            hintText: '------',
-          ),
+          decoration: const InputDecoration(hintText: '------'),
           onSubmitted: (_) => _verifyOtp(),
           autofocus: true,
         ),
@@ -510,9 +496,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Text(
           _isSignUp ? 'Create Account' : 'Sign In',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 20),
         TextField(

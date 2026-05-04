@@ -40,8 +40,7 @@ class AvailableOrdersScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.local_shipping,
-                      size: 48, color: Colors.grey[400]),
+                  Icon(Icons.local_shipping, size: 48, color: Colors.grey[400]),
                   const SizedBox(height: 12),
                   Text(
                     'No orders available',
@@ -57,10 +56,9 @@ class AvailableOrdersScreen extends ConsumerWidget {
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _AvailableOrderCard(
-                order: orders[index],
-              ),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) =>
+                  _AvailableOrderCard(order: orders[index]),
             ),
           );
         },
@@ -86,9 +84,9 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
     final profile = ref.read(userProfileProvider);
     if (profile == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please log in first')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Please log in first')));
       }
       return;
     }
@@ -131,9 +129,9 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to accept order: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to accept order: $e')));
       }
     } finally {
       if (mounted) setState(() => _accepting = false);
@@ -189,10 +187,7 @@ class _AvailableOrderCardState extends ConsumerState<_AvailableOrderCard> {
                 icon: Icons.local_shipping,
                 label: 'Rs ${order.deliveryFee.toStringAsFixed(0)}',
               ),
-              _InfoChip(
-                icon: Icons.access_time,
-                label: timeAgo,
-              ),
+              _InfoChip(icon: Icons.access_time, label: timeAgo),
             ],
           ),
           const SizedBox(height: 12),
@@ -273,10 +268,7 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: Colors.grey[700]),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
         ],
       ),
     );

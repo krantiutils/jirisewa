@@ -60,8 +60,9 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: _amountController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Amount (NPR)',
                       prefixText: 'NPR ',
@@ -69,7 +70,7 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _payoutMethod,
+                    initialValue: _payoutMethod,
                     decoration: const InputDecoration(
                       labelText: 'Payout Method',
                     ),
@@ -77,7 +78,9 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                       DropdownMenuItem(value: 'esewa', child: Text('eSewa')),
                       DropdownMenuItem(value: 'khalti', child: Text('Khalti')),
                       DropdownMenuItem(
-                          value: 'bank', child: Text('Bank Transfer')),
+                        value: 'bank',
+                        child: Text('Bank Transfer'),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -88,12 +91,12 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () async {
-                      final amount =
-                          double.tryParse(_amountController.text.trim());
+                      final amount = double.tryParse(
+                        _amountController.text.trim(),
+                      );
                       if (amount == null || amount <= 0) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Enter a valid amount')),
+                          const SnackBar(content: Text('Enter a valid amount')),
                         );
                         return;
                       }
@@ -113,15 +116,14 @@ class _EarningsScreenState extends ConsumerState<EarningsScreen> {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content:
-                                    Text('Payout request submitted')),
+                              content: Text('Payout request submitted'),
+                            ),
                           );
                         }
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Payout failed: $e')),
+                            SnackBar(content: Text('Payout failed: $e')),
                           );
                         }
                       }

@@ -37,10 +37,7 @@ class RatingsList extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Text(
                 'No ratings yet',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 15, color: Colors.grey.shade500),
               ),
             ),
           );
@@ -50,7 +47,7 @@ class RatingsList extends ConsumerWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: ratings.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final rating = ratings[index];
             return _RatingCard(rating: rating);
@@ -101,10 +98,7 @@ class _RatingCard extends StatelessWidget {
                 if (createdAt != null)
                   Text(
                     _formatRelativeTime(createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
               ],
             ),
@@ -118,10 +112,7 @@ class _RatingCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 comment,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               ),
             ],
           ],

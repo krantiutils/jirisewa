@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:jirisewa_mobile/features/hubs/providers/hub_providers.dart';
 import 'package:jirisewa_mobile/features/hubs/repositories/hub_repository.dart';
 import 'package:jirisewa_mobile/features/hubs/screens/farmer_dropoff_screen.dart';
@@ -12,10 +10,8 @@ import '../../helpers/test_app.dart';
 class _FakeHubRepository implements HubRepository {
   final List<HubInfo> hubs;
   final List<Map<String, dynamic>> listings;
-  final List<DropoffInfo> myDropoffs;
   final HubInfo? operatedHub;
   final List<DropoffInfo> inventory;
-  final Map<String, dynamic>? recordResult;
   final Object? recordError;
 
   int recordCalls = 0;
@@ -27,10 +23,8 @@ class _FakeHubRepository implements HubRepository {
   _FakeHubRepository({
     this.hubs = const [],
     this.listings = const [],
-    this.myDropoffs = const [],
     this.operatedHub,
     this.inventory = const [],
-    this.recordResult,
     this.recordError,
   });
 
@@ -38,7 +32,9 @@ class _FakeHubRepository implements HubRepository {
   Future<List<HubInfo>> listOriginHubs() async => hubs;
 
   @override
-  Future<List<Map<String, dynamic>>> listMyActiveListings(String farmerId) async => listings;
+  Future<List<Map<String, dynamic>>> listMyActiveListings(
+    String farmerId,
+  ) async => listings;
 
   @override
   Future<Map<String, dynamic>> recordDropoff({
@@ -48,16 +44,17 @@ class _FakeHubRepository implements HubRepository {
   }) async {
     recordCalls++;
     if (recordError != null) throw recordError!;
-    return recordResult ??
-        {
-          'dropoff_id': 'do-1',
-          'lot_code': 'ABCD12',
-          'expires_at': DateTime.now().add(const Duration(hours: 48)).toIso8601String(),
-        };
+    return {
+      'dropoff_id': 'do-1',
+      'lot_code': 'ABCD12',
+      'expires_at': DateTime.now()
+          .add(const Duration(hours: 48))
+          .toIso8601String(),
+    };
   }
 
   @override
-  Future<List<DropoffInfo>> listMyDropoffs(String farmerId) async => myDropoffs;
+  Future<List<DropoffInfo>> listMyDropoffs(String farmerId) async => const [];
 
   @override
   Future<HubInfo?> getMyOperatedHub(String operatorId) async => operatedHub;
@@ -141,7 +138,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('Create an active listing first'), findsOneWidget);
+      expect(
+        find.textContaining('Create an active listing first'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders form and submits dropoff', (tester) async {
@@ -219,7 +219,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('not assigned as the operator'), findsOneWidget);
+      expect(
+        find.textContaining('not assigned as the operator'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('lists inventory rows and filters by status', (tester) async {
@@ -264,9 +267,7 @@ void main() {
           address: 'Bazaar',
           hubType: 'origin',
         ),
-        inventory: [
-          _dropoff(id: 'd1', lot: 'AAA111', status: 'dropped_off'),
-        ],
+        inventory: [_dropoff(id: 'd1', lot: 'AAA111', status: 'dropped_off')],
       );
       await tester.pumpWidget(
         buildTestApp(

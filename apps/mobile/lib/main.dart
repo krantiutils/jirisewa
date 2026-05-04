@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jirisewa_mobile/core/providers/auth_provider.dart';
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/services/push_notification_service.dart';
+import 'package:jirisewa_mobile/core/supabase_config.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
 import 'package:jirisewa_mobile/core/providers/locale_provider.dart';
 import 'package:jirisewa_mobile/features/notifications/providers/notification_provider.dart';
@@ -27,15 +28,10 @@ Future<void> main() async {
     debugPrint('Firebase init skipped: $e');
   }
 
+  final supabaseConfig = getSupabaseConfig();
   await Supabase.initialize(
-    url: const String.fromEnvironment(
-      'SUPABASE_URL',
-      defaultValue: 'https://khetbata.xyz/_supabase',
-    ),
-    anonKey: const String.fromEnvironment(
-      'SUPABASE_ANON_KEY',
-      defaultValue: 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH',
-    ),
+    url: supabaseConfig.url,
+    anonKey: supabaseConfig.anonKey,
   );
 
   runApp(const ProviderScope(child: JiriSewaApp()));

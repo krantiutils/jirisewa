@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -114,18 +112,27 @@ class TripRepository {
 
     if ((matchedRows as List).isEmpty) {
       // Race condition — another rider got it first
-      await _client.from('order_pings').update({
-        'status': 'declined',
-        'responded_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', pingId);
-      return {'success': false, 'message': 'Order already matched to another rider'};
+      await _client
+          .from('order_pings')
+          .update({
+            'status': 'declined',
+            'responded_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', pingId);
+      return {
+        'success': false,
+        'message': 'Order already matched to another rider',
+      };
     }
 
     // 3. Mark ping as accepted
-    await _client.from('order_pings').update({
-      'status': 'accepted',
-      'responded_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', pingId);
+    await _client
+        .from('order_pings')
+        .update({
+          'status': 'accepted',
+          'responded_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', pingId);
 
     // 4. Expire other pending pings for this order
     await _client
@@ -145,8 +152,7 @@ class TripRepository {
     if (trip != null) {
       final remaining =
           (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
-      final weight =
-          (ping['total_weight_kg'] as num?)?.toDouble() ?? 0;
+      final weight = (ping['total_weight_kg'] as num?)?.toDouble() ?? 0;
       final newCapacity = (remaining - weight).clamp(0, double.infinity);
       await _client
           .from('rider_trips')
@@ -154,11 +160,7 @@ class TripRepository {
           .eq('id', tripId);
     }
 
-    return {
-      'success': true,
-      'message': 'Order accepted',
-      'trip_id': tripId,
-    };
+    return {'success': true, 'message': 'Order accepted', 'trip_id': tripId};
   }
 
   /// Decline a ping using direct table update.
@@ -180,10 +182,13 @@ class TripRepository {
       return {'success': false, 'message': 'Ping already responded to'};
     }
 
-    await _client.from('order_pings').update({
-      'status': 'declined',
-      'responded_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', pingId);
+    await _client
+        .from('order_pings')
+        .update({
+          'status': 'declined',
+          'responded_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', pingId);
 
     return {'success': true, 'message': 'Ping declined'};
   }
@@ -242,7 +247,10 @@ class TripRepository {
 
   /// Fetch OSRM driving route between two points.
   /// Returns route coordinates as [LatLng] list, or null on failure.
-  Future<List<LatLng>?> fetchOsrmRoute(LatLng origin, LatLng destination) async {
+  Future<List<LatLng>?> fetchOsrmRoute(
+    LatLng origin,
+    LatLng destination,
+  ) async {
     try {
       final coords =
           '${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}';
@@ -265,10 +273,7 @@ class TripRepository {
 
       return coordsRaw.map((coord) {
         final pair = coord as List<dynamic>;
-        return LatLng(
-          (pair[1] as num).toDouble(),
-          (pair[0] as num).toDouble(),
-        );
+        return LatLng((pair[1] as num).toDouble(), (pair[0] as num).toDouble());
       }).toList();
     } catch (e) {
       debugPrint('fetchOsrmRoute failed: $e');
@@ -296,8 +301,7 @@ class TripRepository {
           .eq('trip_id', tripId)
           .order('sequence_order', ascending: true);
 
-      final activeStops =
-          List<Map<String, dynamic>>.from(stopsData).where((s) {
+      final activeStops = List<Map<String, dynamic>>.from(stopsData).where((s) {
         return s['completed'] != true;
       }).toList();
       if (activeStops.isEmpty) return false;
@@ -324,8 +328,9 @@ class TripRepository {
       final allPoints = <LatLng>[start, ...stopPoints, destination];
       if (allPoints.length < 2) return false;
 
-      final coords =
-          allPoints.map((p) => '${p.longitude},${p.latitude}').join(';');
+      final coords = allPoints
+          .map((p) => '${p.longitude},${p.latitude}')
+          .join(';');
       final uri = Uri.parse(
         '$osrmBaseUrl/route/v1/driving/$coords?overview=full&geometries=geojson',
       );
@@ -342,10 +347,12 @@ class TripRepository {
       final coordsRaw = geometry['coordinates'] as List<dynamic>;
       if (coordsRaw.length < 2) return false;
 
-      final lineString = coordsRaw.map((coord) {
-        final pair = coord as List<dynamic>;
-        return '${(pair[0] as num).toDouble()} ${(pair[1] as num).toDouble()}';
-      }).join(',');
+      final lineString = coordsRaw
+          .map((coord) {
+            final pair = coord as List<dynamic>;
+            return '${(pair[0] as num).toDouble()} ${(pair[1] as num).toDouble()}';
+          })
+          .join(',');
 
       final routeWkt = 'LINESTRING($lineString)';
       final totalDistanceKm =
@@ -458,9 +465,7 @@ class TripRepository {
   Future<List<Map<String, dynamic>>> listOrdersByTrip(String tripId) async {
     final result = await _client
         .from('orders')
-        .select(
-          '*, order_items(*, produce_listings(name_en, name_ne))',
-        )
+        .select('*, order_items(*, produce_listings(name_en, name_ne))')
         .eq('rider_trip_id', tripId)
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(result);
@@ -536,10 +541,7 @@ class TripRepository {
   ///
   /// [stopIds] should be the stop IDs in the desired order. Each stop's
   /// sequence_order will be set to its index in the list.
-  Future<void> reorderStops(
-    String tripId,
-    List<String> stopIds,
-  ) async {
+  Future<void> reorderStops(String tripId, List<String> stopIds) async {
     if (stopIds.isEmpty) return;
     await Future.wait([
       for (var i = 0; i < stopIds.length; i++)
@@ -575,7 +577,10 @@ class TripRepository {
         try {
           final bytes = Uint8List(trimmed.length ~/ 2);
           for (var i = 0; i < bytes.length; i++) {
-            bytes[i] = int.parse(trimmed.substring(i * 2, i * 2 + 2), radix: 16);
+            bytes[i] = int.parse(
+              trimmed.substring(i * 2, i * 2 + 2),
+              radix: 16,
+            );
           }
           final view = ByteData.view(bytes.buffer);
           final lng = view.getFloat64(9, Endian.little);
@@ -610,5 +615,4 @@ class TripRepository {
     }
     return null;
   }
-
 }

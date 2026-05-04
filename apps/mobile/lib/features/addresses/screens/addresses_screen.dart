@@ -23,8 +23,9 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen> {
 
   void _showAddEditSheet({SavedAddress? existing}) {
     final labelController = TextEditingController(text: existing?.label ?? '');
-    final addressController =
-        TextEditingController(text: existing?.addressText ?? '');
+    final addressController = TextEditingController(
+      text: existing?.addressText ?? '',
+    );
     bool isDefault = existing?.isDefault ?? false;
     bool isSubmitting = false;
 
@@ -120,8 +121,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen> {
                             setSheetState(() => isSubmitting = true);
 
                             try {
-                              final repo =
-                                  ref.read(addressRepositoryProvider);
+                              final repo = ref.read(addressRepositoryProvider);
 
                               if (existing != null) {
                                 await repo.updateAddress(
@@ -213,8 +213,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 48, color: AppColors.error),
+              const Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: 12),
               Text('Failed to load addresses: $error'),
               const SizedBox(height: 12),
@@ -250,7 +249,7 @@ class _AddressesScreenState extends ConsumerState<AddressesScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
               itemCount: addresses.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final address = addresses[index];
                 return _AddressTile(
@@ -334,9 +333,7 @@ class _AddressTile extends StatelessWidget {
               // Icon
               Icon(
                 address.isDefault ? Icons.star : Icons.location_on,
-                color: address.isDefault
-                    ? AppColors.accent
-                    : AppColors.primary,
+                color: address.isDefault ? AppColors.accent : AppColors.primary,
                 size: 24,
               ),
               const SizedBox(width: 12),
@@ -356,10 +353,7 @@ class _AddressTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       address.addressText,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

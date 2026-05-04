@@ -104,9 +104,9 @@ abstract final class ShellBranch {
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(Ref ref) {
     // Listen to auth & profile changes and notify GoRouter to re-evaluate redirects.
-    ref.listen(isAuthenticatedProvider, (_, __) => notifyListeners());
-    ref.listen(hasProfileProvider, (_, __) => notifyListeners());
-    ref.listen(userSessionProvider, (_, __) => notifyListeners());
+    ref.listen(isAuthenticatedProvider, (_, _) => notifyListeners());
+    ref.listen(hasProfileProvider, (_, _) => notifyListeners());
+    ref.listen(userSessionProvider, (_, _) => notifyListeners());
   }
 }
 
@@ -342,7 +342,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.accountSettings,
-        builder: (_, __) => const AccountSettingsScreen(),
+        builder: (_, _) => const AccountSettingsScreen(),
       ),
       // Order tracking — full-screen map, outside shell (no bottom nav).
       GoRoute(

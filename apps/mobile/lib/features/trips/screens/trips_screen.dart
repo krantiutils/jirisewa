@@ -109,8 +109,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
             ),
             Expanded(
               child: tripsDataAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -124,8 +123,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                       Text('Failed to load trips: $error'),
                       const SizedBox(height: 12),
                       ElevatedButton(
-                        onPressed: () =>
-                            ref.invalidate(tripsDataProvider),
+                        onPressed: () => ref.invalidate(tripsDataProvider),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -176,30 +174,22 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'No trips yet',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Post a trip to start connecting farmers and customers',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: () =>
-                      ref.refresh(tripsDataProvider.future),
+                  onRefresh: () => ref.refresh(tripsDataProvider.future),
                   child: ListView.builder(
                     itemCount: trips.length,
-                    padding:
-                        const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                     itemBuilder: (ctx, i) => _tripTile(
                       trips[i],
                       data.ordersByTripId,
@@ -219,10 +209,8 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
   ) {
     final tripId = trip['id'] as String? ?? '';
     final status = trip['status'] as String? ?? 'scheduled';
-    final remaining =
-        (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
-    final total =
-        (trip['available_capacity_kg'] as num?)?.toDouble() ?? 0;
+    final remaining = (trip['remaining_capacity_kg'] as num?)?.toDouble() ?? 0;
+    final total = (trip['available_capacity_kg'] as num?)?.toDouble() ?? 0;
     final origin = _parsePointOrFallback(trip['origin']);
     final destination = _parsePointOrFallback(trip['destination']);
     final linkedOrders = ordersByTripId[tripId] ?? const [];
@@ -231,175 +219,178 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     return GestureDetector(
       onTap: () => context.push('/trips/$tripId'),
       child: Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      color: AppColors.muted,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _tripStatusColor(status).withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.route,
-                    color: _tripStatusColor(status),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${trip['origin_name'] ?? '?'} \u2192 ${trip['destination_name'] ?? '?'}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatStatus(status),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _tripStatusColor(status),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                height: 160,
-                child: RouteMapWidget(
-                  origin: origin,
-                  destination: destination,
-                  originName: trip['origin_name'] as String?,
-                  destinationName: trip['destination_name'] as String?,
-                  routeCoordinates: [origin, destination],
-                  isActive: status == 'in_transit',
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.fitness_center, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 6),
-                Text(
-                  '${remaining.toStringAsFixed(0)} / ${total.toStringAsFixed(0)} kg available',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                ),
-                const Spacer(),
-                Text(
-                  '${linkedOrders.length} linked orders',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-            if (opportunities.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF86EFAC)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.sensors,
-                      size: 18,
-                      color: Color(0xFF059669),
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 0,
+        color: AppColors.muted,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _tripStatusColor(status).withAlpha(25),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${opportunities.length} farmer beacons on this route',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF065F46),
-                        ),
-                      ),
+                    child: Icon(
+                      Icons.route,
+                      color: _tripStatusColor(status),
+                      size: 20,
                     ),
-                    TextButton(
-                      onPressed: () => _showBeaconSheet(
-                        trip: trip,
-                        opportunities: opportunities,
-                      ),
-                      child: const Text('View'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (linkedOrders.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              ...linkedOrders.take(2).map((order) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.local_shipping_outlined, size: 14),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          order['delivery_address'] as String? ??
-                              'Delivery address',
-                          style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${trip['origin_name'] ?? '?'} \u2192 ${trip['destination_name'] ?? '?'}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        _formatStatus(
-                            order['status'] as String? ?? 'pending'),
-                        style:
-                            TextStyle(fontSize: 11, color: Colors.grey[700]),
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatStatus(status),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _tripStatusColor(status),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }),
-            ],
-            const SizedBox(height: 10),
-            if (status == 'scheduled' || status == 'in_transit')
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: () => _openTripTracking(trip, linkedOrders),
-                  icon: const Icon(Icons.navigation_outlined, size: 18),
-                  label: Text(
-                    status == 'scheduled'
-                        ? 'Start Trip Flow'
-                        : 'Open Live Tracking',
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  height: 160,
+                  child: RouteMapWidget(
+                    origin: origin,
+                    destination: destination,
+                    originName: trip['origin_name'] as String?,
+                    destinationName: trip['destination_name'] as String?,
+                    routeCoordinates: [origin, destination],
+                    isActive: status == 'in_transit',
                   ),
                 ),
               ),
-          ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.fitness_center, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${remaining.toStringAsFixed(0)} / ${total.toStringAsFixed(0)} kg available',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${linkedOrders.length} linked orders',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              if (opportunities.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFECFDF5),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.sensors,
+                        size: 18,
+                        color: Color(0xFF059669),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${opportunities.length} farmer beacons on this route',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF065F46),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _showBeaconSheet(
+                          trip: trip,
+                          opportunities: opportunities,
+                        ),
+                        child: const Text('View'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (linkedOrders.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ...linkedOrders.take(2).map((order) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.local_shipping_outlined, size: 14),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            order['delivery_address'] as String? ??
+                                'Delivery address',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          _formatStatus(
+                            order['status'] as String? ?? 'pending',
+                          ),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+              const SizedBox(height: 10),
+              if (status == 'scheduled' || status == 'in_transit')
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () => _openTripTracking(trip, linkedOrders),
+                    icon: const Icon(Icons.navigation_outlined, size: 18),
+                    label: Text(
+                      status == 'scheduled'
+                          ? 'Start Trip Flow'
+                          : 'Open Live Tracking',
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -429,8 +420,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                 children: [
                   const Text(
                     'Farmer Route Beacons',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -456,31 +446,25 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                       itemBuilder: (context, i) {
                         final opp = opportunities[i];
                         final pingId = opp['id'] as String? ?? '';
-                        final isBusy =
-                            _respondingPingIds.contains(pingId);
+                        final isBusy = _respondingPingIds.contains(pingId);
                         final earning =
-                            (opp['estimated_earnings'] as num?)
-                                    ?.toDouble() ??
-                                0;
+                            (opp['estimated_earnings'] as num?)?.toDouble() ??
+                            0;
                         final detourKm =
-                            ((opp['detour_distance_m'] as num?)
-                                        ?.toDouble() ??
-                                    0) /
-                                1000;
-                        final pickups =
-                            _pickupNames(opp['pickup_locations']);
+                            ((opp['detour_distance_m'] as num?)?.toDouble() ??
+                                0) /
+                            1000;
+                        final pickups = _pickupNames(opp['pickup_locations']);
                         return Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: const Color(0xFFD1FAE5)),
+                            border: Border.all(color: const Color(0xFFD1FAE5)),
                           ),
                           child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
@@ -536,13 +520,12 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
                                           ? null
                                           : () => _acceptPing(opp),
                                       style: FilledButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF059669),
+                                        backgroundColor: const Color(
+                                          0xFF059669,
+                                        ),
                                       ),
                                       child: Text(
-                                        isBusy
-                                            ? 'Working...'
-                                            : 'Accept',
+                                        isBusy ? 'Working...' : 'Accept',
                                       ),
                                     ),
                                   ),
@@ -586,11 +569,10 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     try {
       final repo = ref.read(tripRepositoryProvider);
       final row = await repo.acceptPing(pingId);
-      final ok = row?['success'] == true;
+      final ok = row['success'] == true;
       final message =
-          row?['message'] as String? ?? (ok ? 'Ping accepted' : 'Failed');
-      final tripId =
-          row?['trip_id'] as String? ?? ping['trip_id'] as String?;
+          row['message'] as String? ?? (ok ? 'Ping accepted' : 'Failed');
+      final tripId = row['trip_id'] as String? ?? ping['trip_id'] as String?;
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -641,9 +623,9 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
     try {
       final repo = ref.read(tripRepositoryProvider);
       final row = await repo.declinePing(pingId);
-      final ok = row?['success'] == true;
+      final ok = row['success'] == true;
       final message =
-          row?['message'] as String? ?? (ok ? 'Ping declined' : 'Failed');
+          row['message'] as String? ?? (ok ? 'Ping declined' : 'Failed');
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -684,8 +666,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
           origin: origin,
           destination: destination,
           originName: trip['origin_name'] as String? ?? 'Origin',
-          destinationName:
-              trip['destination_name'] as String? ?? 'Destination',
+          destinationName: trip['destination_name'] as String? ?? 'Destination',
           routeCoordinates: [origin, destination],
           initialStatus: trip['status'] as String? ?? 'scheduled',
         ),
@@ -698,8 +679,7 @@ class _TripsScreenState extends ConsumerState<TripsScreen> {
         .replaceAll('_', ' ')
         .split(' ')
         .map(
-          (w) =>
-              w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
+          (w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '',
         )
         .join(' ');
   }

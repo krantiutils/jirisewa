@@ -64,7 +64,7 @@ class _BulkOrdersScreenState extends ConsumerState<BulkOrdersScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: _filters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final (value, label) = _filters[index];
                 final isSelected = _statusFilter == value;
@@ -75,8 +75,9 @@ class _BulkOrdersScreenState extends ConsumerState<BulkOrdersScreen> {
                   selectedColor: AppColors.primary.withAlpha(30),
                   labelStyle: TextStyle(
                     color: isSelected ? AppColors.primary : Colors.grey[600],
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                     fontSize: 13,
                   ),
                   shape: RoundedRectangleBorder(
@@ -94,14 +95,16 @@ class _BulkOrdersScreenState extends ConsumerState<BulkOrdersScreen> {
           // Orders list
           Expanded(
             child: ordersAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 48, color: AppColors.error),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: AppColors.error,
+                    ),
                     const SizedBox(height: 12),
                     Text('Failed to load orders: $error'),
                     const SizedBox(height: 12),
@@ -115,9 +118,7 @@ class _BulkOrdersScreenState extends ConsumerState<BulkOrdersScreen> {
               data: (orders) {
                 final filtered = _statusFilter == 'all'
                     ? orders
-                    : orders
-                        .where((o) => o.status == _statusFilter)
-                        .toList();
+                    : orders.where((o) => o.status == _statusFilter).toList();
 
                 if (filtered.isEmpty) {
                   return RefreshIndicator(
@@ -135,8 +136,11 @@ class _BulkOrdersScreenState extends ConsumerState<BulkOrdersScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.inventory_2_outlined,
-                                  size: 48, color: Colors.grey[400]),
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 48,
+                                color: Colors.grey[400],
+                              ),
                               const SizedBox(height: 12),
                               Text(
                                 _statusFilter == 'all'
@@ -275,8 +279,11 @@ class _OrderCard extends StatelessWidget {
               // Details
               Row(
                 children: [
-                  Icon(Icons.location_on_outlined,
-                      size: 14, color: Colors.grey[500]),
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: Colors.grey[500],
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -396,13 +403,15 @@ class _CreateOrderSheetState extends ConsumerState<_CreateOrderSheet> {
     }
 
     setState(() {
-      _items.add(_OrderItemEntry(
-        listingId: listingId,
-        nameEn: listing['name_en'] as String? ?? '',
-        nameNe: listing['name_ne'] as String? ?? '',
-        pricePerKg: (listing['price_per_kg'] as num?)?.toDouble() ?? 0,
-        farmerId: listing['farmer_id'] as String? ?? '',
-      ));
+      _items.add(
+        _OrderItemEntry(
+          listingId: listingId,
+          nameEn: listing['name_en'] as String? ?? '',
+          nameNe: listing['name_ne'] as String? ?? '',
+          pricePerKg: (listing['price_per_kg'] as num?)?.toDouble() ?? 0,
+          farmerId: listing['farmer_id'] as String? ?? '',
+        ),
+      );
       _searchResults = [];
       _searchController.clear();
     });
@@ -561,10 +570,7 @@ class _CreateOrderSheetState extends ConsumerState<_CreateOrderSheet> {
               // Search produce
               const Text(
                 'Add Items',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -606,7 +612,7 @@ class _CreateOrderSheetState extends ConsumerState<_CreateOrderSheet> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: _searchResults.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const Divider(height: 1, color: AppColors.border),
                     itemBuilder: (context, index) {
                       final listing = _searchResults[index];
@@ -675,8 +681,11 @@ class _CreateOrderSheetState extends ConsumerState<_CreateOrderSheet> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline,
-                            size: 18, color: AppColors.error),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 18,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -707,9 +716,7 @@ class _CreateOrderSheetState extends ConsumerState<_CreateOrderSheet> {
                     : const Text('Submit Order'),
               ),
 
-              SizedBox(
-                height: MediaQuery.of(context).viewPadding.bottom + 16,
-              ),
+              SizedBox(height: MediaQuery.of(context).viewPadding.bottom + 16),
             ],
           ),
         );
@@ -795,8 +802,9 @@ class _OrderItemRow extends StatelessWidget {
               width: 120,
               child: TextFormField(
                 controller: item.qtyController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
                 ],
