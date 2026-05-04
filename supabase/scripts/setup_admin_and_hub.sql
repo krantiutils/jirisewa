@@ -53,10 +53,12 @@ BEGIN
   SELECT id INTO v_municipality_id FROM municipalities
    WHERE name_en = 'Jiri' AND district = 'Dolakha' LIMIT 1;
   INSERT INTO pickup_hubs (id, name_en, name_ne, operator_id,
-                           municipality_id, address, location, is_active)
+                           municipality_id, address, location, hub_type,
+                           is_active)
   VALUES (v_hub_id, 'Jiri Bazaar', 'जिरी बजार', v_op_id,
           v_municipality_id, 'Jiri Bazaar, Dolakha',
-          ST_SetSRID(ST_MakePoint(86.230, 27.633), 4326), true)
+          ST_SetSRID(ST_MakePoint(86.230, 27.633), 4326),
+          'origin', true)
   ON CONFLICT (id) DO UPDATE SET
     operator_id = v_op_id, is_active = true;
 END $$;
