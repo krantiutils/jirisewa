@@ -1,0 +1,37 @@
+/* Presentation-only styles: Devanagari font swap + decoration helpers. */
+
+.np,
+.np * {
+  font-family: var(--font-mukta), "Mukta", system-ui, sans-serif;
+  font-feature-settings: "kern";
+}
+
+/* Tighter optical leading for big Devanagari display headings */
+.np-display {
+  font-family: var(--font-mukta), "Mukta", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.18;
+}
+
+/* Faint geometric backdrop used on dark/colored slides */
+.deck-geo::before,
+.deck-geo::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+.deck-geo::before {
+  width: 480px;
+  height: 480px;
+  top: -120px;
+  right: -160px;
+}
+.deck-geo::after {
+  width: 320px;
+  height: 320px;
+  bottom: -80px;
+  left: -80px;
+}
