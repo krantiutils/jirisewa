@@ -35,6 +35,10 @@ jobs:
 
             echo "==> Pulling latest code..."
             cd ~/jirisewa-src
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "  Stashing local changes (recoverable with git stash pop)"
+              git stash push -u -m "auto-stash by migrate.yml $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            fi
             git pull
 
             cd ~/jirisewa-docker

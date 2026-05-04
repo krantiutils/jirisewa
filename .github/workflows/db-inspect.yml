@@ -23,6 +23,7 @@ on:
           - all_storage_policies
           - setup_admin_and_hub
           - list_users
+          - server_status
 
 jobs:
   inspect:
@@ -85,6 +86,20 @@ jobs:
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
                 '
                 ;;
+              server_status)
+                echo "==> ~/jirisewa-src git status:"
+                cd ~/jirisewa-src && git status --short
+                echo ""
+                echo "==> Recent stash entries:"
+                git stash list | head -10
+                echo ""
+                echo "==> HEAD:"
+                git log --oneline -3
+                echo ""
+                echo "==> Untracked migrations / scripts authored on server:"
+                git ls-files --others --exclude-standard \
+                  supabase/migrations supabase/scripts 2>/dev/null | head
+                ;;
               list_users)
                 run_query "
                   SELECT u.id, p.email, u.name, u.phone, u.role, u.is_admin
@@ -101,7 +116,12 @@ jobs:
                 ;;
 
               setup_admin_and_hub)
-                cd ~/jirisewa-src && git pull
+                cd ~/jirisewa-src
+                # Preserve any local edits the operator made on the server
+                if ! git diff --quiet || ! git diff --cached --quiet; then
+                  git stash push -u -m "auto-stash by db-inspect $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                fi
+                git pull
                 cd ~/jirisewa-docker
                 docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T db \
                   psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
