@@ -1,0 +1,109 @@
+name: Configure Auth SMS Hook
+
+on:
+  workflow_dispatch:
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure GoTrue send_sms hook on hetzner-1
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 10m
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            cd ~/jirisewa-docker
+
+            if [ ! -f .env.docker ]; then
+              echo ".env.docker not found"
+              exit 1
+            fi
+
+            get_env() {
+              awk -F= -v key="$1" '$1 == key { sub(/^[^=]*=/, ""); value=$0 } END { print value }' .env.docker \
+                | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//"
+            }
+
+            set_env() {
+              key="$1"
+              value="$2"
+              escaped=$(printf '%s' "$value" | sed -e 's/[\/&]/\\&/g')
+              if grep -qE "^${key}=" .env.docker; then
+                sed -i "s/^${key}=.*/${key}=${escaped}/" .env.docker
+              else
+                printf '\n%s=%s\n' "$key" "$value" >> .env.docker
+              fi
+            }
+
+            webhook_secret="$(get_env WEBHOOK_SEND_SMS_SECRET)"
+            aakash_token="$(get_env AAKASH_SMS_TOKEN)"
+
+            if [ -z "$webhook_secret" ]; then
+              echo "WEBHOOK_SEND_SMS_SECRET is not configured in .env.docker"
+              exit 1
+            fi
+
+            if [ -z "$aakash_token" ]; then
+              echo "AAKASH_SMS_TOKEN is not configured in .env.docker"
+              exit 1
+            fi
+
+            # GoTrue expects the raw base64 hook secret. The web hook accepts
+            # raw base64, whsec_..., or v1,... forms, so normalize before
+            # injecting into GOTRUE_HOOK_SEND_SMS_SECRETS.
+            hook_secret="$webhook_secret"
+            hook_secret="${hook_secret#v1,}"
+            hook_secret="${hook_secret#whsec_}"
+
+            if [ -z "$hook_secret" ]; then
+              echo "Normalized hook secret is empty"
+              exit 1
+            fi
+
+            if ! grep -q "GOTRUE_HOOK_SEND_SMS_ENABLED" docker-compose.prod.yml; then
+              echo "docker-compose.prod.yml does not expose GOTRUE_HOOK_SEND_SMS_* env vars"
+              exit 1
+            fi
+
+            set_env GOTRUE_HOOK_SEND_SMS_ENABLED true
+            set_env GOTRUE_HOOK_SEND_SMS_URI https://khetbata.xyz/api/auth/sms-hook
+            set_env GOTRUE_HOOK_SEND_SMS_SECRETS "$hook_secret"
+
+            echo "Configured auth hook env:"
+            echo "  GOTRUE_HOOK_SEND_SMS_ENABLED=true"
+            echo "  GOTRUE_HOOK_SEND_SMS_URI=https://khetbata.xyz/api/auth/sms-hook"
+            echo "  GOTRUE_HOOK_SEND_SMS_SECRETS=<configured:${#hook_secret}>"
+            echo "  AAKASH_SMS_TOKEN=<configured:${#aakash_token}>"
+
+            docker compose -f docker-compose.prod.yml --env-file .env.docker up -d auth
+
+            echo "Waiting for auth health..."
+            for _ in $(seq 1 30); do
+              if docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T auth wget -q --spider http://localhost:9999/health; then
+                break
+              fi
+              sleep 2
+            done
+
+            echo "Live auth hook env:"
+            docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T auth sh -c '
+              echo "GOTRUE_HOOK_SEND_SMS_ENABLED=$GOTRUE_HOOK_SEND_SMS_ENABLED"
+              echo "GOTRUE_HOOK_SEND_SMS_URI=$GOTRUE_HOOK_SEND_SMS_URI"
+              echo "GOTRUE_HOOK_SEND_SMS_SECRETS=<configured:${#GOTRUE_HOOK_SEND_SMS_SECRETS}>"
+            '
+
+            echo "Checking hook endpoint reachability from auth container..."
+            hook_probe="$(
+              docker compose -f docker-compose.prod.yml --env-file .env.docker exec -T auth \
+                wget -S --spider -T 10 https://khetbata.xyz/api/auth/sms-hook 2>&1 || true
+            )"
+            printf '%s\n' "$hook_probe" | grep -E "HTTP/.* 405|HTTP/.* 401"
+
+            echo "Done."
