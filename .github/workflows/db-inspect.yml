@@ -14,6 +14,7 @@ on:
           - applied_migrations
           - row_counts
           - produce_listings_columns
+          - user_profiles_check
 
 jobs:
   inspect:
@@ -65,5 +66,20 @@ jobs:
                     FROM information_schema.columns
                    WHERE table_schema='public' AND table_name='produce_listings'
                    ORDER BY ordinal_position;"
+                ;;
+              user_profiles_check)
+                echo "==> user_profiles columns:"
+                run_query "
+                  SELECT column_name, data_type, is_nullable
+                    FROM information_schema.columns
+                   WHERE table_schema='public' AND table_name='user_profiles'
+                   ORDER BY ordinal_position;"
+                echo "==> user_profiles CHECK constraints:"
+                run_query "
+                  SELECT con.conname, pg_get_constraintdef(con.oid)
+                    FROM pg_constraint con
+                    JOIN pg_class rel ON rel.oid = con.conrelid
+                    JOIN pg_namespace n ON n.oid = rel.relnamespace
+                   WHERE n.nspname = 'public' AND rel.relname = 'user_profiles' AND con.contype='c';"
                 ;;
             esac
