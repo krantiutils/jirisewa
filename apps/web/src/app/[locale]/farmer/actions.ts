@@ -345,7 +345,7 @@ export async function getFarmerDashboardData(): Promise<
 export async function uploadProducePhoto(
   formData: FormData,
 ): Promise<ActionResult<{ url: string }>> {
-  const { supabase, user, error: authError } = await getAuthenticatedFarmer();
+  const { user, error: authError } = await getAuthenticatedFarmer();
   if (!user) {
     return { success: false, error: authError };
   }
@@ -370,7 +370,12 @@ export async function uploadProducePhoto(
     "image/webp": "webp",
   };
   const ext = mimeToExt[file.type] ?? "jpg";
+  // Path is keyed to the verified user.id, mirroring the produce-photos
+  // RLS policy. We use the service-role client because supabase-ssr's
+  // cookie-based JWT doesn't reliably propagate to storage.objects RLS
+  // from a server action; the auth check above is the source of truth.
   const fileName = `${user.id}/${crypto.randomUUID()}.${ext}`;
+  const supabase = createServiceRoleClient();
 
   const { error } = await supabase.storage
     .from("produce-photos")
