@@ -40,6 +40,10 @@ const nextConfig: NextConfig = {
         hostname: "khetbata.xyz",
         pathname: "/_supabase/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
     ],
   },
 };
