@@ -12,6 +12,14 @@ import {
   Package,
   Search,
   TrendingUp,
+  Users,
+  Banknote,
+  Activity,
+  BarChart3,
+  ShieldCheck,
+  LifeBuoy,
+  FileText,
+  Eye,
 } from "lucide-react";
 import { SlideStage, type Slide } from "../SlideStage";
 
@@ -1008,79 +1016,239 @@ const slides: Slide[] = [
     ),
   },
 
-  // 10 — Live ward counters
+  // — Municipality super-admin dashboard
   {
     id: "counters",
     bg: "bg-foreground deck-geo",
     body: (
-      <div className="relative flex h-full flex-col px-20 py-14 text-white">
+      <div className="relative flex h-full flex-col px-10 py-9 text-white">
+        {/* Header */}
         <div className="flex items-end justify-between">
           <div>
-            <div className="np-display np text-5xl font-bold">
-              तपाईंको वडा, आज, प्लेटफर्ममा
+            <div className="np-display np text-[2.6rem] font-bold leading-tight">
+              नगरपालिकाको सुपर-एडमिन
             </div>
-            <div className="mt-2 text-lg text-white/60">
-              Your ward on JiriSewa today
+            <div className="mt-1 text-base text-white/60">
+              Drive the platform yourself — every farmer, customer, rider, kilo,
+              rupee, and signal in one panel
             </div>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-bold uppercase tracking-wider">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
             Live
           </div>
         </div>
 
-        <div className="mt-10 grid flex-1 grid-cols-[3fr_2fr] gap-10">
-          <div className="relative overflow-hidden rounded-lg bg-white/5">
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="text-center">
-                <div className="text-7xl">🗺️</div>
-                <div className="np mt-4 text-2xl font-semibold">
-                  जिरी नगरपालिका
-                </div>
-                <div className="text-sm text-white/50">
-                  Wards 1–9 · Koseli Ghar pinned
-                </div>
-              </div>
+        {/* Mock dashboard frame */}
+        <div className="mt-5 flex-1 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+          {/* Title bar */}
+          <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-3 py-2">
+            <div className="flex gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-full bg-red-400/40" />
+              <div className="h-2.5 w-2.5 rounded-full bg-amber-400/40" />
+              <div className="h-2.5 w-2.5 rounded-full bg-emerald-400/40" />
+            </div>
+            <div className="font-mono text-[11px] text-white/50">
+              khetbata.xyz/admin · jiri.nagarpalika
+            </div>
+            <div className="ml-auto text-[10px] uppercase tracking-wider text-white/40">
+              उदाहरण · illustrative
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* KPI strip */}
+          <div className="grid grid-cols-4 gap-2 p-3">
             {[
-              { label: "किसान", sub: "Farmers", value: "—" },
-              { label: "लिस्टिङ", sub: "Active listings", value: "—" },
-              { label: "केजी (यो महिना)", sub: "Kg this month", value: "—" },
-              { label: "रुपैयाँ (यो महिना)", sub: "NPR this month", value: "—" },
-            ].map((c) => (
-              <div
-                key={c.label}
-                className="flex flex-col gap-1 rounded-lg bg-white/5 p-6"
-              >
-                <div className="np text-sm font-semibold text-white/60">
-                  {c.label}
+              {
+                ne: "किसान",
+                en: "Farmers",
+                val: "47",
+                sub: "+ 12 pending",
+                tint: "text-emerald-300",
+              },
+              {
+                ne: "ग्राहक",
+                en: "Customers",
+                val: "1,284",
+                sub: "+18% MoM",
+                tint: "text-blue-300",
+              },
+              {
+                ne: "राइडर",
+                en: "Riders",
+                val: "23",
+                sub: "5 active now",
+                tint: "text-amber-300",
+              },
+              {
+                ne: "अर्डर / हप्ता",
+                en: "Orders / week",
+                val: "156",
+                sub: "92% on-time",
+                tint: "text-purple-300",
+              },
+            ].map((k) => (
+              <div key={k.ne} className="rounded-md bg-white/5 p-3">
+                <div className="np text-[11px] font-semibold text-white/70">
+                  {k.ne}
                 </div>
-                <div className="text-xs text-white/40">{c.sub}</div>
-                <div className="mt-3 text-5xl font-extrabold text-white/70">
-                  {c.value}
+                <div className="text-[9px] uppercase tracking-wider text-white/40">
+                  {k.en}
                 </div>
+                <div className="mt-1 text-2xl font-extrabold">{k.val}</div>
+                <div className={`text-[10px] ${k.tint}`}>{k.sub}</div>
               </div>
             ))}
-            <div className="col-span-2 rounded-lg bg-amber-500/15 p-5 text-sm">
-              <div className="np font-semibold text-amber-200">
-                हाम्रो प्रणाली तयार छ — साझेदारी पछि वडा-स्तरीय गणना सुरु हुनेछ।
+          </div>
+
+          {/* 4 panels */}
+          <div className="grid grid-cols-4 gap-2 px-3 pb-3">
+            {/* People */}
+            <div className="rounded-md bg-white/5 p-3">
+              <div className="flex items-center gap-1.5">
+                <Users
+                  className="h-3.5 w-3.5 text-blue-300"
+                  strokeWidth={2.25}
+                />
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/70">
+                  People · व्यक्ति
+                </div>
               </div>
-              <div className="mt-1 text-amber-100/70">
-                System is ready. Ward-level counts begin once partnership is
-                signed.
-              </div>
+              <ul className="mt-2 space-y-1.5 text-[11px] leading-snug text-white/85">
+                <li>· 47 farmers (35 verified, 12 pending)</li>
+                <li>· 1,284 consumers (KTM 89%, outside 11%)</li>
+                <li>· 23 riders (8 motorcycle, 15 bus/jeep)</li>
+                <li>· Avg consumer rating 4.6 / 5</li>
+              </ul>
             </div>
+
+            {/* Money */}
+            <div className="rounded-md bg-white/5 p-3">
+              <div className="flex items-center gap-1.5">
+                <Banknote
+                  className="h-3.5 w-3.5 text-emerald-300"
+                  strokeWidth={2.25}
+                />
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/70">
+                  Money · पैसा
+                </div>
+              </div>
+              <ul className="mt-2 space-y-1.5 text-[11px] leading-snug text-white/85">
+                <li>· रु ८.४ लाख settled to farmers · this month</li>
+                <li>· +18% above Kalimati avg price</li>
+                <li>· रु ४२,००० pending payouts</li>
+                <li>· 6.5% platform fee, fully transparent</li>
+              </ul>
+            </div>
+
+            {/* Operations */}
+            <div className="rounded-md bg-white/5 p-3">
+              <div className="flex items-center gap-1.5">
+                <Activity
+                  className="h-3.5 w-3.5 text-amber-300"
+                  strokeWidth={2.25}
+                />
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/70">
+                  Operations · सञ्चालन
+                </div>
+              </div>
+              <ul className="mt-2 space-y-1.5 text-[11px] leading-snug text-white/85">
+                <li>· 2,400 kg through Jiri hub · this month</li>
+                <li>· 14 orders in transit right now</li>
+                <li>· 3 open support tickets</li>
+                <li>· 1 dispute (escalated to municipal staff)</li>
+              </ul>
+            </div>
+
+            {/* Intelligence */}
+            <div className="rounded-md bg-white/5 p-3">
+              <div className="flex items-center gap-1.5">
+                <BarChart3
+                  className="h-3.5 w-3.5 text-purple-300"
+                  strokeWidth={2.25}
+                />
+                <div className="text-[10px] font-bold uppercase tracking-wider text-white/70">
+                  Signals · सूचक
+                </div>
+              </div>
+              <ul className="mt-2 space-y-1.5 text-[11px] leading-snug text-white/85">
+                <li>· Top demand: kiwi, churpi, akbare</li>
+                <li>· Gap: 200 kg requested, 50 kg listed</li>
+                <li>· Ward 4 leads production (38% share)</li>
+                <li>· Seasonal forecast: Jeth → kiwi peak</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Government tools strip */}
+        <div className="mt-4 rounded-lg bg-secondary px-5 py-4 text-white">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <ShieldCheck
+              className="h-5 w-5 self-center text-amber-300"
+              strokeWidth={2.25}
+            />
+            <div className="np text-base font-bold">
+              नगरपालिकाले सिधै सञ्चालन गर्न सक्ने
+            </div>
+            <span className="text-white/50">·</span>
+            <div className="text-sm">
+              Direct municipality controls — no JiriSewa staff in the middle
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-5 gap-2">
+            {[
+              {
+                icon: ShieldCheck,
+                ne: "किसान प्रमाणित",
+                en: "Verify farmer registrations",
+              },
+              {
+                icon: LifeBuoy,
+                ne: "ग्राहक सहायता",
+                en: "Resolve customer support tickets",
+              },
+              {
+                icon: Building2,
+                ne: "वडा अधिकारी खाता",
+                en: "Create ward officer accounts",
+              },
+              {
+                icon: Eye,
+                ne: "लिस्टिङ निरीक्षण",
+                en: "Moderate listings · quality control",
+              },
+              {
+                icon: FileText,
+                ne: "मासिक रिपोर्ट",
+                en: "Export tonnage + revenue reports",
+              },
+            ].map((t) => {
+              const Ic = t.icon;
+              return (
+                <div
+                  key={t.en}
+                  className="flex items-start gap-2 rounded-md bg-white/15 px-2.5 py-2"
+                >
+                  <Ic className="h-4 w-4 shrink-0 mt-0.5" strokeWidth={2.25} />
+                  <div className="leading-tight">
+                    <div className="np text-[11px] font-semibold">{t.ne}</div>
+                    <div className="text-[9px] text-white/75">{t.en}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     ),
     notes: (
       <p>
-        Don&apos;t apologize for zeros — the slide explains them. Belief: B.
-        1:30.
+        Walk through the dashboard top to bottom: KPIs, then the four panels,
+        then the green strip. The line that lands: &ldquo;the municipality runs
+        the platform — we don&apos;t sit between you and your farmers, your
+        customers, or your data.&rdquo; Numbers are illustrative; say so if
+        anyone asks. Belief: B + C. 2:30.
       </p>
     ),
   },
