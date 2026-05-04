@@ -20,6 +20,14 @@ jobs:
 
             echo "==> Pulling latest code..."
             cd ~/jirisewa-src
+            # Preserve any local edits the operator may have made on the
+            # server (e.g. a hotfix) — recover with `git stash pop` on the
+            # server later if needed. Listed untracked changes are skipped
+            # to avoid hiding dotfiles from view.
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "  Stashing local changes (recoverable with git stash pop)"
+              git stash push -m "auto-stash by deploy.yml $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            fi
             git pull
 
             echo "==> Building ARM image..."
