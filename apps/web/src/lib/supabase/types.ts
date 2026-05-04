@@ -162,6 +162,7 @@ export type Database = {
           photos: string[];
           is_active: boolean;
           municipality_id: string | null;
+          pickup_mode: "farm_pickup" | "hub_dropoff" | "both";
           created_at: string;
           updated_at: string;
         };
@@ -180,6 +181,7 @@ export type Database = {
           photos?: string[];
           is_active?: boolean;
           municipality_id?: string | null;
+          pickup_mode?: "farm_pickup" | "hub_dropoff" | "both";
           created_at?: string;
           updated_at?: string;
         };
@@ -198,6 +200,7 @@ export type Database = {
           photos?: string[];
           is_active?: boolean;
           municipality_id?: string | null;
+          pickup_mode?: "farm_pickup" | "hub_dropoff" | "both";
           created_at?: string;
           updated_at?: string;
         };
@@ -1491,6 +1494,26 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      record_hub_dropoff_v1: {
+        Args: {
+          p_hub_id: string;
+          p_listing_id: string;
+          p_quantity_kg: number;
+        };
+        Returns: { dropoff_id: string; lot_code: string; expires_at: string };
+      };
+      mark_dropoff_received_v1: {
+        Args: { p_dropoff_id: string };
+        Returns: { dropoff_id: string; status: string };
+      };
+      mark_dropoff_spoiled_v1: {
+        Args: { p_dropoff_id: string; p_notes?: string | null };
+        Returns: { dropoff_id: string; status: string };
+      };
+      dispatch_dropoff_v1: {
+        Args: { p_dropoff_id: string; p_rider_trip_id: string };
+        Returns: { dropoff_id: string; status: string };
+      };
       search_municipalities: {
         Args: {
           p_query?: string;

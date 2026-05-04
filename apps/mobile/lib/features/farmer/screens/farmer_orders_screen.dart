@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:jirisewa_mobile/core/providers/session_provider.dart';
 import 'package:jirisewa_mobile/features/farmer/providers/farmer_orders_provider.dart';
 import 'package:jirisewa_mobile/features/farmer/repositories/farmer_orders_repository.dart';
 
@@ -109,15 +110,123 @@ class _OrderListTab extends StatelessWidget {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerStatefulWidget {
   final FarmerOrder order;
 
   const _OrderCard({required this.order});
 
   @override
+  ConsumerState<_OrderCard> createState() => _OrderCardState();
+}
+
+class _OrderCardState extends ConsumerState<_OrderCard> {
+  bool _busy = false;
+
+  Future<void> _confirmPickup() async {
+    final profile = ref.read(userProfileProvider);
+    if (profile == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm pickup'),
+        content: Text(
+          'Mark all your items in order #${widget.order.id.substring(0, 8)} as ready for the rider?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(farmerOrdersRepositoryProvider)
+          .confirmPickup(widget.order.id, profile.id);
+      if (!mounted) return;
+      ref.invalidate(farmerOrdersProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pickup confirmed')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not confirm: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _markUnavailable() async {
+    final profile = ref.read(userProfileProvider);
+    if (profile == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark unavailable'),
+        content: const Text(
+          'Tell the customer your items can\'t be fulfilled? This refunds them.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Mark unavailable'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(farmerOrdersRepositoryProvider)
+          .markUnavailable(widget.order.id, profile.id);
+      if (!mounted) return;
+      ref.invalidate(farmerOrdersProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Items marked unavailable')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final order = widget.order;
     final theme = Theme.of(context);
     final dateStr = DateFormat('MMM d, yyyy').format(order.createdAt);
+    // Match the server-side gate in confirmFarmerPickup: only allow pickup
+    // confirmation once a rider has matched (or already confirmed picked_up
+    // in case of a partial confirm earlier). Don't allow pre-confirming for
+    // 'pending' orders — there's no rider yet.
+    final hasPendingPickup =
+        order.items.any((i) => i.pickupStatus == 'pending_pickup');
+    final showActions = (order.status == 'matched' ||
+            order.status == 'picked_up') &&
+        hasPendingPickup;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -195,6 +304,37 @@ class _OrderCard extends StatelessWidget {
               color: Colors.grey,
             ),
           ),
+
+          if (showActions) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _busy ? null : _confirmPickup,
+                    icon: _busy
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Confirm pickup'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Mark unavailable',
+                  onPressed: _busy ? null : _markUnavailable,
+                  icon: const Icon(Icons.do_not_disturb_alt_outlined),
+                  color: Colors.red,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

@@ -702,6 +702,12 @@
       "ctaPrimary": "Sign Up Now",
       "ctaSecondary": "Learn More"
     },
+    "androidBanner": {
+      "eyebrow": "New",
+      "title": "Download our Android app",
+      "subtitle": "Order, sell, and deliver on the go.",
+      "cta": "Get the app"
+    },
     "footer": {
       "brand": "JiriSewa",
       "tagline": "Connecting Nepali farmers directly with consumers through community riders.",
@@ -724,6 +730,30 @@
       "address": "Kathmandu, Nepal",
       "mapAttribution": "Map data \u00a9 OpenStreetMap contributors",
       "copyright": "JiriSewa. All rights reserved."
+    },
+    "android": {
+      "title": "JiriSewa for Android",
+      "tagline": "Fresh produce, faster — right from your phone.",
+      "description": "Browse the marketplace, track your deliveries, manage farmer listings, and accept rider trips — all from one app built for farmers, consumers, and riders across Nepal.",
+      "playStoreBadge": "Coming soon to Google Play",
+      "playStoreNote": "We're in the final review stages. In the meantime, install our latest APK directly.",
+      "downloadCta": "Download APK",
+      "downloadHint": "Latest release • Android 7.0 and above",
+      "featuresTitle": "What you can do",
+      "feature1Title": "Shop the marketplace",
+      "feature1Desc": "Search fresh produce, set delivery locations, pay with eSewa, Khalti, connectIPS, or cash.",
+      "feature2Title": "Sell your harvest",
+      "feature2Desc": "List produce in minutes, get notified of new orders, and track your payouts.",
+      "feature3Title": "Earn on the road",
+      "feature3Desc": "Post trips, accept matched orders, and follow turn-by-turn pickup and delivery routes.",
+      "feature4Title": "Built for offline",
+      "feature4Desc": "Works on patchy connections — designed for hub coordinators in rural municipalities.",
+      "installTitle": "How to install",
+      "installStep1": "Tap Download APK below.",
+      "installStep2": "When prompted, allow your browser to install unknown apps for this one install.",
+      "installStep3": "Open the downloaded file and tap Install.",
+      "installStep4": "Sign in with your phone number and you're set.",
+      "securityNote": "Why a direct download? While we wait for Play Store approval, this signed APK comes straight from JiriSewa. Your phone may show a one-time warning because the app isn't yet listed on the Play Store."
     }
   },
   "admin": {
@@ -734,6 +764,7 @@
       "orders": "Orders",
       "disputes": "Disputes",
       "farmers": "Farmer Verification",
+      "hubs": "Hubs",
       "payouts": "Payouts"
     },
     "dashboard": {

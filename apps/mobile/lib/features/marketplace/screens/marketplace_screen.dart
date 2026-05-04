@@ -7,6 +7,9 @@ import 'package:jirisewa_mobile/core/constants/map_constants.dart';
 import 'package:jirisewa_mobile/core/providers/session_provider.dart';
 import 'package:jirisewa_mobile/core/routing/app_router.dart';
 import 'package:jirisewa_mobile/core/theme.dart';
+import 'package:jirisewa_mobile/features/cart/models/cart.dart';
+import 'package:jirisewa_mobile/features/cart/providers/cart_provider.dart';
+import 'package:jirisewa_mobile/features/farmer/providers/farmer_orders_provider.dart';
 import 'package:jirisewa_mobile/features/map/widgets/listings_map.dart';
 import 'package:jirisewa_mobile/features/marketplace/providers/marketplace_provider.dart';
 
@@ -78,7 +81,7 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                         center: jiriCenter,
                         zoom: 10.8,
                         onMarkerTap: (listingId) {
-                          context.push('${AppRoutes.marketplace}/$listingId');
+                          context.push('/produce/$listingId');
                         },
                       );
                     },
@@ -307,15 +310,9 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Pickup marked ready. Rider can now connect this order.',
-                                ),
-                              ),
-                            );
-                          },
+                          onPressed: orderId == null
+                              ? null
+                              : () => _markPickupReady(orderId),
                           icon: const Icon(
                             Icons.local_shipping_outlined,
                             size: 18,
@@ -331,6 +328,30 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
         ],
       ),
     );
+  }
+
+  /// Confirm pickup of this farmer's items in [orderId].
+  /// Mirrors the server action: flips order_items.pickup_status to picked_up
+  /// and advances orders.status from matched -> picked_up if all items done.
+  Future<void> _markPickupReady(String orderId) async {
+    final profile = ref.read(userProfileProvider);
+    if (profile == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(farmerOrdersRepositoryProvider)
+          .confirmPickup(orderId, profile.id);
+      ref.invalidate(marketplaceDataProvider);
+      ref.invalidate(farmerOrdersProvider);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Marked ready for rider pickup.')),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not confirm pickup: $e')),
+      );
+    }
   }
 
   Future<void> _showRequestSheet(Map<String, dynamic> listing) async {
@@ -387,15 +408,37 @@ class _MarketplaceScreenState extends ConsumerState<MarketplaceScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Purchase request sent. Farmer confirms, then rider matching starts.',
-                            ),
+                      onPressed: () async {
+                        // Real cart-then-checkout flow. The bottom sheet's
+                        // "Send Request" used to be a fake snackbar — now it
+                        // adds the line to the cart and navigates to /checkout
+                        // where placeOrder actually fires.
+                        final navigator = Navigator.of(ctx);
+                        final router = GoRouter.of(context);
+                        final cart = ref.read(cartProvider.notifier);
+                        await cart.addItem(
+                          CartItem(
+                            listingId: listing['id'] as String,
+                            farmerId: listing['farmer_id'] as String,
+                            quantityKg: requestQty,
+                            pricePerKg:
+                                (listing['price_per_kg'] as num?)?.toDouble() ??
+                                    0,
+                            nameEn:
+                                listing['name_en'] as String? ?? 'Produce',
+                            nameNe: listing['name_ne'] as String?,
+                            farmerName: ((listing['users']
+                                            as Map<String, dynamic>?)?['name']
+                                        as String?) ??
+                                'Farmer',
+                            photo: ((listing['photos'] as List?)?.isNotEmpty ??
+                                    false)
+                                ? (listing['photos'] as List).first as String?
+                                : null,
                           ),
                         );
+                        navigator.pop();
+                        router.push(AppRoutes.checkout);
                       },
                       child: const Text('Send Request'),
                     ),

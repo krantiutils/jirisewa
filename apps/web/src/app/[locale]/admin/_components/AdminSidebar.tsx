@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   UserCheck,
   Wallet,
+  Building2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -22,6 +23,7 @@ const navItems = [
   { key: "orders", href: "/orders", icon: ShoppingCart },
   { key: "disputes", href: "/disputes", icon: AlertTriangle },
   { key: "farmers", href: "/farmers", icon: UserCheck },
+  { key: "hubs", href: "/hubs", icon: Building2 },
   { key: "payouts", href: "/payouts", icon: Wallet },
 ] as const;
 

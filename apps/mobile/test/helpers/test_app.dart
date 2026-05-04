@@ -23,6 +23,7 @@ Widget buildTestApp({
   UserProfile? profile,
   List<UserRoleDetails>? roles,
   String activeRole = 'consumer',
+  List<Override> extraOverrides = const [],
 }) {
   final testUserSession = UserSession(
     profile: profile ?? testProfile,
@@ -34,6 +35,7 @@ Widget buildTestApp({
       supabaseProvider.overrideWithValue(mockClient),
       userSessionProvider.overrideWith(() => _TestUserSessionNotifier(testUserSession)),
       activeRoleProvider.overrideWith(() => _TestActiveRoleNotifier(activeRole)),
+      ...extraOverrides,
     ],
     child: MaterialApp(
       theme: buildAppTheme(),

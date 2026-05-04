@@ -1,0 +1,10 @@
+{
+  "stamp": "2026-04-29",
+  "note": "Day-1 fallback. All zeros are the correct value when prod has no Jiri data yet — the slide renders the partnership-pending caption automatically.",
+  "counters": {
+    "farmers": 0,
+    "listings": 0,
+    "kg": 0,
+    "npr": 0
+  }
+}

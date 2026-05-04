@@ -41,6 +41,20 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   }
 
   @override
+  void didUpdateWidget(covariant LocationPickerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.initialLocation;
+    if (next != null && next != oldWidget.initialLocation && next != _selectedLocation) {
+      // Parent passed a new location (e.g. user searched a municipality).
+      // Treat it like a tap: move the map, drop the marker, geocode, and
+      // fire onLocationSelected so upstream state captures it without
+      // requiring a manual map tap.
+      _mapController.move(next, 13.0);
+      _onTap(TapPosition(Offset.zero, Offset.zero), next);
+    }
+  }
+
+  @override
   void dispose() {
     _geocodingService.dispose();
     _mapController.dispose();

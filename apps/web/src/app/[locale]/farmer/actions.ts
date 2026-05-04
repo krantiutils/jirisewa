@@ -15,6 +15,7 @@ export type ListingFormData = {
   unit: string;
   freshness_date: string;
   photos: string[];
+  pickup_mode?: "farm_pickup" | "hub_dropoff" | "both";
 };
 
 export type ActionResult<T = null> =
@@ -183,6 +184,7 @@ export async function createListing(
       freshness_date: formData.freshness_date || null,
       photos: formData.photos,
       location: profile?.location ?? null,
+      pickup_mode: formData.pickup_mode ?? "farm_pickup",
     })
     .select("id")
     .single();
@@ -219,6 +221,8 @@ export async function updateListing(
   if (formData.freshness_date !== undefined)
     updateData.freshness_date = formData.freshness_date || null;
   if (formData.photos !== undefined) updateData.photos = formData.photos;
+  if (formData.pickup_mode !== undefined)
+    updateData.pickup_mode = formData.pickup_mode;
 
   const { error } = await supabase
     .from("produce_listings")

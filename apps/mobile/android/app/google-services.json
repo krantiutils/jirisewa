@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "308769660100",
+    "project_id": "jirisewa",
+    "storage_bucket": "jirisewa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308769660100:android:1205e5d55c3051c2b33d91",
+        "android_client_info": {
+          "package_name": "com.jirisewa.jirisewa_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAn1KpGPZXyHoyhLxJE6womhozhg_dB_Ds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

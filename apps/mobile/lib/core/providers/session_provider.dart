@@ -25,11 +25,16 @@ final userSessionProvider =
 class UserSessionNotifier extends AsyncNotifier<UserSession> {
   @override
   Future<UserSession> build() async {
-    final session = ref.watch(currentSessionProvider);
-    if (session == null) return const UserSession();
+    // Only rebuild when the user's identity changes — not on every Session
+    // object emit. Supabase fires TOKEN_REFRESHED with a new Session object
+    // (same user.id) which would otherwise cancel in-flight fetches and
+    // wedge this provider in `loading` forever.
+    final userId = ref.watch(
+      currentSessionProvider.select((s) => s?.user.id),
+    );
+    if (userId == null) return const UserSession();
 
     final client = ref.read(supabaseProvider);
-    final userId = session.user.id;
 
     final profileResponse = await client
         .from('users')

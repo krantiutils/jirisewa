@@ -400,7 +400,7 @@ class HomeScreen extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () =>
-          context.push('${AppRoutes.marketplace}/${produce['id']}'),
+          context.push('/produce/${produce['id']}'),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.muted,

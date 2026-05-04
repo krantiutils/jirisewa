@@ -29,6 +29,7 @@ class FarmerRepository {
     List<String>? photos,
     LatLng? location,
     String? municipalityId,
+    String pickupMode = 'farm_pickup',
   }) async {
     final data = <String, dynamic>{
       'farmer_id': farmerId,
@@ -38,6 +39,7 @@ class FarmerRepository {
       'price_per_kg': pricePerKg,
       'available_qty_kg': availableQtyKg,
       'is_active': true,
+      'pickup_mode': pickupMode,
     };
 
     if (description != null && description.isNotEmpty) {
@@ -81,12 +83,14 @@ class FarmerRepository {
     String? freshnessDate,
     List<String>? photos,
     bool? isActive,
+    String? pickupMode,
   }) async {
     final data = <String, dynamic>{};
 
     if (categoryId != null) data['category_id'] = categoryId;
     if (nameEn != null) data['name_en'] = nameEn;
     if (nameNe != null) data['name_ne'] = nameNe;
+    if (pickupMode != null) data['pickup_mode'] = pickupMode;
     if (description != null) {
       // Empty string means "clear the field" → store as null
       data['description'] = description.isEmpty ? null : description;

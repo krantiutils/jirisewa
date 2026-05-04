@@ -166,6 +166,15 @@ class PushNotificationService {
   void _handleNotificationTap(GoRouter router, Map<String, dynamic> data) {
     final orderId = data['order_id'] as String?;
     final type = data['type'] as String?;
+
+    // Rider ping notifications: route to the trips screen where the ping
+    // panel lives. Pings don't belong to the rider yet, so /orders/:id
+    // would show an error.
+    if (type == 'ping') {
+      router.go('/trips');
+      return;
+    }
+
     if (orderId == null) return;
 
     switch (type) {

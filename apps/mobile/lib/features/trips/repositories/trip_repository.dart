@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -554,7 +555,9 @@ class TripRepository {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Parse a PostGIS point from WKT POINT, GeoJSON, or Map format.
+  /// Parse a PostGIS point from WKT POINT, EWKB hex, GeoJSON, or Map format.
+  /// Supabase returns geography columns as EWKB hex by default — see
+  /// `0101000020E6100000<lng-LE><lat-LE>` (50 hex chars total).
   static LatLng? parsePoint(dynamic value) {
     if (value == null) return null;
 
@@ -567,6 +570,20 @@ class TripRepository {
         final lng = double.tryParse(pointMatch.group(1)!);
         final lat = double.tryParse(pointMatch.group(2)!);
         if (lat != null && lng != null) return LatLng(lat, lng);
+      }
+      if (trimmed.length >= 50 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(trimmed)) {
+        try {
+          final bytes = Uint8List(trimmed.length ~/ 2);
+          for (var i = 0; i < bytes.length; i++) {
+            bytes[i] = int.parse(trimmed.substring(i * 2, i * 2 + 2), radix: 16);
+          }
+          final view = ByteData.view(bytes.buffer);
+          final lng = view.getFloat64(9, Endian.little);
+          final lat = view.getFloat64(17, Endian.little);
+          return LatLng(lat, lng);
+        } catch (_) {
+          // Fall through to JSON / null.
+        }
       }
       if (trimmed.startsWith('{')) {
         try {

@@ -11,6 +11,7 @@ import {
   OSRM_BASE_URL,
 } from "@jirisewa/shared";
 import { createServiceRoleClient, createClient } from "@/lib/supabase/server";
+import { notifyRiderPingArrived } from "@/lib/actions/notifications";
 import { parseEwkbPoint } from "@/lib/geo-utils";
 import type { ActionResult } from "@/lib/types/action";
 import type {
@@ -137,6 +138,20 @@ export async function findAndPingRiders(
     if (insertError) {
       console.error("findAndPingRiders: failed to insert pings:", insertError);
       return { error: insertError.message };
+    }
+
+    // 6. Push-notify each pinged rider so backgrounded apps get the banner.
+    // Realtime alone only covers app-foregrounded riders.
+    // Fire-and-forget — notification failures must not break the order.
+    for (const row of pingRows) {
+      notifyRiderPingArrived(
+        row.rider_id,
+        row.order_id,
+        row.trip_id,
+        Number(row.estimated_earnings),
+      ).catch((err) =>
+        console.error("notifyRiderPingArrived failed:", err),
+      );
     }
 
     return { data: { pingedCount: pingRows.length } };

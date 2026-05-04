@@ -41,6 +41,8 @@ import 'package:jirisewa_mobile/features/orders/screens/available_orders_screen.
 import 'package:jirisewa_mobile/features/payments/screens/payment_callback_screen.dart';
 import 'package:jirisewa_mobile/features/addresses/screens/addresses_screen.dart';
 import 'package:jirisewa_mobile/features/profile/screens/account_settings_screen.dart';
+import 'package:jirisewa_mobile/features/hubs/screens/farmer_dropoff_screen.dart';
+import 'package:jirisewa_mobile/features/hubs/screens/hub_inventory_screen.dart';
 
 abstract final class AppRoutes {
   static const login = '/login';
@@ -77,6 +79,8 @@ abstract final class AppRoutes {
   static const businessDashboard = '/business/dashboard';
   static const businessOrders = '/business/orders';
   static const availableOrders = '/rider/available-orders';
+  static const farmerHubs = '/farmer/hubs';
+  static const hubInventory = '/hub';
   static const businessOrderDetail = '/business/orders/:id';
 
   // Payment callback deep link routes
@@ -115,11 +119,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: refreshNotifier,
     redirect: (BuildContext context, GoRouterState state) {
-      final sessionLoading = ref.read(userSessionProvider).isLoading;
-      if (sessionLoading) return null;
+      final sessionAsync = ref.read(userSessionProvider);
+      if (sessionAsync.isLoading) return null;
 
+      // Read hasProfile directly off the AsyncValue rather than via
+      // hasProfileProvider. The refresh listener can fire BEFORE the
+      // dependent Provider chain (hasProfileProvider) has recomputed,
+      // so its cached value lags one tick behind userSessionProvider —
+      // long enough to bounce a fully-registered user to /register.
+      final session = sessionAsync.valueOrNull;
       final isAuthenticated = ref.read(isAuthenticatedProvider);
-      final hasProfile = ref.read(hasProfileProvider);
+      final hasProfile = session?.hasProfile ?? false;
 
       final isOnLogin = state.matchedLocation == AppRoutes.login;
       final isOnRegister = state.matchedLocation == AppRoutes.register;
@@ -317,6 +327,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.availableOrders,
         builder: (context, state) => const AvailableOrdersScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.farmerHubs,
+        builder: (context, state) => const FarmerDropoffScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.hubInventory,
+        builder: (context, state) => const HubInventoryScreen(),
       ),
       GoRoute(
         path: AppRoutes.addresses,

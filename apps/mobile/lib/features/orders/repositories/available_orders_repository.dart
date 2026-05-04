@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ---------------------------------------------------------------------------
@@ -198,20 +200,37 @@ class AvailableOrdersRepository {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  /// Parse a WKT POINT string into (lat, lng).
-  ///
-  /// WKT format: `POINT(<lng> <lat>)`
+  /// Parse a PostGIS point into (lat, lng). Accepts:
+  ///   * WKT: `POINT(<lng> <lat>)`
+  ///   * EWKB hex (what Supabase returns by default for geography columns):
+  ///     `0101000020E6100000<lng-double-LE><lat-double-LE>` — 50 hex chars.
   static (double, double)? _parsePoint(dynamic value) {
     if (value == null) return null;
     if (value is! String) return null;
+    final s = value.trim();
 
-    final match = RegExp(r'POINT\(([-\d.]+)\s+([-\d.]+)\)').firstMatch(value);
-    if (match == null) return null;
+    final match = RegExp(r'POINT\(([-\d.]+)\s+([-\d.]+)\)').firstMatch(s);
+    if (match != null) {
+      final lng = double.tryParse(match.group(1)!);
+      final lat = double.tryParse(match.group(2)!);
+      if (lat != null && lng != null) return (lat, lng);
+    }
 
-    final lng = double.tryParse(match.group(1)!);
-    final lat = double.tryParse(match.group(2)!);
-    if (lat == null || lng == null) return null;
+    if (s.length >= 50 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(s)) {
+      try {
+        final bytes = Uint8List(s.length ~/ 2);
+        for (var i = 0; i < bytes.length; i++) {
+          bytes[i] = int.parse(s.substring(i * 2, i * 2 + 2), radix: 16);
+        }
+        final view = ByteData.view(bytes.buffer);
+        final lng = view.getFloat64(9, Endian.little);
+        final lat = view.getFloat64(17, Endian.little);
+        return (lat, lng);
+      } catch (_) {
+        return null;
+      }
+    }
 
-    return (lat, lng);
+    return null;
   }
 }
