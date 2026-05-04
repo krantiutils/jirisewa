@@ -167,23 +167,10 @@ async function main() {
     await context.close();
   }
 
-  // ─── Admin (promote the farmer) ────────────────────────────
+  // ─── Admin (static jiri-admin user, provisioned by setup_admin_and_hub.sql) ─
   {
     const { context, page, ctx, errors } = await newCtx(browser, "admin");
-    // Find the farmer's user.id and promote
-    const { data: farmerProfile } = await admin
-      .from("user_profiles")
-      .select("id")
-      .eq("email", farmerEmail)
-      .single();
-    if (farmerProfile?.id) {
-      const { error: promoteErr } = await admin
-        .from("users")
-        .update({ is_admin: true })
-        .eq("id", farmerProfile.id);
-      console.log("admin promote:", promoteErr ? promoteErr.message : "ok");
-    }
-    await loginEmail(page, ctx, farmerEmail, PASSWORD);
+    await loginEmail(page, ctx, "jiri-admin@jirisewa.local", "admin-pw");
     await page.goto(`${BASE_URL}/en/admin`, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(2500);
     await shot(page, ctx, "admin-dashboard");

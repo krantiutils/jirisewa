@@ -63,7 +63,43 @@ BEGIN
     operator_id = v_op_id, is_active = true;
 END $$;
 
--- 3. Confirm
+-- 3. Provision a static admin (so e2e drive-all-roles has a stable login)
+DO $$
+DECLARE
+  v_admin_id uuid := '00000000-0000-4000-a000-000000000a02';
+BEGIN
+  INSERT INTO auth.users (
+    id, instance_id, aud, role, email,
+    raw_app_meta_data, raw_user_meta_data,
+    created_at, updated_at, email_confirmed_at,
+    encrypted_password, confirmation_token,
+    recovery_token, email_change_token_new, email_change
+  ) VALUES (
+    v_admin_id, '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'jiri-admin@jirisewa.local',
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"name":"Jiri Admin"}'::jsonb,
+    now(), now(), now(),
+    crypt('admin-pw', gen_salt('bf')),
+    '', '', '', ''
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    encrypted_password = crypt('admin-pw', gen_salt('bf')),
+    email_confirmed_at = COALESCE(auth.users.email_confirmed_at, now());
+
+  INSERT INTO user_profiles (id, email, full_name, role, onboarding_completed)
+  VALUES (v_admin_id, 'jiri-admin@jirisewa.local',
+          'Jiri Admin', 'customer', true)
+  ON CONFLICT (id) DO UPDATE SET onboarding_completed = true;
+
+  INSERT INTO users (id, phone, name, role, is_admin)
+  VALUES (v_admin_id, 'jiri-admin@jirisewa.local',
+          'Jiri Admin', 'consumer', true)
+  ON CONFLICT (id) DO UPDATE SET is_admin = true;
+END $$;
+
+-- 4. Confirm
 SELECT u.id, p.email, u.role, u.is_admin
   FROM users u
   LEFT JOIN user_profiles p ON p.id = u.id
