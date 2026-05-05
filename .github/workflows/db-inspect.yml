@@ -24,6 +24,7 @@ on:
           - setup_admin_and_hub
           - list_users
           - server_status
+          - orders_state
           - promote_ashish
           - promote_samrat_hub
 
@@ -87,6 +88,25 @@ jobs:
                   echo "SUPABASE_SERVICE_ROLE_KEY length=${#SUPABASE_SERVICE_ROLE_KEY}";
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
                 '
+                ;;
+              orders_state)
+                run_query "
+                  SELECT id, status, rider_id IS NOT NULL AS has_rider,
+                         parent_order_id, delivery_location IS NOT NULL AS has_loc,
+                         total_price, created_at
+                    FROM orders
+                   ORDER BY created_at DESC LIMIT 20;"
+                echo "==> rider_trips:"
+                run_query "
+                  SELECT id, rider_id, status, available_capacity_kg,
+                         remaining_capacity_kg, departure_at
+                    FROM rider_trips
+                   ORDER BY departure_at DESC LIMIT 10;"
+                echo "==> order_pings:"
+                run_query "
+                  SELECT order_id, rider_id, status, expires_at
+                    FROM order_pings
+                   ORDER BY created_at DESC LIMIT 10;"
                 ;;
               server_status)
                 echo "==> ~/jirisewa-src git status:"
