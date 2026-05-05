@@ -92,10 +92,12 @@ jobs:
                 ;;
               who_riders)
                 run_query "
-                  SELECT u.id, p.email, u.name, u.role, u.is_admin,
+                  SELECT u.id, p.email, a.phone AS auth_phone, u.name,
+                         u.role, u.is_admin,
                          (SELECT COUNT(*) FROM rider_trips WHERE rider_id = u.id) AS trips
                     FROM users u
                     LEFT JOIN user_profiles p ON p.id = u.id
+                    LEFT JOIN auth.users a ON a.id = u.id
                    WHERE u.id IN (SELECT DISTINCT rider_id FROM rider_trips);"
                 ;;
               orders_state)
