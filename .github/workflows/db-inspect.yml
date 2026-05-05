@@ -25,6 +25,7 @@ on:
           - list_users
           - server_status
           - orders_state
+          - who_riders
           - promote_ashish
           - promote_samrat_hub
 
@@ -88,6 +89,14 @@ jobs:
                   echo "SUPABASE_SERVICE_ROLE_KEY length=${#SUPABASE_SERVICE_ROLE_KEY}";
                   echo "Are anon and service role identical? $([ \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" = \"$SUPABASE_SERVICE_ROLE_KEY\" ] && echo YES-WRONG || echo no)"
                 '
+                ;;
+              who_riders)
+                run_query "
+                  SELECT u.id, p.email, u.name, u.role, u.is_admin,
+                         (SELECT COUNT(*) FROM rider_trips WHERE rider_id = u.id) AS trips
+                    FROM users u
+                    LEFT JOIN user_profiles p ON p.id = u.id
+                   WHERE u.id IN (SELECT DISTINCT rider_id FROM rider_trips);"
                 ;;
               orders_state)
                 run_query "
